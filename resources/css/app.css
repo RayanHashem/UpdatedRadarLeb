@@ -657,6 +657,27 @@ section {
     .help-container { font-size: 0.9rem; }
 }
 
+/* 360px (narrow phones): prevent overflow, readable forms and overlays */
+@media (max-width: 360px) {
+    .overlay-content {
+        max-width: 100%;
+        padding: 12px;
+        margin: 8px;
+        max-height: 85vh;
+    }
+    .overlay-title { font-size: 1.1rem; margin-bottom: 1rem; }
+    .overlay-subtitle { font-size: 1rem; }
+    .a-btn, .a-input { max-width: 100%; padding: 12px 16px; font-size: 1rem; }
+    .winner-card { padding: 8px 12px; border-radius: 24px; }
+    .winner-name { font-size: 0.85rem; }
+    .winner-prize { font-size: 0.65rem; }
+    .help-container { font-size: 0.85rem; padding: 0 4px; }
+    .bar { padding: 8px 10px; }
+    .bar-right { gap: 8px; }
+    .menu-item { width: 18px; height: 18px; }
+    .logo-nav { max-width: 85px; }
+}
+
 /* Other existing styles from your app.css file should remain below */
 .bar { flex-shrink: 0; padding: 10px 15px; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: space-between; align-items: center; width: 100%; }
 .bar-left, .bar-right { flex: 1; }
@@ -753,13 +774,19 @@ section {
     background-size: cover;
     background-position: center center;
     background-repeat: no-repeat;
+    background-attachment: scroll; /* Avoid fixed attachment on mobile for performance */
     display: flex; /* Ensure flex properties apply to the section */
     justify-content: center; /* Center content horizontally */
     align-items: center; /* Center content vertically */
     flex-direction: column; /* Stack children vertically */
+    min-height: 100vh;
+    min-height: 100dvh; /* Prefer dynamic viewport on mobile */
+    padding: env(safe-area-inset-top, 0) env(safe-area-inset-right, 0) env(safe-area-inset-bottom, 0) env(safe-area-inset-left, 0);
+    box-sizing: border-box;
+    width: 100%;
 }
 
-/* Updated form container styles to match the image */
+/* Updated form container styles (default = Sign in / Login page) */
 .form-container {
     background-color: transparent; /* Remove black box background */
     border-radius: 20px; /* Rounded corners */
@@ -769,19 +796,19 @@ section {
     margin: 20px auto; /* Center horizontally */
     display: flex;
     flex-direction: column;
-    gap: 2rem; /* Adjusted gap inside the form container */
+    gap: 2rem; /* Gap inside the form container */
     align-items: center; /* Center contents inside the form container */
 }
 
-/* Updated styles for input fields to match the image */
+/* Updated styles for input fields (default = Login page) */
 .form-control.custom-input {
     background-color: rgba(0, 0, 0, 0.5); /* Darker semi-transparent background */
     border: none; /* No border */
     border-radius: 15px; /* Rounded corners */
     color: white; /* White text */
-    padding: 15px 20px; /* Good vertical padding */
+    padding: 15px 20px; /* Vertical padding */
     height: auto; /* Allow height to adjust based on padding */
-    font-size: 1.1em; /* Slightly larger font */
+    font-size: 1.1em; /* Font size */
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2); /* Inner shadow for depth */
     width: 100%; /* Ensure inputs take full width */
 }
@@ -797,16 +824,73 @@ section {
     border-color: transparent; /* No border on focus */
 }
 
-/* Updated styles for custom buttons to match the image */
+#sign-in .form-check-input {
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 4px;
+}
+#sign-in .form-check-input:checked {
+    background-color: rgb(102, 175, 219);
+    border-color: rgb(102, 175, 219);
+}
+#sign-in .form-check-label a:hover {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* Register form spacing – comfortable but not as large as Login */
+#sign-in.page-register .register-form-fields .form-control.custom-input,
+#sign-in.page-register .register-form-fields .form-check-label {
+    margin-bottom: 0.5rem;
+}
+#sign-in.page-register .register-form-fields .terms-checkbox-wrap {
+    margin-top: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+#sign-in.page-register .register-form-fields .error-message,
+#sign-in.page-register .register-form-fields .error-message-material {
+    margin-top: 4px;
+    margin-bottom: 6px;
+}
+
+/* Sign up (Register) page – bigger boxes, original logo size */
+#sign-in.page-register .form-container {
+    border-radius: 16px;
+    padding: 24px 28px;
+    max-width: 380px;
+    margin: 16px auto;
+    gap: 0.75rem;
+}
+#sign-in.page-register .form-control.custom-input {
+    border-radius: 12px;
+    padding: 12px 16px;
+    min-height: 46px;
+    font-size: 1.05em;
+}
+#sign-in.page-register .btn-custom {
+    border-radius: 12px;
+    padding: 10px 20px;
+    height: 46px;
+    font-size: 1.05em;
+    min-width: 110px;
+}
+/* Keep logo at original height on Register page (same as Login) */
+#sign-in.page-register .flag {
+    width: 100px;
+    height: auto;
+    margin-bottom: 24px;
+    border-radius: 10px;
+}
+
+/* Updated styles for custom buttons (default = Register: Sign up red, Sign in blue) */
 .btn-custom {
     border-radius: 15px; /* Rounded corners */
-    padding: 12px 25px; /* Good padding */
+    padding: 12px 25px; /* Padding */
     font-size: 1.1em;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.42), 0 6px 20px 0 rgba(0, 0, 0, 0.84); /* Shadow */
     transition: all 0.3s ease; /* Smooth transitions */
     border: none; /* No default border */
     flex: 1; /* Allow buttons to grow and shrink in flex container */
-    min-width: 120px; /* Ensure a minimum width for buttons */
+    min-width: 120px; /* Minimum width for buttons */
     color: white !important; /* White text color for all buttons */
     white-space: nowrap; /* Prevent text from wrapping to multiple lines */
 }
@@ -815,13 +899,26 @@ section {
     transform: translateY(-2px); /* Slight lift on hover */
 }
 
-/* Blue highlight for Sign In button (btn-custom-1) */
+/* Red shadow for Sign Up button (btn-custom-1 on Register page) */
 .btn-custom-1:hover {
+    box-shadow: 0 6px 12px 0 rgba(228, 120, 126, 0.6), 0 8px 25px 0 rgba(228, 120, 126, 0.9);
+}
+
+/* Blue shadow for Sign In button (btn-custom-2 on Register page) */
+.btn-custom-2:hover {
     box-shadow: 0 6px 12px 0 rgba(102, 175, 219, 0.6), 0 8px 25px 0 rgba(102, 175, 219, 0.9);
 }
 
-/* Red highlight for Sign Up button (btn-custom-2) */
-.btn-custom-2:hover {
+/* Login page: Sign in & Forgot password (blue) get blue shadow, Sign up (red) gets red shadow */
+#sign-in.page-login .btn-custom-1:hover {
+    box-shadow: 0 6px 12px 0 rgba(102, 175, 219, 0.6), 0 8px 25px 0 rgba(102, 175, 219, 0.9);
+}
+
+/* Forgot password page: Send Reset Link & Back to Login (blue) get blue shadow */
+#sign-in.page-forgot .btn-custom-1:hover {
+    box-shadow: 0 6px 12px 0 rgba(102, 175, 219, 0.6), 0 8px 25px 0 rgba(102, 175, 219, 0.9);
+}
+#sign-in.page-login .btn-custom-2:hover {
     box-shadow: 0 6px 12px 0 rgba(228, 120, 126, 0.6), 0 8px 25px 0 rgba(228, 120, 126, 0.9);
 }
 
@@ -844,15 +941,41 @@ section {
     justify-content: center; /* Center content vertically */
     align-items: center; /* Center content horizontally */
     width: 100%; /* Ensure it takes full width */
-    height: 100%; /* Ensure it takes full height */
+    max-width: 100%;
+    min-height: 100%; /* Fill section on mobile */
+    padding: 1rem; /* Base padding */
+    box-sizing: border-box;
+    overflow-y: auto; /* Allow scroll when content is tall (e.g. Register on small screens) */
+    -webkit-overflow-scrolling: touch;
 }
 
 .flag {
-    width: 100px; /* Adjust flag size */
+    width: 100px; /* Flag size (Login page default) */
     height: auto;
     margin-bottom: 30px; /* Space between flag and form */
     box-shadow: 0 0 15px rgba(255, 255, 255, 0.3); /* Subtle glow for flag */
     border-radius: 10px; /* Slightly rounded corners for flag */
+}
+
+/* Auth divider (Login page hr) */
+.auth-divider {
+    height: 2px;
+    border: none;
+    color: gray;
+    background-color: white;
+    opacity: 1;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.42), 0 6px 20px 0 rgba(0, 0, 0, 0.84);
+    width: 80%;
+    margin: 20px auto;
+}
+@media (max-width: 576px) {
+    .auth-divider {
+        width: 100%;
+        margin: 16px 0;
+    }
+    .forgot-password-btn {
+        width: 100%;
+    }
 }
 
 /* Forgot Password text styling */
@@ -868,28 +991,170 @@ section {
     display: block;
 }
 
-/* Responsive adjustments */
-@media (max-width: 576px) {
+/* Forgot password: email-sent success message - clear, readable on sign-in background */
+#sign-in.page-forgot .forgot-password-status-msg {
+    color: #fff;
+    font-size: 1rem;
+    font-weight: 500;
+    text-shadow: 0 0 2px #000, 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* ========== Mobile responsive: Sign in & Sign up ========== */
+
+/* Tablet and down */
+@media (max-width: 768px) {
+    #sign-in > .d-flex.align-items-center.flex-column.h-100 {
+        padding: 1rem 1.25rem;
+        justify-content: flex-start;
+        padding-top: max(1rem, env(safe-area-inset-top));
+        padding-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    }
     .form-container {
-        padding: 20px; /* Smaller padding on small screens */
-        width: 95%; /* More width on very small screens */
-    }
-    .flag {
-        width: 80px; /* Smaller flag on small screens */
-        margin-bottom: 20px;
-    }
-    .btn-custom {
-        font-size: 1em; /* Smaller font for buttons */
-        padding: 10px 15px; /* Adjusted padding for smaller buttons */
-        min-width: unset; /* Remove min-width on very small screens if it causes overflow */
-        white-space: nowrap; /* Prevent text from wrapping to multiple lines */
+        width: 100%;
+        max-width: 100%;
+        padding: 24px 20px;
+        margin: 0;
+        gap: 1.5rem;
     }
     .form-control.custom-input {
+        font-size: 16px; /* Prevents zoom on focus on iOS */
+        padding: 14px 16px;
+        min-height: 48px; /* Touch-friendly */
+    }
+    .btn-custom {
+        min-height: 48px;
+        padding: 12px 20px;
         font-size: 1em;
-        padding: 12px 15px;
+    }
+    #sign-in.page-register .form-container {
+        padding: 20px 18px;
+        gap: 0.6rem;
+    }
+    #sign-in.page-register .form-control.custom-input {
+        font-size: 16px;
+        padding: 12px 14px;
+        min-height: 48px;
+    }
+    #sign-in.page-register .btn-custom {
+        min-height: 48px;
+        padding: 10px 18px;
+    }
+    #sign-in.page-register .register-form-fields .terms-checkbox-wrap .form-check-label {
+        font-size: 0.875rem;
+        line-height: 1.4;
     }
 }
 
+/* Mobile landscape / large phone */
+@media (max-width: 576px) {
+    #sign-in > .d-flex.align-items-center.flex-column.h-100 {
+        padding: 0.75rem 1rem;
+    }
+    .form-container {
+        padding: 20px 16px;
+        width: 100%;
+        border-radius: 16px;
+        gap: 1.25rem;
+    }
+    .flag {
+        width: 80px;
+        margin-bottom: 16px;
+    }
+    .btn-custom {
+        font-size: 1em;
+        padding: 12px 16px;
+        min-width: unset;
+        white-space: nowrap;
+        flex: 1 1 auto;
+    }
+    /* Stack buttons vertically on small screens for easier tap */
+    #sign-in .auth-button-row {
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    #sign-in .auth-button-row .btn-custom {
+        width: 100%;
+    }
+    .form-control.custom-input {
+        font-size: 16px;
+        padding: 12px 14px;
+        min-height: 48px;
+    }
+    #sign-in.page-register .form-container {
+        padding: 18px 16px;
+    }
+    #sign-in.page-register .flag {
+        width: 100px;
+        margin-bottom: 16px;
+    }
+    #sign-in.page-register .btn-custom {
+        font-size: 1em;
+        padding: 12px 16px;
+        min-height: 48px;
+    }
+    #sign-in.page-register .form-control.custom-input {
+        font-size: 16px;
+        padding: 12px 14px;
+        min-height: 48px;
+    }
+}
+
+/* Small phones */
+@media (max-width: 380px) {
+    #sign-in > .d-flex.align-items-center.flex-column.h-100 {
+        padding: 0.5rem 0.75rem;
+    }
+    .form-container {
+        padding: 16px 12px;
+        border-radius: 14px;
+        gap: 1rem;
+    }
+    .flag {
+        width: 72px;
+        margin-bottom: 12px;
+    }
+    .form-control.custom-input {
+        padding: 10px 12px;
+        min-height: 44px;
+        font-size: 16px;
+    }
+    .btn-custom {
+        padding: 10px 14px;
+        min-height: 44px;
+    }
+    #sign-in.page-register .form-container {
+        padding: 14px 12px;
+        gap: 0.5rem;
+    }
+    #sign-in.page-register .form-control.custom-input {
+        padding: 10px 12px;
+        min-height: 44px;
+    }
+    #sign-in.page-register .btn-custom {
+        min-height: 44px;
+        padding: 10px 14px;
+    }
+    #sign-in.page-register .register-form-fields .terms-checkbox-wrap .form-check-label {
+        font-size: 0.8125rem;
+    }
+    #sign-in.page-login .form-container {
+        gap: 1.25rem;
+    }
+}
+
+/* 360px: ensure no horizontal scroll on sign-in/register/forgot-password */
+@media (max-width: 360px) {
+    #sign-in > .d-flex.align-items-center.flex-column.h-100 {
+        padding: 0.5rem;
+    }
+    .form-container {
+        width: 100%;
+        padding: 12px 10px;
+        margin: 8px auto;
+    }
+    .form-control.custom-input { font-size: 16px; padding: 10px 12px; }
+    .btn-custom { min-width: 0; padding: 10px 12px; }
+}
 
 /* Existing wallet display styles (keeping them as is) */
 .wallet-image-container {

@@ -6,10 +6,31 @@ use Illuminate\Database\Eloquent\Model;
 
 class Game extends Model
 {
-    protected $fillable = ['name','price','image_path','price_to_play','minimum_amount_for_winning','minimum_deposit','is_enabled','draw_number'];
+    protected $fillable = ['name','price','image_path','price_to_play','minimum_amount_for_winning','minimum_deposit','is_enabled','draw_number','target_amount','current_amount'];
+
+    protected $casts = [
+        'target_amount' => 'decimal:2',
+        'current_amount' => 'decimal:2',
+    ];
 
     public function scans()      { return $this->hasMany(Scan::class); }
     public function stats()      { return $this->hasMany(GameUserStat::class); }
+    public function walletTransactions() { return $this->hasMany(WalletTransaction::class); }
+
+    /**
+     * Get distinct users who have spent on this game (via wallet transactions).
+     */
+    public function usersWhoSpent()
+    {
+        return $this->belongsToMany(
+            User::class,
+            'wallet_transactions',
+            'game_id',
+            'user_id'
+        )
+        ->whereIn('wallet_transactions.type', ['debit', 'play', 'spend'])
+        ->distinct();
+    }
 
     /** Get the logged-in user’s progress (used by API). */
     public function progressFor(User $user): array
@@ -66,14 +87,21 @@ class Game extends Model
         ]);
 
         // Log wallet transaction for scan debit
+        // Note: Transaction is created even if scan fails (user pays regardless of success)
+        // Prevent duplicate transactions for the same scan_id
         $user->refresh(); // Ensure we have the updated balance
-        WalletTransaction::create([
-            'user_id'       => $user->id,
-            'type'          => 'debit',
-            'amount'        => $cost,
-            'balance_after' => $user->wallet_balance,
-            'scan_id'       => $scan->id,
-        ]);
+        WalletTransaction::firstOrCreate(
+            [
+                'scan_id' => $scan->id, // Unique constraint prevents duplicates
+            ],
+            [
+                'user_id'       => $user->id,
+                'game_id'       => $this->id, // Link transaction to the game being played
+                'type'          => 'debit', // Lowercase snake_case
+                'amount'        => $cost, // Must match scans.cost
+                'balance_after' => $user->wallet_balance,
+            ]
+        );
 
         return [
             'antenna_detected' => $isSuccess,

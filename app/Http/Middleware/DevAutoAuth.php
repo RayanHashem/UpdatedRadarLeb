@@ -63,7 +63,7 @@ class DevAutoAuth
                     'phone_number' => '1234567890',
                     'password' => bcrypt(env('DEV_PASSWORD', 'password')),
                     'email_verified_at' => now(),
-                    'game_id' => 1, // Default game
+                    'game_id' => null, // no prize selected (do not use Main Game fallback)
                     'wallet_balance' => '1000', // Default wallet balance
                 ]);
                 Auth::login($user);

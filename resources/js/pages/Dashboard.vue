@@ -12,7 +12,7 @@
                     <div class="help-container">
                         <h1 class="overlay-title">RADAR LEB</h1>
                         <p dir="rtl">
-                            هي لعبة ممتعة تجمع بين الاستراتيجيةوالحظ. الهدف الرئيسي من اللعبة هو قيام اللاعبين بمسح من عدة مناطق على طول الأراضي اللبنانية وجمع الهوائيات باستخدام واجهة رادار. كل عملية مسح ناجحة تضيف إلى عداد الهوائيات الخاص باللاعب. عند اكتشاف ستة هوائيات نشطة, يفوز اللاعب بعد اختياره من مجموعة متنوعة من الجوائز القيمة, بما في ذلك الهواتف المحموله, الإلكترونيات, الدراجات النارية, سيارات الدفع الرباعي والسيارات الخارقة.
+                            هي لعبة ممتعة تجمع بين الاستراتيجية و الحظ. الهدف الرئيسي من اللعبة هو قيام اللاعبين بمسح من عدة مناطق على طول الأراضي اللبنانية وجمع الهوائيات باستخدام واجهة رادار. كل عملية مسح ناجحة تضيف إلى عداد الهوائيات الخاص باللاعب. عند اكتشاف ستة هوائيات نشطة, يفوز اللاعب بعد اختياره من مجموعة متنوعة من الجوائز القيمة, بما في ذلك الهواتف المحموله, الإلكترونيات, الدراجات النارية, سيارات الدفع الرباعي والسيارات الخارقة.
                         </p>
                         <h2 class="overlay-subtitle" dir="rtl">كيفية المشاركة ولعب <span class="ltr-inline">RADAR LEB</span></h2>
                         <ol dir="rtl">
@@ -24,7 +24,7 @@
                             <li>بمجرد مسح واكتشاف ستة هوائيات نشطة, يفوز اللاعب بالجائزة المختارة</li>
                         </ol>
                         <p dir="rtl">
-                            ملاحظة: يجب استخدام زر المسح الضوئي في مواقع مختلفة داخل الأراضي اللبنانية لضمان اكتشاف الهوائيات النشطة, بعد اعلان ربح كل جائزة خيار زر RADAR ONLINE سيتحول إلى RADAR ONLINE ليتم توقيف زر ال للمشتركين لوقت قصير للتمكن من التحضير للجائزة التالية, بعد عملية تشريج الرادارات إلى محفظتك لا يسمح للمشترك المطالبة بإعادة المبلغ نقدا
+                            ملاحظة: يجب استخدام زر المسح الضوئي في مواقع مختلفة داخل الأراضي اللبنانية لضمان اكتشاف الهوائيات النشطة, بعد عملية تشريج الرادارات إلى محفظتك لا يسمح للمشترك المطالبة بإعادة المبلغ نقدا
                             يحق فقط لرابح الجائزة أن يستلمها
                         </p>
 
@@ -328,6 +328,18 @@
         </section>
     </div>
 
+    <GameModal
+        :show="gameModalShow"
+        :title="gameModalTitle"
+        :message="gameModalMessage"
+        :subtext="gameModalSubtext"
+        :primary-label="gameModalPrimaryLabel"
+        :primary-route="gameModalPrimaryRoute"
+        :primary-action="gameModalPrimaryAction"
+        secondary-label="Close"
+        @close="gameModalShow = false"
+        @primary="onModalPrimary"
+    />
     <audio id="scanSound" src="/assets/imgs/audio/radar.mp3" preload="auto"></audio>
     <audio id="scanSound2" src="/assets/imgs/audio/radar2.mp3" preload="auto"></audio>
     <audio id="hornSound" src="/assets/imgs/horn.mp3" preload="auto"></audio>
@@ -338,6 +350,10 @@
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue';
 import axios from 'axios';
 import { router, Link } from '@inertiajs/vue3';
+import GameModal from '@/components/GameModal.vue';
+import { getPrizeRules } from '@/lib/prizeRules.js';
+
+const PRIZE_DISPLAY_ORDER = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car', 'Super Cash Prize'];
 
 const activeOverlay = ref(null);
 
@@ -348,8 +364,31 @@ const props = defineProps({
 });
 
 const prizes = ref(props.games);
-const selectedGameId = ref(props.selectedGameId ?? (prizes.value.length > 0 ? prizes.value[0]?.id : null));
-const walletBalance = ref(props.wallet_balance);
+const walletBalance = ref(Number(props.wallet_balance) || 0);
+
+const selectedGameId = ref(null);
+
+const orderedPrizes = computed(() => {
+    const names = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car'];
+    const firstFour = names.map((name) => prizes.value.find((p) => p.name === name) ?? null).filter(Boolean);
+    const superCar = prizes.value.find(
+        (p) =>
+            p.name === 'Super Cash Prize' ||
+            p.name === 'Super Car' ||
+            /super\s*(cash\s*prize|car)/i.test(String(p.name))
+    );
+    const others = prizes.value.filter((p) => !names.includes(p.name));
+    const fifth = superCar ?? others[others.length - 1] ?? null;
+    return [...firstFour, fifth].filter(Boolean);
+});
+
+const gameModalShow = ref(false);
+const gameModalTitle = ref('');
+const gameModalMessage = ref('');
+const gameModalSubtext = ref('');
+const gameModalPrimaryLabel = ref('');
+const gameModalPrimaryRoute = ref('');
+const gameModalPrimaryAction = ref('');
 const loading = ref(true);
 
 const radarOnline = ref(true);
@@ -408,19 +447,80 @@ const selectedGameEnabled = computed(() => {
     const g = prizes.value.find(p => p.id == selectedGameId.value);
     return g ? !!g.is_enabled : true; // default true if missing
 });
+
+const selectedPrize = computed(() =>
+    prizes.value.find(p => p.id == selectedGameId.value)
+);
+
+function showGameModal(config) {
+    gameModalTitle.value = config.title ?? '';
+    gameModalMessage.value = config.message ?? '';
+    gameModalSubtext.value = config.subtext ?? '';
+    gameModalPrimaryLabel.value = config.primaryLabel ?? '';
+    gameModalPrimaryRoute.value = config.primaryRoute ?? '';
+    gameModalPrimaryAction.value = config.primaryAction ?? '';
+    gameModalShow.value = true;
+}
+
+function onModalPrimary(action) {
+    if (action === 'openHelp') {
+        activeOverlay.value = 'help';
+    }
+}
+
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 async function selectPrize(id) {
-    // Update UI immediately for instant visual feedback
+    const prize = prizes.value.find(p => p.id === id);
+    if (!prize) return;
+
+    if (!prize.is_enabled) {
+        showGameModal({
+            title: 'Coming soon',
+            message: 'Coming soon! Check out our other prizes for now!',
+            primaryLabel: '',
+            primaryAction: '',
+        });
+        return;
+    }
+
+    const rules = getPrizeRules(prize.name);
+    const balance = Number(walletBalance.value) || 0;
+    const minRadar = rules ? rules.minRadar : 0;
+    const displayName = rules?.displayName ?? prize.name;
+
+    if (balance < minRadar) {
+        const minDeposit = rules?.minDepositDollars ?? minRadar;
+        showGameModal({
+            title: 'Not enough Radar Cash',
+            message: `You need a minimum deposit of $${minDeposit} to play for ${displayName}. Top up your account to get started.`,
+            primaryLabel: 'How to play',
+            primaryAction: 'openHelp',
+        });
+        return;
+    }
+
     selectedGameId.value = id;
     updatePrizeSelectionUI();
-    
-    // Make API call in background (non-blocking) - don't wait for it
-    axios.post('/me/game', { game_id: id }).catch(error => {
-        console.error("Failed to select prize:", error);
-    });
+
+    try {
+        await axios.post('/me/game', { game_id: id });
+    } catch (error) {
+        if (error.response?.status === 403 && error.response?.data?.message === 'Prize is disabled') {
+            selectedGameId.value = null;
+            updatePrizeSelectionUI();
+            showGameModal({
+                title: 'Coming soon',
+                message: 'Coming soon! Check out our other prizes for now!',
+                primaryLabel: '',
+                primaryAction: '',
+            });
+            return;
+        }
+        console.error('Failed to select prize:', error);
+    }
 }
 const currentProgress = computed(() => {
     const g = prizes.value.find(p => p.id == selectedGameId.value)
@@ -474,6 +574,21 @@ function playScanSoundSequence() {
 async function startScan() {
     if (scanning.value) return;
 
+    const prize = selectedPrize.value;
+    const rules = prize ? getPrizeRules(prize.name) : null;
+    const balance = Number(walletBalance.value) || 0;
+    const minRadar = rules ? rules.minRadar : 0;
+
+    if (selectedGameId.value == null || balance < minRadar) {
+        showGameModal({
+            title: 'Select a prize first',
+            message: 'You need to select a prize first and add Radar Cash before you can scan.',
+            primaryLabel: 'How to play',
+            primaryAction: 'openHelp',
+        });
+        return;
+    }
+
     playScanSoundSequence();
 
     scanning.value = true;
@@ -496,7 +611,18 @@ async function startScan() {
         found = !!data.antenna_detected;
         dat = data;
         walletBalance.value = data.wallet;
-    } catch {
+    } catch (err) {
+        if (err.response?.status === 403 && err.response?.data?.message === 'Prize is disabled') {
+            scanning.value = false;
+            detectionStatus.value = 'idle';
+            showGameModal({
+                title: 'Coming soon',
+                message: 'Coming soon! Check out our other prizes for now!',
+                primaryLabel: '',
+                primaryAction: '',
+            });
+            return;
+        }
         found = false;
     }
 
@@ -518,13 +644,16 @@ async function startScan() {
     if (found) {
         antennaIconSrc.value = '/assets/imgs/an2.png';
     } else {
-        antennaIconSrc.value = '/assets/imgs/an3.png';
+        antennaIconSrc.value = '/assets/imgs/an3.png'; // antenna not detected
     }
 
     await sleep(2000);
     detectionStatus.value = 'idle';
     visibleCount.value = 0;
-    antennaIconSrc.value = '/assets/imgs/an.png';
+    // Only reset icon to default when antenna was detected; leave an3.png when not detected until next scan
+    if (found) {
+        antennaIconSrc.value = '/assets/imgs/an.png';
+    }
 }
 async function fetchRadarStatus() {
     try {
@@ -738,7 +867,7 @@ const updatePrizeSelectionUI = () => {
             }
         }
 
-        const prizeId = prizes.value[index]?.id;
+        const prizeId = orderedPrizes.value[index]?.id;
         const originalSrc = img.dataset.originalSrc;
 
         // Check if this image's prize is selected
@@ -843,8 +972,7 @@ onMounted(() => {
                 img.dataset.originalSrc = originalSrc;
             }
         }
-        
-        const prizeId = prizes.value[index]?.id;
+        const prizeId = orderedPrizes.value[index]?.id;
         
         // Preload detected images for instant switching
         const detectedSrc = img.dataset.detected;
@@ -853,7 +981,7 @@ onMounted(() => {
             preloadImg.src = detectedSrc;
         }
         
-        // Attach click handler to the entire prize item
+        // Attach click handler to the entire prize item (slot order: Mobile, Bike, SUV, Muscle, Super)
         item.addEventListener('click', () => {
             if (prizeId !== undefined) {
                 selectPrize(prizeId);

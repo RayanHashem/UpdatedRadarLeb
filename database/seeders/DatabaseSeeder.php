@@ -22,6 +22,9 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make(env('SEEDER_PASSWORD', 'password'))
         ]);
 
-        $this->call([GameSeeder::class]);
+        $this->call([
+            GameSeeder::class,
+            AdminUserSeeder::class,
+        ]);
     }
 }

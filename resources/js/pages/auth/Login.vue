@@ -29,7 +29,7 @@ const submit = () => {
 </script>
 
 <template>
-    <section id="sign-in" class="w-100">
+    <section id="sign-in" class="w-100 page-login">
         <!-- The d-flex align-items-center flex-column h-100 p-3-5 ensures content is centered vertically and horizontally -->
         <div class="d-flex align-items-center flex-column h-100 p-3-5">
             <!-- Flag container, centered above the form -->
@@ -68,7 +68,7 @@ const submit = () => {
 
                     <!-- Buttons and Forgot Password link, centered -->
                     <!-- Changed from flex-column to flex-row for side-by-side buttons -->
-                    <div class="d-flex justify-content-center align-items-center gap-3 mt-4 w-100">
+                    <div class="d-flex justify-content-center align-items-center gap-3 mt-4 w-100 auth-button-row">
                         <!-- Sign Up button (darker style) -->
                         <Link
                             as="button"
@@ -95,12 +95,12 @@ const submit = () => {
                     </div>
 
                     <!-- Horizontal rule with shadow -->
-                    <hr style="height:2px;border-width:0;color:gray;background-color:white;opacity:1; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.42), 0 6px 20px 0 rgba(0, 0, 0, 0.84); width: 80%; margin: 20px auto;">
+                    <hr class="auth-divider">
                     <!-- Forgot Password button -->
                     <div class="d-flex justify-content-center mt-3 w-100">
                         <a
                             href="/forgot-password"
-                            class="btn btn-custom-1 btn-custom"
+                            class="btn btn-custom-1 btn-custom forgot-password-btn"
                             style="background-color:rgb(102, 175, 219); color: white;"
                             :tabindex="6"
                         >

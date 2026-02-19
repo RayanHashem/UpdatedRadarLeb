@@ -6,8 +6,15 @@ use Illuminate\Support\Facades\DB;
 // API routes can be added here if needed
 // Currently, API endpoints are in routes/auth.php
 
-// Temporary DB health check - REMOVE AFTER TESTING
+// DB health check: only when APP_ENV is local or when ?secret=HEALTH_CHECK_SECRET is provided (production)
 Route::get('/db-check', function () {
+    $allow = app()->environment('local') || (
+        config('app.env') !== 'production' ||
+        (request()->filled('secret') && request()->query('secret') === env('HEALTH_CHECK_SECRET'))
+    );
+    if (! $allow) {
+        abort(404);
+    }
     try {
         $pdo = DB::connection()->getPdo();
         $result = DB::select('SELECT current_database() as db, version() as version');
@@ -15,14 +22,12 @@ Route::get('/db-check', function () {
             'status' => 'SUCCESS',
             'database' => $result[0]->db,
             'driver' => config('database.default'),
-            'host' => config('database.connections.pgsql.host'),
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'status' => 'FAILED',
             'error' => $e->getMessage(),
             'driver' => config('database.default'),
-            'host' => config('database.connections.pgsql.host'),
         ], 500);
     }
 });

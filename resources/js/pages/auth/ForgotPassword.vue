@@ -17,7 +17,7 @@ const submit = () => {
 
 <template>
     <Head title="Forgot password" />
-    <section id="sign-in" class="w-100">
+    <section id="sign-in" class="w-100 page-forgot">
         <div class="d-flex align-items-center flex-column h-100 p-3-5">
             <!-- Flag container, centered above the form -->
             <div class="d-flex gap-4 flex-column w-100 align-items-center">
@@ -27,7 +27,7 @@ const submit = () => {
             <div class="form-container d-flex flex-column gap-5">
                 <form @submit.prevent="submit">
                     <!-- Status message -->
-                    <div v-if="status" class="mb-3 text-center" style="color: #4ade80; font-size: 0.9em;">
+                    <div v-if="status" class="mb-3 text-center forgot-password-status-msg">
                         {{ status }}
                     </div>
 

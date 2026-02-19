@@ -14,17 +14,22 @@ class GameController extends Controller
     public function index()
     {
         return Game::all()->map(fn ($g) => [
-            'id'        => $g->id,
-            'name'      => $g->name,
-            'price'     => $g->price,
-            'image'     => $g->image_path,
-            'progress'  => $g->progressFor(auth()->user()),
+            'id'         => $g->id,
+            'name'       => $g->name,
+            'price'      => $g->price,
+            'image'      => $g->image_path,
+            'progress'   => $g->progressFor(auth()->user()),
+            'is_enabled' => (bool) $g->is_enabled,
         ]);
     }
 
-    /** POST /api/games/{game}/scan */
+    /** POST /scan/{game} - guarded: disabled games return 403 */
     public function scan(Game $game)
     {
+        if (! $game->is_enabled) {
+            return response()->json(['message' => 'Prize is disabled'], 403);
+        }
+
         return response()->json(
             $game->attemptScan(auth()->user()),
             200

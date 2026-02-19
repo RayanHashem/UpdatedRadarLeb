@@ -1,16 +1,122 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
-import {Link, useForm} from '@inertiajs/vue3';
+import { Link, useForm } from '@inertiajs/vue3';
+import { computed, ref, watch } from 'vue';
 
 const form = useForm({
     name: '',
     email: '',
     phone_number: '',
+    date_of_birth: '',
     password: '',
     password_confirmation: '',
+    confirm_18_and_terms: false,
 });
 
+const dobDisplay = ref('');
+const dobTouched = ref(false);
+const submitAttempted = ref(false);
+
+/** Password rules: must match backend validation exactly */
+const PASSWORD_RULES = [
+    { id: 'min', label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
+    { id: 'upper', label: 'At least one uppercase letter', test: (p: string) => /[A-Z]/.test(p) },
+    { id: 'lower', label: 'At least one lowercase letter', test: (p: string) => /[a-z]/.test(p) },
+    { id: 'number', label: 'At least one number', test: (p: string) => /\d/.test(p) },
+    { id: 'special', label: 'At least one special character (!@#$%^&*)', test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p) },
+] as const;
+
+const passwordRuleStatus = computed(() =>
+    PASSWORD_RULES.map((rule) => ({
+        ...rule,
+        satisfied: rule.test(form.password),
+    }))
+);
+
+const passwordAllValid = computed(() =>
+    PASSWORD_RULES.every((rule) => rule.test(form.password))
+);
+
+const passwordConfirmationValid = computed(
+    () => form.password_confirmation === form.password && form.password.length > 0
+);
+
+const passwordSubmitError = computed(() => {
+    if (!form.password) return null;
+    if (!passwordAllValid.value) {
+        const failed = PASSWORD_RULES.filter((r) => !r.test(form.password));
+        return `Password must meet all requirements: ${failed.map((r) => r.label.toLowerCase()).join(', ')}`;
+    }
+    return null;
+});
+
+function parseDob(value: string): { day: number; month: number; year: number } | null {
+    const re = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
+    const m = value.trim().match(re);
+    if (!m) return null;
+    const day = parseInt(m[1], 10);
+    const month = parseInt(m[2], 10);
+    const year = parseInt(m[3], 10);
+    if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2100) return null;
+    const d = new Date(year, month - 1, day);
+    if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return null;
+    return { day, month, year };
+}
+
+function ageFromDob(parsed: { day: number; month: number; year: number }): number {
+    const today = new Date();
+    let age = today.getFullYear() - parsed.year;
+    const m = today.getMonth() - (parsed.month - 1);
+    if (m < 0 || (m === 0 && today.getDate() < parsed.day)) age--;
+    return age;
+}
+
+const dobError = computed(() => {
+    const raw = form.date_of_birth.trim();
+    if (!raw) return 'Date of birth is required';
+    const parsed = parseDob(raw);
+    if (!parsed) return 'Please enter a valid date (DD/MM/YYYY)';
+    if (ageFromDob(parsed) < 18) return 'You must be at least 18 years old';
+    return null;
+});
+
+const showDobError = computed(
+    () => (dobTouched.value || submitAttempted.value) && (dobError.value || form.errors.date_of_birth)
+);
+const dobErrorMessage = computed(() => dobError.value || form.errors.date_of_birth || null);
+
+const isDobValid = computed(() => !dobError.value);
+const canSubmit = computed(
+    () =>
+        isDobValid.value &&
+        form.confirm_18_and_terms &&
+        passwordAllValid.value &&
+        passwordConfirmationValid.value &&
+        !form.processing
+);
+
+function formatDobInput(e: Event) {
+    const input = e.target as HTMLInputElement;
+    let v = input.value.replace(/\D/g, '');
+    if (v.length > 8) v = v.slice(0, 8);
+    const parts: string[] = [];
+    if (v.length > 0) parts.push(v.slice(0, 2));
+    if (v.length > 2) parts.push(v.slice(2, 4));
+    if (v.length > 4) parts.push(v.slice(4, 8));
+    const formatted = parts.join('/');
+    dobDisplay.value = formatted;
+    form.date_of_birth = formatted;
+}
+
+watch(
+    () => form.date_of_birth,
+    (val) => { dobDisplay.value = val; },
+    { immediate: true }
+);
+
 const submit = () => {
+    submitAttempted.value = true;
+    if (!canSubmit.value) return;
     form.post(route('register'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
     });
@@ -18,20 +124,16 @@ const submit = () => {
 </script>
 
 <template>
-    <section id="sign-in" class="w-100">
-        <!-- The d-flex align-items-center flex-column h-100 p-3-5 ensures content is centered vertically and horizontally -->
+    <section id="sign-in" class="w-100 page-register">
         <div class="d-flex align-items-center flex-column h-100 p-3-5">
-            <!-- Flag container, centered above the form -->
-            <div class="d-flex gap-4 flex-column w-100 align-items-center">
+            <div class="d-flex gap-2 flex-column w-100 align-items-center">
                 <img src="assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
             </div>
-            <!-- Form container with custom styling defined in app.css -->
-            <div class="form-container d-flex flex-column gap-5">
-                <form @submit.prevent="submit">
-                    <!-- Full Name Input -->
+            <div class="form-container d-flex flex-column">
+                <form @submit.prevent="submit" class="register-form-fields">
                     <input
                         v-model="form.name"
-                        class="form-control mb-3 custom-input"
+                        class="form-control custom-input"
                         placeholder="Full Name"
                         id="name"
                         required
@@ -42,10 +144,9 @@ const submit = () => {
                     />
                     <InputError :message="form.errors.name" variant="material" />
 
-                    <!-- Email Input -->
                     <input
                         v-model="form.email"
-                        class="form-control mb-3 custom-input"
+                        class="form-control custom-input"
                         placeholder="Email"
                         id="email"
                         required
@@ -55,10 +156,9 @@ const submit = () => {
                     />
                     <InputError :message="form.errors.email" variant="material" />
 
-                    <!-- Phone Number Input -->
                     <input
                         v-model="form.phone_number"
-                        class="form-control mb-3 custom-input"
+                        class="form-control custom-input"
                         placeholder="Phone Number"
                         id="phone_number"
                         required
@@ -68,45 +168,112 @@ const submit = () => {
                     />
                     <InputError :message="form.errors.phone_number" variant="material" />
 
-                    <!-- Password Input -->
+                    <!-- Date of Birth (DD/MM/YYYY) -->
+                    <input
+                        :value="dobDisplay"
+                        class="form-control custom-input"
+                        placeholder="DD/MM/YYYY"
+                        id="date_of_birth"
+                        :tabindex="4"
+                        autocomplete="bday"
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="10"
+                        @input="formatDobInput"
+                        @blur="dobTouched = true"
+                    />
+                    <InputError
+                        v-if="showDobError && dobErrorMessage"
+                        :message="dobErrorMessage"
+                        variant="material"
+                    />
+
                     <input
                         v-model="form.password"
-                        class="form-control mb-3 custom-input"
+                        class="form-control custom-input"
                         placeholder="Password"
                         id="password"
-                        required
-                        :tabindex="4"
-                        autocomplete="new-password"
-                        type="password"
-                    />
-                    <InputError :message="form.errors.password" variant="material" />
-
-                    <!-- Confirm Password Input -->
-                    <input
-                        v-model="form.password_confirmation"
-                        class="form-control mb-3 custom-input"
-                        placeholder="Confirm Password"
-                        id="password_confirmation"
                         required
                         :tabindex="5"
                         autocomplete="new-password"
                         type="password"
+                        :class="{ 'is-invalid': form.password && !passwordAllValid.value }"
+                    />
+                    <!-- Real-time password rules -->
+                    <ul class="password-rules" aria-live="polite">
+                        <li
+                            v-for="rule in passwordRuleStatus"
+                            :key="rule.id"
+                            class="password-rule"
+                            :class="{ satisfied: rule.satisfied }"
+                        >
+                            <span class="password-rule-icon" aria-hidden="true">
+                                {{ rule.satisfied ? '✓' : '○' }}
+                            </span>
+                            <span class="password-rule-label">{{ rule.label }}</span>
+                        </li>
+                    </ul>
+                    <InputError
+                        :message="passwordSubmitError || form.errors.password"
+                        variant="material"
                     />
 
-                    <!-- Buttons, centered and side-by-side -->
-                    <div class="d-flex justify-content-center align-items-center gap-3 mt-4 w-100">
-                        <!-- Sign Up button (blue gradient style) -->
-                        <button class="btn btn-custom-1 btn-custom"  style="font-weight: normal;
-                                   background-color: #e4787e;" type="submit" :disabled="form.processing" :tabindex="6">
+                    <input
+                        v-model="form.password_confirmation"
+                        class="form-control custom-input"
+                        placeholder="Confirm Password"
+                        id="password_confirmation"
+                        required
+                        :tabindex="6"
+                        autocomplete="new-password"
+                        type="password"
+                        :class="{ 'is-invalid': form.password_confirmation && !passwordConfirmationValid.value }"
+                    />
+                    <InputError
+                        v-if="form.password_confirmation && !passwordConfirmationValid.value"
+                        message="Passwords do not match."
+                        variant="material"
+                    />
+                    <InputError
+                        v-else
+                        :message="form.errors.password_confirmation"
+                        variant="material"
+                    />
+
+                    <!-- 18+ and Terms checkbox -->
+                    <div class="d-flex align-items-start gap-2 terms-checkbox-wrap">
+                        <input
+                            v-model="form.confirm_18_and_terms"
+                            type="checkbox"
+                            id="confirm_18_and_terms"
+                            class="mt-1 form-check-input flex-shrink-0"
+                            :tabindex="7"
+                        />
+                        <label for="confirm_18_and_terms" class="form-check-label text-white small">
+                            I confirm I'm at least 18 years old and I agree to the
+                            <Link :href="route('terms')" class="text-decoration-underline text-white">Terms</Link>
+                            &amp;
+                            <Link :href="route('privacy')" class="text-decoration-underline text-white">Privacy Policy</Link>.
+                        </label>
+                    </div>
+                    <InputError :message="form.errors.confirm_18_and_terms" variant="material" />
+
+                    <div class="d-flex justify-content-center align-items-center gap-2 mt-2 w-100 auth-button-row">
+                        <button
+                            class="btn btn-custom-1 btn-custom"
+                            style="font-weight: normal; background-color: #e4787e;"
+                            type="submit"
+                            :disabled="!canSubmit"
+                            :tabindex="8"
+                        >
                             Sign up
                         </button>
-                        <!-- Sign In button (darker style) -->
                         <Link
                             as="button"
                             :href="route('login')"
                             class="btn btn-custom-2 btn-custom"
-                            :tabindex="7"
-                            style="background-color:rgb(102, 175, 219);"
+                            :tabindex="9"
+                            style="background-color: rgb(102, 175, 219);"
                         >
                             Sign in
                         </Link>
@@ -117,3 +284,39 @@ const submit = () => {
     </section>
 </template>
 
+<style scoped>
+.password-rules {
+    list-style: none;
+    padding: 0;
+    margin: 8px 0 12px 0;
+    font-size: 0.8rem;
+}
+
+.password-rule {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    color: rgba(255, 255, 255, 0.6);
+    transition: color 0.2s ease;
+}
+
+.password-rule.satisfied {
+    color: #4ade80;
+}
+
+.password-rule-icon {
+    flex-shrink: 0;
+    width: 18px;
+    text-align: center;
+    font-size: 0.9rem;
+}
+
+.password-rule:not(.satisfied) .password-rule-icon {
+    opacity: 0.7;
+}
+
+.password-rule.satisfied .password-rule-icon {
+    font-weight: bold;
+}
+</style>

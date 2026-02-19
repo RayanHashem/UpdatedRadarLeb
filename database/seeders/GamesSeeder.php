@@ -13,41 +13,47 @@ class GamesSeeder extends Seeder
      */
     public function run(): void
     {
+        // Algorithm: base +10% = target_amount; price_to_play and minimum_deposit per prize
         $games = [
             [
                 'name' => 'Mobile',
-                'price' => 500.00, // Prize value
+                'price' => 1650.00,
+                'target_amount' => 1650.00,   // base 1500 +10%
                 'price_to_play' => 0.25,
                 'minimum_deposit' => 10.00,
-                'minimum_amount_for_winning' => 1,
+                'minimum_amount_for_winning' => 1650,
             ],
             [
                 'name' => 'Bike & Electronics',
-                'price' => 2000.00,
+                'price' => 16500.00,
+                'target_amount' => 16500.00,  // base 15000 +10%
                 'price_to_play' => 4.00,
                 'minimum_deposit' => 25.00,
-                'minimum_amount_for_winning' => 1,
+                'minimum_amount_for_winning' => 16500,
             ],
             [
                 'name' => 'SUV',
-                'price' => 50000.00,
+                'price' => 55000.00,
+                'target_amount' => 55000.00,  // base 50000 +10%
                 'price_to_play' => 16.00,
                 'minimum_deposit' => 30.00,
-                'minimum_amount_for_winning' => 1,
+                'minimum_amount_for_winning' => 55000,
             ],
             [
                 'name' => 'Muscle Car',
-                'price' => 100000.00,
+                'price' => 165000.00,
+                'target_amount' => 165000.00, // base 150000 +10%
                 'price_to_play' => 144.00,
                 'minimum_deposit' => 40.00,
-                'minimum_amount_for_winning' => 1,
+                'minimum_amount_for_winning' => 165000,
             ],
             [
                 'name' => 'Super Cash Prize',
-                'price' => 500000.00,
+                'price' => 220000.00,
+                'target_amount' => 220000.00, // base 200000 +10%
                 'price_to_play' => 256.00,
                 'minimum_deposit' => 50.00,
-                'minimum_amount_for_winning' => 1,
+                'minimum_amount_for_winning' => 220000,
             ],
         ];
 
@@ -58,7 +64,7 @@ class GamesSeeder extends Seeder
                 array_merge($gameData, [
                     'draw_number' => '1',
                     'is_enabled' => true,
-                ])
+                    ])
             );
 
             $this->command->info("Game '{$game->name}' created/updated with ID={$game->id}");

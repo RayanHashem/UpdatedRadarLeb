@@ -16,7 +16,7 @@ Route::get('/', function () {
             'is_enabled' => (bool) $g->is_enabled, // 👈 add this
         ]),
         'selectedGameId'  => auth()->user()->game_id,
-        'wallet_balance'  => (int) auth()->user()->wallet_balance,
+        'wallet_balance'  => auth()->user()->wallet_balance,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -24,4 +24,8 @@ Route::get ('/radar/status',  [RadarController::class,'status']);
 Route::get('/winners', function () {
     return \App\Models\Winner::select('game_name', 'user_name')->get();
 });
+
+Route::get('/terms', fn () => Inertia::render('Legal', ['type' => 'terms']))->name('terms');
+Route::get('/privacy', fn () => Inertia::render('Legal', ['type' => 'privacy']))->name('privacy');
+
 require __DIR__.'/auth.php';
