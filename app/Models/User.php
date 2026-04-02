@@ -6,12 +6,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\WalletTransaction;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+
 class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable;
+
+    /** Roles that can access the Filament admin panel. Null role = app user only. */
+    public const ADMIN_ROLES = ['super_admin', 'technical_admin', 'admin', 'staff'];
 
     /**
      * The attributes that are mass assignable.
@@ -47,21 +52,36 @@ class User extends Authenticatable implements FilamentUser
 
     public function canAccessPanel(Panel $panel): bool
     {
-        return str_ends_with($this->email, '@admin.com');
+        return $this->role !== null && in_array($this->role, self::ADMIN_ROLES, true);
     }
 
-    /** Exclude admin users (email ends with @admin.com) from lists/reports. */
+    /** Exclude admin users (users with a role) from app user lists/reports. */
     public function scopeExcludeAdmins($query)
     {
-        return $query->where(function ($q) {
-            $q->whereNull('email')->orWhere('email', 'not like', '%@admin.com');
-        });
+        return $query->whereNull('role');
+    }
+
+    /** Whether this user is an admin (has any admin role). */
+    public function isAdmin(): bool
+    {
+        return $this->role !== null && in_array($this->role, self::ADMIN_ROLES, true);
     }
 
     /** Subquery/sum for radar cash spent (sum of debit transactions). Use with list queries to avoid N+1. */
     public function scopeWithRadarCashSpent($query)
     {
         return $query->withSum(['walletTransactions as radar_cash_spent' => fn ($q) => $q->where('type', 'debit')], 'amount');
+    }
+
+    /** Subquery for count of distinct games a user has spent on. Avoids N+1 in table description callbacks. */
+    public function scopeWithDistinctGameCount($query)
+    {
+        return $query->addSelect([
+            'distinct_game_count' => WalletTransaction::selectRaw('COUNT(DISTINCT game_id)')
+                ->whereColumn('user_id', 'users.id')
+                ->whereNotNull('game_id')
+                ->whereIn('type', ['debit', 'play', 'spend']),
+        ]);
     }
 
     public function game() { return $this->belongsTo(Game::class); }

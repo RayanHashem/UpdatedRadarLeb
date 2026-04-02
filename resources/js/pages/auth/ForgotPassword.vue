@@ -21,7 +21,7 @@ const submit = () => {
         <div class="d-flex align-items-center flex-column h-100 p-3-5">
             <!-- Flag container, centered above the form -->
             <div class="d-flex gap-4 flex-column w-100 align-items-center">
-                <img src="assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
+                <img src="/assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
             </div>
             <!-- Form container with custom styling defined in app.css -->
             <div class="form-container d-flex flex-column gap-5">

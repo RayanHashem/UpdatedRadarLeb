@@ -12,7 +12,6 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class UserResource extends Resource
 {
@@ -79,21 +78,9 @@ class UserResource extends Resource
                 ->formatStateUsing(fn ($state) => $state ?? '—')
                 ->sortable()
                 ->description(function (User $record): string {
-                    // Check if game_id column exists (defensive for pre-migration state)
-                    if (!Schema::hasColumn('wallet_transactions', 'game_id')) {
-                        return '';
-                    }
-                    try {
-                        return $record->walletTransactions()
-                            ->whereNotNull('game_id')
-                            ->whereIn('type', ['debit', 'play', 'spend'])
-                            ->distinct('game_id')
-                            ->count() > 1
-                            ? 'Plays multiple games'
-                            : '';
-                    } catch (\Exception $e) {
-                        return '';
-                    }
+                    return ($record->distinct_game_count ?? 0) > 1
+                        ? 'Plays multiple games'
+                        : '';
                 }),
             Tables\Columns\TextColumn::make('wallet_balance')
                 ->label('Radar cash balance')

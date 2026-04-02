@@ -2,21 +2,29 @@
 
 use App\Http\Controllers\RadarController;
 use App\Models\Game;
+use App\Models\GameUserStat;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function () {
+    $user = auth()->user();
+    $games = Game::all();
+
+    $statsByGame = GameUserStat::where('user_id', $user->id)
+        ->get()
+        ->keyBy('game_id');
+
     return Inertia::render('Dashboard', [
-        'games' => Game::all()->map(fn ($g) => [
+        'games' => $games->map(fn ($g) => [
             'id'         => $g->id,
             'name'       => $g->name,
             'price'      => $g->price,
             'image'      => $g->image_path,
-            'progress'   => $g->progressFor(auth()->user()),
-            'is_enabled' => (bool) $g->is_enabled, // 👈 add this
+            'progress'   => $g->progressFromStat($statsByGame->get($g->id)),
+            'is_enabled' => (bool) $g->is_enabled,
         ]),
-        'selectedGameId'  => auth()->user()->game_id,
-        'wallet_balance'  => auth()->user()->wallet_balance,
+        'selectedGameId'  => $user->game_id,
+        'wallet_balance'  => $user->wallet_balance,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 

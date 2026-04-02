@@ -1,11 +1,12 @@
 <?php
 
+require_once __DIR__ . '/../app/Helpers/functions.php';
+
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
-use Illuminate\Session\TokenMismatchException;
-use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -20,7 +21,6 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
-        // Trust ALB/CloudFront proxy headers (set APP_TRUSTED_PROXIES=* or comma-separated IPs in production)
         $proxies = env('APP_TRUSTED_PROXIES');
         if ($proxies !== null && $proxies !== '') {
             $at = $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies));
@@ -28,33 +28,32 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->reportable(function (TokenMismatchException $e) {
-            $request = request();
-            Log::channel('single')->warning('419 TokenMismatchException – diagnostic', [
-                'url' => $request->fullUrl(),
-                'method' => $request->method(),
-                'cookie_header' => $request->header('Cookie'),
-                'x_xsrf_token' => $request->header('X-XSRF-TOKEN'),
-                'x_csrf_token' => $request->header('X-CSRF-TOKEN'),
-                'session_id' => $request->hasSession() ? $request->session()->getId() : null,
-                'session_keys' => $request->hasSession() ? array_keys($request->session()->all()) : [],
-                'config_app_url' => config('app.url'),
-                'config_session_domain' => config('session.domain'),
-                'config_session_cookie' => config('session.cookie'),
-                'config_session_secure' => config('session.secure'),
-                'config_session_same_site' => config('session.same_site'),
-                'config_session_path' => config('session.path'),
-            ]);
-        });
-
         $exceptions->respond(function (mixed $response, \Throwable $e, Request $request) {
             if ($e instanceof HttpException && $e->getStatusCode() === 403 && str_starts_with($request->path(), 'admin')) {
-                auth()->logout();
-
+                auth('admin')->logout();
                 return redirect()->route('filament.admin.auth.login');
+            }
+
+            $isAdminRoute = str_starts_with($request->path(), 'admin')
+                || str_starts_with($request->path(), 'livewire');
+
+            if ($isAdminRoute && $e instanceof QueryException && \App\Helpers\isDbConnectionError($e)) {
+                $loginUrl = '/admin/login';
+
+                if ($request->expectsJson() || $request->header('X-Livewire')) {
+                    return response()->json([
+                        'message' => 'Database temporarily unavailable. Please refresh the page.',
+                    ], 503);
+                }
+
+                return redirect($loginUrl)
+                    ->with('notification', [
+                        'title' => 'Database temporarily unavailable',
+                        'body' => 'Could not reach the database. Please wait a moment and try again.',
+                        'status' => 'danger',
+                    ]);
             }
 
             return $response;
         });
     })->create();
-

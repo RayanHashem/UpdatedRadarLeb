@@ -14,7 +14,9 @@ use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\View\PanelsRenderHook;
 use Filament\Widgets;
+use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
+use App\Filament\Pages\Profile;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -43,6 +45,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
+            ->authGuard('admin')
             ->login()
             ->homeUrl(fn (): string => '/admin') // Explicitly set home URL to stay in admin
             ->brandName('RadarLeb Admin')
@@ -82,6 +85,12 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([])
+            ->userMenuItems([
+                MenuItem::make()
+                    ->label('Profile')
+                    ->url(fn (): string => Profile::getUrl())
+                    ->icon('heroicon-o-user-circle'),
+            ])
             ->middleware([
                 EnsureAdminPortIsolation::class,
                 EncryptCookies::class,

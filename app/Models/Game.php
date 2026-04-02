@@ -45,6 +45,18 @@ class Game extends Model
         ];
     }
 
+    /** Build progress array from a pre-loaded stat (avoids N+1 on dashboard). */
+    public function progressFromStat(?GameUserStat $stat): array
+    {
+        return [
+            'radar_level'   => $stat->current_radar ?? 0,
+            'failed_scans'  => $stat->failed_scans ?? 0,
+            'successful'    => $stat->successful_scans ?? 0,
+            'amount_spent'  => $stat->amount_spent ?? 0,
+            'can_win_final' => false,
+        ];
+    }
+
     public function attemptScan(User $user): array
     {
         abort_unless($this->is_enabled == true, 423, 'game_disabled');
@@ -56,6 +68,7 @@ class Game extends Model
         abort_if($user->wallet_balance < $cost, 402, 'Not enough balance');
         $user->decrement('wallet_balance', $cost);
         $stat->increment('amount_spent', $cost);
+        $this->increment('current_amount', $cost);
 
         $nextRadar     = min($stat->current_radar + 1, 6);
         $baseFails   = $nextRadar * 10;

@@ -207,7 +207,7 @@
             <div class="game-content-wrapper">
                 <div class="bar">
                     <div class="bar-left">
-                        <img src="assets/imgs/logo.png" class="logo-nav">
+                        <img src="/assets/imgs/logo.png" class="logo-nav">
                     </div>
                     <div class="bar-center">
                         <div :class="['icon-box-2', radarOnline ? 'green' : 'red']">
@@ -231,10 +231,7 @@
                 <div class="radar-row">
                     <div class="col-3 antenna-detection-col">
                         <div class="icon-box">
-                              <img :src="antennaIconSrc" class="an" style="width: 100px;
-  margin-bottom: 0px;
-  max-width: 100%;
-"/>
+                              <img :src="antennaIconSrc" class="an" style="width: clamp(50px, 15vw, 100px); margin-bottom: 0px; max-width: 100%;"/>
                               <div class="antenna-label">ANTENNA DETECTION</div>
                         </div>
                         <div class="bar-container">
@@ -255,30 +252,23 @@
 
                     <div class="col-3 prize-selection-col" style="padding:0 !important;">
                         <div id="image-selector" class="prize-selector">
-                            <div class="prize-item">
-                                <img class="selectable" src="/assets/imgs/mobile1.png" data-detected="/assets/imgs/mobile-detected1.png" />
-                                <div class="prize-label">MOBILE</div>
-                                <div class="prize-price">1.500$</div>
-                            </div>
-                            <div class="prize-item">
-                                <img class="selectable" src="/assets/imgs/be1.png" data-detected="/assets/imgs/be-detected1.png" />
-                                <div class="prize-label">BIKE / ELECTRONICS</div>
-                                <div class="prize-price">15.000$</div>
-                            </div>
-                            <div class="prize-item">
-                                <img class="selectable" src="/assets/imgs/suv1.png" data-detected="/assets/imgs/suv-detected1.png" />
-                                <div class="prize-label">SUV</div>
-                                <div class="prize-price">50.000$</div>
-                            </div>
-                            <div class="prize-item">
-                                <img class="selectable" src="/assets/imgs/muscle-car1.png" data-detected="/assets/imgs/muscle-car-detected1.png" />
-                                <div class="prize-label">MUSCLE CAR</div>
-                                <div class="prize-price">150.000$</div>
-                            </div>
-                            <div class="prize-item">
-                                <img class="selectable" src="/assets/imgs/super-car1.png" data-detected="/assets/imgs/super-car-detected1.png" />
-                                <div class="prize-label">SUPER CAR</div>
-                                <div class="prize-price">200.000$</div>
+                            <div
+                                v-for="(config, index) in PRIZE_DISPLAY_CONFIG"
+                                :key="index"
+                                class="prize-item"
+                                role="button"
+                                tabindex="0"
+                                @click="onPrizeSlotClick(index)"
+                                @keydown.enter.prevent="onPrizeSlotClick(index)"
+                                @keydown.space.prevent="onPrizeSlotClick(index)"
+                            >
+                                <img
+                                    class="selectable"
+                                    :src="(orderedPrizes[index] && selectedGameId === orderedPrizes[index].id) ? config.detectedImg : config.img"
+                                    :alt="config.label"
+                                />
+                                <div class="prize-label">{{ config.label }}</div>
+                                <div class="prize-price">{{ config.price }}</div>
                             </div>
                         </div>
                     </div>
@@ -305,7 +295,7 @@
 
 
                 <div class="button-row">
-                     <div class="col-3 cash-balance-container"> <img style="width:100px; height:100px" src="/assets/imgs/radar-cash.png">
+                     <div class="col-3 cash-balance-container"> <img style="width:clamp(60px, 20vw, 100px); height:auto" src="/assets/imgs/radar-cash.png">
             <span class="wallet-balance-display">RADAR CASH {{ walletBalance }}</span> </div>
                     <div class="col-6">
 
@@ -318,9 +308,15 @@
                         </button>
                     </div>
                     <div class="col-3 location-container">
-                        <a :href="locationUrl" target="_blank" @click="getUserLocation" style="display: flex; justify-content: center; align-items: center;">
-                            <img style="width:100px; height:auto; object-fit: contain;" src="/assets/imgs/my-location.png">
-                        </a>
+                        <button
+                            type="button"
+                            class="location-button"
+                            @touchstart.prevent="onLocationTap"
+                            @click.prevent="onLocationTap"
+                            style="display: flex; justify-content: center; align-items: center; background: none; border: none; padding: 0; cursor: pointer;"
+                        >
+                            <img class="location-button-img" style="width:clamp(60px, 20vw, 100px); height:auto; object-fit: contain;" src="/assets/imgs/my-location.png" alt="My Location">
+                        </button>
                         <span class="location-label">MY LOCATION</span>
                     </div>
                 </div>
@@ -351,9 +347,18 @@ import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue';
 import axios from 'axios';
 import { router, Link } from '@inertiajs/vue3';
 import GameModal from '@/components/GameModal.vue';
-import { getPrizeRules } from '@/lib/prizeRules.js';
+import { getPrizeRules, getMinDepositMessage, getMinDepositMessageBySlot } from '@/lib/prizeRules.js';
 
 const PRIZE_DISPLAY_ORDER = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car', 'Super Cash Prize'];
+
+/** Display config for each prize slot (same order as orderedPrizes). Enables Vue @click instead of DOM listeners. */
+const PRIZE_DISPLAY_CONFIG = [
+    { img: '/assets/imgs/mobile1.png', detectedImg: '/assets/imgs/mobile-detected1.png', label: 'MOBILE', price: '1.500$' },
+    { img: '/assets/imgs/be1.png', detectedImg: '/assets/imgs/be-detected1.png', label: 'BIKE / ELECTRONICS', price: '15.000$' },
+    { img: '/assets/imgs/suv1.png', detectedImg: '/assets/imgs/suv-detected1.png', label: 'SUV', price: '50.000$' },
+    { img: '/assets/imgs/muscle-car1.png', detectedImg: '/assets/imgs/muscle-car-detected1.png', label: 'MUSCLE CAR', price: '150.000$' },
+    { img: '/assets/imgs/super-car1.png', detectedImg: '/assets/imgs/super-car-detected1.png', label: 'SUPER CAR', price: '200.000$' },
+];
 
 const activeOverlay = ref(null);
 
@@ -366,7 +371,7 @@ const props = defineProps({
 const prizes = ref(props.games);
 const walletBalance = ref(Number(props.wallet_balance) || 0);
 
-const selectedGameId = ref(null);
+const selectedGameId = ref(props.selectedGameId ?? null);
 
 const orderedPrizes = computed(() => {
     const names = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car'];
@@ -422,6 +427,13 @@ const showSuccessMessage = ref(false);
 const help = ref(false);
 const userLocation = ref({ lat: null, lng: null });
 const locationUrl = ref('https://www.google.com/maps?q=33.8938,35.5018'); // Default fallback location
+/** ID from navigator.geolocation.watchPosition; cleared in onUnmounted. */
+const locationWatchId = ref(null);
+/** Prevents duplicate getCurrentPosition calls and duplicate permission prompts. */
+const locationRequestInProgress = ref(false);
+/** Dedupe touch + click so we only run once per tap (touchend fires first on mobile, then click may fire). */
+let lastLocationTapAt = 0;
+const LOCATION_TAP_DEBOUNCE_MS = 500;
 
 const canScan = computed(() => radarOnline.value && !scanning.value && selectedGameEnabled.value);
 
@@ -462,6 +474,17 @@ function showGameModal(config) {
     gameModalShow.value = true;
 }
 
+/** Prize-specific "minimum deposit" popup: message + Deposit (How to Play) and Cancel. */
+function showMinDepositModal(message, secondaryLabel = 'Cancel') {
+    showGameModal({
+        title: 'Minimum deposit required',
+        message,
+        primaryLabel: 'Deposit',
+        primaryAction: 'openHelp',
+        secondaryLabel,
+    });
+}
+
 function onModalPrimary(action) {
     if (action === 'openHelp') {
         activeOverlay.value = 'help';
@@ -472,33 +495,43 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function onPrizeSlotClick(index) {
+    playClickSound();
+    const prize = orderedPrizes.value[index];
+    if (!prize) {
+        showMinDepositModal(getMinDepositMessageBySlot(index), 'Cancel');
+        return;
+    }
+    selectPrize(prize.id);
+}
+
+function onPrizeItemClick(prize) {
+    playClickSound();
+    selectPrize(prize.id);
+}
+
 async function selectPrize(id) {
     const prize = prizes.value.find(p => p.id === id);
     if (!prize) return;
 
     if (!prize.is_enabled) {
         showGameModal({
-            title: 'Coming soon',
-            message: 'Coming soon! Check out our other prizes for now!',
+            title: 'Prize unavailable',
+            message: 'Prize unavailable. You can try other prizes instead.',
             primaryLabel: '',
             primaryAction: '',
+            secondaryLabel: 'Close',
         });
         return;
     }
 
     const rules = getPrizeRules(prize.name);
     const balance = Number(walletBalance.value) || 0;
-    const minRadar = rules ? rules.minRadar : 0;
-    const displayName = rules?.displayName ?? prize.name;
+    const minDepositDollars = rules?.minDepositDollars ?? 0;
 
-    if (balance < minRadar) {
-        const minDeposit = rules?.minDepositDollars ?? minRadar;
-        showGameModal({
-            title: 'Not enough Radar Cash',
-            message: `You need a minimum deposit of $${minDeposit} to play for ${displayName}. Top up your account to get started.`,
-            primaryLabel: 'How to play',
-            primaryAction: 'openHelp',
-        });
+    if (balance < minDepositDollars) {
+        const message = getMinDepositMessage(prize.name) || `Minimum deposit is ${minDepositDollars}$ to play for this prize.`;
+        showMinDepositModal(message, 'Cancel');
         return;
     }
 
@@ -512,10 +545,11 @@ async function selectPrize(id) {
             selectedGameId.value = null;
             updatePrizeSelectionUI();
             showGameModal({
-                title: 'Coming soon',
-                message: 'Coming soon! Check out our other prizes for now!',
+                title: 'Prize unavailable',
+                message: 'Prize unavailable. You can try other prizes instead.',
                 primaryLabel: '',
                 primaryAction: '',
+                secondaryLabel: 'Close',
             });
             return;
         }
@@ -811,86 +845,112 @@ const updatePassword = async () => {
     }
 };
 
-const getUserLocation = (event) => {
-    // If we already have the location, just open the link normally
-    if (userLocation.value.lat !== null && userLocation.value.lng !== null) {
-        playClickSound();
-        return; // Let the link open normally
-    }
+function showLocationError(title, message) {
+    showGameModal({ title, message });
+}
 
-    // Prevent default link behavior to get location first
-    event.preventDefault();
-    playClickSound();
-
-    if (!navigator.geolocation) {
-        alert('Geolocation is not supported by your browser. Using default location.');
-        window.open(locationUrl.value, '_blank');
-        return;
-    }
-
-    navigator.geolocation.getCurrentPosition(
+function startLocationWatch() {
+    if (locationWatchId.value != null || !navigator.geolocation) return;
+    locationWatchId.value = navigator.geolocation.watchPosition(
         (position) => {
             userLocation.value = {
                 lat: position.coords.latitude,
                 lng: position.coords.longitude
             };
             locationUrl.value = `https://www.google.com/maps?q=${userLocation.value.lat},${userLocation.value.lng}`;
-            
-            // Open the link with the actual location
+        },
+        (err) => {
+            console.warn('Location watch error:', err);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 5000 }
+    );
+}
+
+/**
+ * My Location: handler for both touchstart (mobile, first tap) and click (desktop).
+ * getCurrentPosition must run in the same sync turn as this handler so the permission prompt appears.
+ */
+function onLocationTap() {
+    console.log('location button pressed');
+    const now = Date.now();
+    if (now - lastLocationTapAt < LOCATION_TAP_DEBOUNCE_MS) return;
+    lastLocationTapAt = now;
+
+    // Already tracking and have position: open map with current location
+    if (locationWatchId.value != null && userLocation.value.lat != null && userLocation.value.lng != null) {
+        playClickSound();
+        window.open(locationUrl.value, '_blank');
+        return;
+    }
+
+    if (!navigator.geolocation) {
+        showLocationError('Location unavailable', 'Geolocation is not supported by your browser.');
+        playClickSound();
+        return;
+    }
+
+    if (typeof window !== 'undefined' && !window.isSecureContext) {
+        showLocationError('Location unavailable', 'Location access requires HTTPS. Please open this page via https://');
+        playClickSound();
+        return;
+    }
+
+    if (locationRequestInProgress.value) {
+        playClickSound();
+        return;
+    }
+    locationRequestInProgress.value = true;
+
+    const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            locationRequestInProgress.value = false;
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            userLocation.value = { lat, lng };
+            locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
+            startLocationWatch();
+            playClickSound();
             window.open(locationUrl.value, '_blank');
         },
         (error) => {
-            console.error('Error getting location:', error);
-            // Open with default location if user denies or error occurs
-            window.open(locationUrl.value, '_blank');
+            locationRequestInProgress.value = false;
+            const code = error.code;
+            const msg =
+                code === 1
+                    ? 'Location access is required to use this feature.'
+                    : code === 2 || code === 3
+                        ? 'Unable to get your location. Please try again.'
+                        : 'Unable to get your location. Please try again.';
+            showLocationError('Location unavailable', msg);
+            playClickSound();
         },
-        {
-            enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 60000 // Cache for 1 minute
-        }
+        options
     );
-};
+}
 
 
-const updatePrizeSelectionUI = () => {
-    const prizeItems = document.querySelectorAll('#image-selector .prize-item');
-    prizeItems.forEach((item, index) => {
-        const img = item.querySelector('.selectable');
-        if (!img) return;
-
-        // Ensure original source is stored - get from HTML attribute first
-        if (!img.dataset.originalSrc) {
-            const originalSrc = img.getAttribute('src');
-            if (originalSrc) {
-                img.dataset.originalSrc = originalSrc;
-            }
-        }
-
-        const prizeId = orderedPrizes.value[index]?.id;
-        const originalSrc = img.dataset.originalSrc;
-
-        // Check if this image's prize is selected
-        if (prizeId !== undefined && prizeId === selectedGameId.value) {
-            // Switch to detected version
-            const detectedSrc = img.dataset.detected;
-            if (detectedSrc) {
-                img.src = detectedSrc;
-            }
-        } else {
-            // Always switch back to original for non-selected images
-            img.style.border = 'none';
-            if (originalSrc) {
-                img.src = originalSrc;
-            }
-        }
-    });
-};
+/** Prize selection visual state is now driven by template (:src binding on prize items). Kept for any other side effects. */
+const updatePrizeSelectionUI = () => {};
 
 let hornInterval = null;
 
 
+async function refreshGamesFromApi() {
+    try {
+        const { data } = await axios.get('/games');
+        if (Array.isArray(data) && data.length > 0) {
+            prizes.value = data;
+        }
+    } catch { /* silent — Inertia props are the primary source */ }
+}
+
 onMounted(() => {
+    if (!prizes.value || prizes.value.length === 0) {
+        refreshGamesFromApi();
+    }
+
     fetchRadarStatus();
     setInterval(fetchRadarStatus, 5_000);
 
@@ -960,34 +1020,12 @@ onMounted(() => {
 
     }, 2000);
 
-    const prizeItems = document.querySelectorAll('#image-selector .prize-item');
-    prizeItems.forEach((item, index) => {
-        const img = item.querySelector('.selectable');
-        if (!img) return;
-
-        // Store original source from the initial src attribute before any changes
-        if (!img.dataset.originalSrc) {
-            const originalSrc = img.getAttribute('src');
-            if (originalSrc) {
-                img.dataset.originalSrc = originalSrc;
-            }
-        }
-        const prizeId = orderedPrizes.value[index]?.id;
-        
-        // Preload detected images for instant switching
-        const detectedSrc = img.dataset.detected;
-        if (detectedSrc) {
+    // Preload detected images for prize items (optional, for instant switch when selected)
+    PRIZE_DISPLAY_CONFIG.forEach((cfg) => {
+        if (cfg.detectedImg) {
             const preloadImg = new Image();
-            preloadImg.src = detectedSrc;
+            preloadImg.src = cfg.detectedImg;
         }
-        
-        // Attach click handler to the entire prize item (slot order: Mobile, Bike, SUV, Muscle, Super)
-        item.addEventListener('click', () => {
-            if (prizeId !== undefined) {
-                selectPrize(prizeId);
-                playClickSound();
-            }
-        });
     });
 
     const radarCashImg = document.querySelector('img[src="/assets/imgs/radar-cash.png"]');
@@ -995,10 +1033,7 @@ onMounted(() => {
         radarCashImg.addEventListener('click', playClickSound);
     }
 
-    const myLocationImg = document.querySelector('img[src="/assets/imgs/my-location.png"]');
-    if (myLocationImg) {
-        myLocationImg.addEventListener('click', playClickSound);
-    }
+    // My Location: handled by button @click (getUserLocation); no extra listener to avoid blocking first tap / gesture.
 
     const menuItems = document.querySelectorAll('.menu-item');
     menuItems.forEach(item => {
@@ -1022,6 +1057,10 @@ onMounted(() => {
 onUnmounted(() => {
     if (hornInterval) {
         clearInterval(hornInterval);
+    }
+    if (locationWatchId.value != null && navigator.geolocation) {
+        navigator.geolocation.clearWatch(locationWatchId.value);
+        locationWatchId.value = null;
     }
 });
 
@@ -1168,13 +1207,15 @@ watch(selectedGameId, updatePrizeSelectionUI);
     background: transparent;
     border: none;
     cursor: pointer;
-    padding: 5px;
+    padding: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     transition: opacity 0.2s ease;
     width: 25px;
     height: 25px;
+    box-sizing: content-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-logout:hover {
@@ -1196,9 +1237,31 @@ watch(selectedGameId, updatePrizeSelectionUI);
 
 .location-label {
     color: white;
-    font-size: 0.8em;
-    margin-top: 12px;
+    font-size: clamp(9px, 2.5vw, 0.8em);
+    margin-top: 8px;
     text-align: center;
+    white-space: nowrap;
+}
+
+.location-button {
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+    touch-action: manipulation;
+    min-width: 60px;
+    min-height: 44px;
+}
+.location-button-img {
+    pointer-events: none;
+}
+.location-container {
+    pointer-events: auto;
+}
+.location-button:focus {
+    outline: none;
+}
+.location-button:focus-visible {
+    outline: 2px solid rgba(255, 255, 255, 0.6);
+    outline-offset: 2px;
 }
 
 </style>

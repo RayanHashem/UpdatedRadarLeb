@@ -18,6 +18,6 @@ class ListUsers extends ListRecords
 
     protected function getTableQuery(): ?Builder
     {
-        return parent::getTableQuery()?->excludeAdmins()->withRadarCashSpent();
+        return parent::getTableQuery()?->excludeAdmins()->withRadarCashSpent()->withDistinctGameCount();
     }
 }

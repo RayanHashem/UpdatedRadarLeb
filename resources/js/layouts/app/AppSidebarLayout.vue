@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts">
 import AppSidebarLayoutComponent from '../../../../AppSidebarLayout.vue';
 export default AppSidebarLayoutComponent;
 </script>

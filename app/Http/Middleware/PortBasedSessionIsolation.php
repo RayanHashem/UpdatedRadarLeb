@@ -8,25 +8,23 @@ use Illuminate\Support\Facades\URL;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Run first (global prepend) so session cookie name and app URL are set BEFORE
- * StartSession runs. This prevents main app and admin from sharing sessions:
- * - Dev: port 8001 = admin, 8000 = main.
- * - Production (single host): path /admin = admin cookie, else main cookie.
+ * Set session cookie name by port so admin (8001) and main app (8000) don't share sessions.
+ * Runs before everything else (global prepend). Pure port check — no path/referer/redirect logic.
  */
 class PortBasedSessionIsolation
 {
     public function handle(Request $request, Closure $next): Response
     {
         $port = (int) $request->getPort();
-        $path = $request->path();
-        $root = $request->getSchemeAndHttpHost();
 
-        if ($port === 8001 || str_starts_with($path, 'admin')) {
+        if ($port === 8001) {
+            set_time_limit(120);
             config(['session.cookie' => 'radarleb_admin_session']);
-        } elseif ($port === 8000 || ! str_starts_with($path, 'admin')) {
+        } else {
             config(['session.cookie' => 'radarleb_main_session']);
         }
 
+        $root = $request->getSchemeAndHttpHost();
         config(['app.url' => $root]);
         URL::forceRootUrl($root);
 

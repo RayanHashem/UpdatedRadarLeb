@@ -15,13 +15,16 @@
 <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 {{-- End Favicon Links --}}
 
+        <link rel="preload" href="/assets/imgs/loading-bg.png" as="image">
+        <link rel="preload" href="/assets/imgs/sign-in-bg.jpg" as="image">
+
         <style>
             html {
-                background-color: oklch(1 0 0);
+                background-color: #06212e;
             }
 
             html.dark {
-                background-color: oklch(0.145 0 0);
+                background-color: #06212e;
             }
         </style>
 

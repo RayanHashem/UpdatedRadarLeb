@@ -10,7 +10,7 @@ defineProps<{
     <section id="sign-in" class="w-100">
         <div class="d-flex align-items-center flex-column h-100 p-3-5">
             <div class="d-flex gap-4 flex-column w-100 align-items-center">
-                <img src="assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
+                <img src="/assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
             </div>
             <div class="form-container d-flex flex-column gap-4" style="max-width: 560px;">
                 <h1 class="text-white text-center mb-0">

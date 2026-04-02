@@ -28,9 +28,11 @@ class UserController extends Controller
      */
     public function updateGame(Request $request)
     {
-        $request->validate(['game_id' => 'required', 'exists:games,id']);
+        $request->validate([
+            'game_id' => ['required', 'exists:games,id'],
+        ]);
 
-        $game = Game::find($request->game_id);
+        $game = Game::findOrFail($request->game_id);
         if (! $game->is_enabled) {
             return response()->json(['message' => 'Prize is disabled'], 403);
         }

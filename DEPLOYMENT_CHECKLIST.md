@@ -80,6 +80,19 @@ After changing `.env`, run `php artisan config:clear` (or `optimize:clear`) then
 | Frontend | `npm ci && npm run build` (Vite); serve built assets. |
 | Response caching | Add where needed (e.g. winners list, radar status); not implemented by default. |
 
+**Vite manifest error (`ViteManifestNotFoundException`)**  
+If you see "Vite manifest not found at … public/build/manifest.json", the frontend was not built. Laravel loads assets from `public/build/` in production; without a build, that file is missing. Fix: run the frontend build on the server (or commit `public/build/` after building locally).
+
+**Staging (bash) — build frontend on the server:**
+
+```bash
+cd /path/to/your/app
+npm ci
+npm run build
+```
+
+Ensure Node.js (v18+) and npm are installed on the instance. After this, `public/build/manifest.json` and the hashed JS/CSS assets will exist and the app will load correctly.
+
 ---
 
 ### 7. Database

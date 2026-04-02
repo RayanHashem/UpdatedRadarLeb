@@ -91,7 +91,7 @@ php artisan optimize:clear
 **Checklist:**
 
 1. **Admin login (8001)**  
-   - Open `http://localhost:8001/admin/login`, sign in (e.g. admin@admin.com / admin123).  
+   - Open `http://localhost:8001/admin/login`, sign in with an admin account (see AdminUserSeeder).  
    - Repeat **10 times** (refresh, sign out/sign in). No 419, no “page expired” popup.
 
 2. **No redirect to 8000**  

@@ -20,3 +20,9 @@ yarn-error.log
 /.idea
 /.vscode
 
+# Runtime / generated
+/storage/logs/
+/storage/framework/
+/database/*.sqlite
+/public/build/
+

@@ -225,7 +225,7 @@ RADAR LEB
 
             <div class="d-flex justify-content-between align-items-center flex-column h-100 p-3-5" style="padding:0px !important;">
                 <div class="d-flex gap-4 flex-row w-100 justify-content-between bar">
-                    <img src="assets/imgs/logo.png" class="logo-nav" style="margin:auto; margin-left: 3%;">
+                    <img src="/assets/imgs/logo.png" class="logo-nav" style="margin:auto; margin-left: 3%;">
 
                      <div class="icon-box" style="margin:auto;">
                             <div :class="['icon-box-2', radarOnline ? 'green' : 'red']">

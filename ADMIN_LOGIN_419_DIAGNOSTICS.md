@@ -36,7 +36,7 @@
 
 1. Clear site data for `localhost:8001` (or use an incognito window).
 2. Open `http://localhost:8001/admin/login`.
-3. Sign in with `admin@admin.com` / `admin123`.  
+3. Sign in with an admin account (create with `php artisan db:seed --class=AdminUserSeeder` if needed).  
    You should land on the dashboard without a 419 or redirect loop.
 
 ## Restoring CSRF for admin later

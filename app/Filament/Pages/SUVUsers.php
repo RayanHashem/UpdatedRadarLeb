@@ -36,7 +36,8 @@ class SUVUsers extends Page implements HasTable
 
         $query = User::query()
             ->excludeAdmins()
-            ->withRadarCashSpent();
+            ->withRadarCashSpent()
+            ->withDistinctGameCount();
 
         if ($hasGameIdColumn) {
             $query->whereHas('walletTransactions', function ($q) use ($gameId) {

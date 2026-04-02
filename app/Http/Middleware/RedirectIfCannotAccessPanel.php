@@ -20,14 +20,12 @@ class RedirectIfCannotAccessPanel
             return $next($request);
         }
 
-        // Avoid timeout when DB (e.g. RDS) is slow; admin dashboard/widgets can be heavy
-        set_time_limit(120);
-
         $panel = Filament::getPanel('admin');
-        $user = $request->user();
+        $guard = auth('admin');
+        $user = $guard->user();
 
         if ($user && method_exists($user, 'canAccessPanel') && ! $user->canAccessPanel($panel)) {
-            auth()->logout();
+            $guard->logout();
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 

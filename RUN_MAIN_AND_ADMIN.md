@@ -15,7 +15,7 @@ php artisan serve --port=8001
 Then open in the browser: **http://localhost:8001/admin** (or **http://localhost:8001/admin/login**).  
 Do **not** open `http://localhost:8001` alone — that shows the main app; the admin is only at the `/admin` path.
 
-Same codebase and database; only the port is different. Log in to admin with `admin@admin.com` / `admin123` (create the user with `php artisan db:seed --class=AdminUserSeeder` if needed).
+Same codebase and database; only the port is different. Create admin users once with `php artisan db:seed --class=AdminUserSeeder` (prints temporary passwords). Log in at `/admin/login` with those credentials; change password via Profile in the user menu.
 
 ---
 

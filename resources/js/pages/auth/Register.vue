@@ -14,7 +14,6 @@ const form = useForm({
 });
 
 const dobDisplay = ref('');
-const dobTouched = ref(false);
 const submitAttempted = ref(false);
 
 /** Password rules: must match backend validation exactly */
@@ -26,20 +25,15 @@ const PASSWORD_RULES = [
     { id: 'special', label: 'At least one special character (!@#$%^&*)', test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p) },
 ] as const;
 
-const passwordRuleStatus = computed(() =>
-    PASSWORD_RULES.map((rule) => ({
-        ...rule,
-        satisfied: rule.test(form.password),
-    }))
-);
-
 const passwordAllValid = computed(() =>
     PASSWORD_RULES.every((rule) => rule.test(form.password))
 );
 
-const passwordConfirmationValid = computed(
-    () => form.password_confirmation === form.password && form.password.length > 0
-);
+const passwordConfirmationValid = computed(() => {
+    const p = String(form.password ?? '').trim();
+    const pc = String(form.password_confirmation ?? '').trim();
+    return p.length > 0 && pc === p;
+});
 
 const passwordSubmitError = computed(() => {
     if (!form.password) return null;
@@ -80,8 +74,9 @@ const dobError = computed(() => {
     return null;
 });
 
+/** Only show date error after Sign up attempt or when server returns an error (not on blur) */
 const showDobError = computed(
-    () => (dobTouched.value || submitAttempted.value) && (dobError.value || form.errors.date_of_birth)
+    () => (submitAttempted.value && dobError.value) || !!form.errors.date_of_birth
 );
 const dobErrorMessage = computed(() => dobError.value || form.errors.date_of_birth || null);
 
@@ -117,6 +112,9 @@ watch(
 const submit = () => {
     submitAttempted.value = true;
     if (!canSubmit.value) return;
+    // Trim password fields so accidental spaces don't cause "passwords do not match"
+    form.password = form.password.trim();
+    form.password_confirmation = form.password_confirmation.trim();
     form.post(route('register'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
     });
@@ -127,7 +125,7 @@ const submit = () => {
     <section id="sign-in" class="w-100 page-register">
         <div class="d-flex align-items-center flex-column h-100 p-3-5">
             <div class="d-flex gap-2 flex-column w-100 align-items-center">
-                <img src="assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
+                <img src="/assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
             </div>
             <div class="form-container d-flex flex-column">
                 <form @submit.prevent="submit" class="register-form-fields">
@@ -180,7 +178,6 @@ const submit = () => {
                         inputmode="numeric"
                         maxlength="10"
                         @input="formatDobInput"
-                        @blur="dobTouched = true"
                     />
                     <InputError
                         v-if="showDobError && dobErrorMessage"
@@ -197,22 +194,8 @@ const submit = () => {
                         :tabindex="5"
                         autocomplete="new-password"
                         type="password"
-                        :class="{ 'is-invalid': form.password && !passwordAllValid.value }"
+                        :class="{ 'is-invalid': form.password && !passwordAllValid }"
                     />
-                    <!-- Real-time password rules -->
-                    <ul class="password-rules" aria-live="polite">
-                        <li
-                            v-for="rule in passwordRuleStatus"
-                            :key="rule.id"
-                            class="password-rule"
-                            :class="{ satisfied: rule.satisfied }"
-                        >
-                            <span class="password-rule-icon" aria-hidden="true">
-                                {{ rule.satisfied ? '✓' : '○' }}
-                            </span>
-                            <span class="password-rule-label">{{ rule.label }}</span>
-                        </li>
-                    </ul>
                     <InputError
                         :message="passwordSubmitError || form.errors.password"
                         variant="material"
@@ -227,15 +210,15 @@ const submit = () => {
                         :tabindex="6"
                         autocomplete="new-password"
                         type="password"
-                        :class="{ 'is-invalid': form.password_confirmation && !passwordConfirmationValid.value }"
+                        :class="{ 'is-invalid': form.password_confirmation && !passwordConfirmationValid }"
                     />
                     <InputError
-                        v-if="form.password_confirmation && !passwordConfirmationValid.value"
+                        v-if="form.password_confirmation && !passwordConfirmationValid"
                         message="Passwords do not match."
                         variant="material"
                     />
                     <InputError
-                        v-else
+                        v-else-if="!passwordConfirmationValid && form.errors.password_confirmation"
                         :message="form.errors.password_confirmation"
                         variant="material"
                     />
@@ -283,40 +266,3 @@ const submit = () => {
         </div>
     </section>
 </template>
-
-<style scoped>
-.password-rules {
-    list-style: none;
-    padding: 0;
-    margin: 8px 0 12px 0;
-    font-size: 0.8rem;
-}
-
-.password-rule {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 0;
-    color: rgba(255, 255, 255, 0.6);
-    transition: color 0.2s ease;
-}
-
-.password-rule.satisfied {
-    color: #4ade80;
-}
-
-.password-rule-icon {
-    flex-shrink: 0;
-    width: 18px;
-    text-align: center;
-    font-size: 0.9rem;
-}
-
-.password-rule:not(.satisfied) .password-rule-icon {
-    opacity: 0.7;
-}
-
-.password-rule.satisfied .password-rule-icon {
-    font-weight: bold;
-}
-</style>

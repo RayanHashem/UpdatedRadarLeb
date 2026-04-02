@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script lang="ts">
 import DeleteUserComponent from '../pages/DeleteUser.vue';
 export default DeleteUserComponent;
 </script>

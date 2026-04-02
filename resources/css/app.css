@@ -22,7 +22,7 @@ html {
 
 section {
     height: 100svh;
-    width: 100vw;
+    width: 100%;
     position: relative;
     background-position: center center;
     background-repeat: no-repeat;
@@ -31,6 +31,7 @@ section {
 }
 
 #loading-game {
+ 
     background-image: url("/assets/imgs/loading-bg.png");
     position: fixed;
     top: 0;
@@ -54,6 +55,7 @@ section {
     object-fit: cover;
     height: 100%;
     width: 100%;
+    pointer-events: none; /* Let taps/clicks pass through to game content */
 }
 
 /* Main Layout Structure */
@@ -110,7 +112,20 @@ section {
     padding: 0 10px;
 }
 
-/* Bottom Bar */
+/* Ensure prize column is above any overlay and receives touches on mobile */
+.prize-selection-col {
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+}
+#image-selector.prize-selector {
+    pointer-events: auto;
+}
+.prize-selector .prize-item {
+    pointer-events: auto;
+}
+
+/* Bottom Bar - ensure taps reach Scan and My Location buttons */
 .button-row {
     flex-shrink: 0;
     padding: 10px;
@@ -118,6 +133,8 @@ section {
     align-items: center;
     justify-content: space-between;
     width: 100%;
+    position: relative;
+    z-index: 2;
 }
 .button-row > div {
     display: flex;
@@ -195,6 +212,7 @@ background-color: rgba(255,255,255,0.3);
     cursor: pointer;
     margin: 0;
     padding: 0;
+    touch-action: manipulation; /* Avoid 300ms delay and scroll-stealing on mobile */
 }
 
 .prize-selector .selectable {
@@ -206,7 +224,7 @@ background-color: rgba(255,255,255,0.3);
     object-fit: contain;
     cursor: pointer;
     border-radius: 8px;
-    transition: border 0.2s ease;
+    transition: transform 0.1s ease, border 0.2s ease;
     image-rendering: -webkit-optimize-contrast;
     image-rendering: auto;
     transform: translateZ(0);
@@ -217,11 +235,15 @@ background-color: rgba(255,255,255,0.3);
     -moz-osx-font-smoothing: grayscale;
 }
 
+.prize-selector .prize-item:active .selectable {
+    transform: scale(0.9);
+}
+
 .prize-selector .prize-label {
     margin-top: 4px;
     line-height: 1.1;
     color: #ffffff !important;
-    font-size: 0.65em;
+    font-size: clamp(10px, 0.75em, 13px);
     text-align: center;
     pointer-events: none;
 }
@@ -230,7 +252,7 @@ background-color: rgba(255,255,255,0.3);
     margin-top: 1px;
     line-height: 1;
     color: #ffffff !important;
-    font-size: 0.6em;
+    font-size: clamp(9px, 0.7em, 12px);
     text-align: center;
     pointer-events: none;
 }
@@ -323,6 +345,9 @@ background-color: rgba(255,255,255,0.3);
     width: 25px;
     height: 25px;
     cursor: pointer;
+    padding: 10px;
+    box-sizing: content-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .btn-custom {
@@ -370,7 +395,7 @@ background-color: rgba(255,255,255,0.3);
 }
 
 .btn-custom {
-  transition: background-color 5s ease; /* Adjust duration and timing function as needed */
+  transition: background-color 0.3s ease;
 }
 
 .icon-box-2.red {
@@ -485,6 +510,7 @@ background-color: rgba(255,255,255,0.3);
     .menu-item {
         width: 20px;
         height: 20px;
+        padding: 8px;
     }
     .bar-container {
         width: 30px;
@@ -497,8 +523,8 @@ background-color: rgba(255,255,255,0.3);
         height: 50px !important;
     }
     .btn-custom {
-        height: 35px;
-        font-size: 14px !important;
+        height: 44px;
+        font-size: 15px !important;
         width: 90%;
     }
     .icon-box span {
@@ -523,7 +549,7 @@ body, html {
 }
 
 section {
-    height: 100svh; width: 100vw; position: relative; background-position: center; background-repeat: no-repeat; background-size: cover; overflow: hidden;
+    height: 100svh; width: 100%; position: relative; background-position: center; background-repeat: no-repeat; background-size: cover; overflow: hidden;
 }
 
 #game {
@@ -532,6 +558,7 @@ section {
 
 #myVideo {
     position: absolute; top: 0; left: 0; z-index: 0; object-fit: cover; height: 100%; width: 100%;
+    pointer-events: none;
 }
 
 .game-content-wrapper {
@@ -540,7 +567,7 @@ section {
 
 /* Overlays */
 .overlay {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
     backdrop-filter: blur(8px);
     background-color: rgba(6, 33, 46, 0.8);
     display: flex; align-items: center; justify-content: center; z-index: 1000;
@@ -674,7 +701,7 @@ section {
     .help-container { font-size: 0.85rem; padding: 0 4px; }
     .bar { padding: 8px 10px; }
     .bar-right { gap: 8px; }
-    .menu-item { width: 18px; height: 18px; }
+    .menu-item { width: 18px; height: 18px; padding: 8px; }
     .logo-nav { max-width: 85px; }
 }
 
@@ -814,7 +841,7 @@ section {
 }
 
 .form-control.custom-input::placeholder {
-    color: rgba(255, 255, 255, 0.7); /* Lighter placeholder color */
+    color: rgba(255, 255, 255, 0.92); /* Bright placeholder for readability */
     opacity: 1; /* Ensure placeholder is visible */
 }
 
@@ -1021,6 +1048,9 @@ section {
         padding: 14px 16px;
         min-height: 48px; /* Touch-friendly */
     }
+    .form-control.custom-input::placeholder {
+        color: #fff; /* Full white on mobile so Password / Confirm Password are clearly visible */
+    }
     .btn-custom {
         min-height: 48px;
         padding: 12px 20px;
@@ -1034,6 +1064,9 @@ section {
         font-size: 16px;
         padding: 12px 14px;
         min-height: 48px;
+    }
+    #sign-in.page-register .form-control.custom-input::placeholder {
+        color: #fff; /* Password / Confirm Password placeholders bright on mobile */
     }
     #sign-in.page-register .btn-custom {
         min-height: 48px;
@@ -1080,6 +1113,9 @@ section {
         padding: 12px 14px;
         min-height: 48px;
     }
+    .form-control.custom-input::placeholder {
+        color: #fff;
+    }
     #sign-in.page-register .form-container {
         padding: 18px 16px;
     }
@@ -1118,6 +1154,9 @@ section {
         min-height: 44px;
         font-size: 16px;
     }
+    .form-control.custom-input::placeholder {
+        color: #fff;
+    }
     .btn-custom {
         padding: 10px 14px;
         min-height: 44px;
@@ -1153,6 +1192,7 @@ section {
         margin: 8px auto;
     }
     .form-control.custom-input { font-size: 16px; padding: 10px 12px; }
+    .form-control.custom-input::placeholder { color: #fff; }
     .btn-custom { min-width: 0; padding: 10px 12px; }
 }
 

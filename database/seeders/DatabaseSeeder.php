@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
 
         $this->call([
             GameSeeder::class,
-            AdminUserSeeder::class,
         ]);
+        // Create admin users separately: php artisan db:seed --class=AdminUserSeeder
     }
 }

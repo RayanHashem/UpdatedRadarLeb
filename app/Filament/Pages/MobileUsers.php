@@ -37,10 +37,10 @@ class MobileUsers extends Page implements HasTable
 
         $query = User::query()
             ->excludeAdmins()
-            ->withRadarCashSpent();
+            ->withRadarCashSpent()
+            ->withDistinctGameCount();
 
         if ($hasGameIdColumn) {
-            // New: filter by wallet_transactions.game_id
             $query->whereHas('walletTransactions', function ($q) use ($gameId) {
                 $q->where('game_id', $gameId)
                     ->whereIn('type', ['debit', 'play', 'spend']);

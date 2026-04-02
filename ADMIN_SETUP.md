@@ -21,49 +21,20 @@ You should see routes such as `/admin`, `/admin/login`, etc.
 
 ---
 
-## 2. Test admin user
+## 2. Admin users (role-based access)
 
-- **Email:** `admin@admin.com`
-- **Password:** `admin123`
-- **Name:** Test Admin
+Admin access is controlled by the `role` column on `users`. Allowed roles: `super_admin`, `technical_admin`, `admin`, `staff`. Only users with one of these roles can access `/admin`.
 
-This user passes `canAccessPanel()` (email ends with `@admin.com`).
-
-### Create/update the admin user
-
-**Option A – Seeder (recommended, reproducible):**
+### Create the two admin users (run once)
 
 ```bash
 php artisan db:seed --class=AdminUserSeeder
 ```
 
-Or seed everything (including admin):
+This creates (or updates) two users and **prints temporary passwords** for new accounts. Store them and change passwords after first login via **Profile** in the admin user menu (top right).
 
-```bash
-php artisan db:seed
-```
-
-**Option B – Tinker (one-off):**
-
-```bash
-php artisan tinker
-```
-
-Then in tinker:
-
-```php
-$u = \App\Models\User::updateOrCreate(
-    ['email' => 'admin@admin.com'],
-    [
-        'name' => 'Test Admin',
-        'password' => \Illuminate\Support\Facades\Hash::make('admin123'),
-        'phone_number' => null,
-        'game_id' => 1,
-    ]
-);
-$u->exists; // true
-exit
-```
+- **Ali Houdeib** — `Ali_houdeib@hotmail.com` — role: `super_admin`
+- **Rayan Hashem** — `rayanehashem37@gmail.com` — role: `technical_admin`
 
 ---
 
@@ -93,7 +64,7 @@ Both use the same codebase and DB; only the port differs.
 ## 4. Sanity checks
 
 - **`/admin`** → redirects to **`/admin/login`** when not authenticated (Filament auth middleware).
-- **`/admin/login`** → shows Filament login; log in with `admin@admin.com` / `admin123`.
+- **`/admin/login`** → Filament login; use the admin account emails and temporary passwords from the seeder; change password via Profile.
 - No changes to existing API or frontend (Vue SPA) logic.
 - No changes to existing web routes; Filament registers its own routes under `/admin`.
 
@@ -105,6 +76,6 @@ Both use the same codebase and DB; only the port differs.
 |------|--------|
 | **Admin URL (port 8001)** | http://localhost:8001/admin |
 | **Login URL** | http://localhost:8001/admin/login |
-| **Email** | admin@admin.com |
-| **Password** | admin123 |
+| **Admin accounts** | Created by `php artisan db:seed --class=AdminUserSeeder`; see seeder output for temporary passwords. |
+| **Change password** | Admin → user menu (top right) → Profile |
 | **Main app (port 8000)** | http://localhost:8000 |
