@@ -60,67 +60,80 @@ class Game extends Model
     public function attemptScan(User $user): array
     {
         abort_unless($this->is_enabled == true, 423, 'game_disabled');
-
-        $stat = $this->stats()->firstOrCreate(['user_id' => $user->id]);
-        $cost = $this->price_to_play;
         abort_unless(SystemSetting::get('scans_enabled', true), 423, 'Radar offline');
 
-        abort_if($user->wallet_balance < $cost, 402, 'Not enough balance');
-        $user->decrement('wallet_balance', $cost);
-        $stat->increment('amount_spent', $cost);
-        $this->increment('current_amount', $cost);
+        $cost = (float) $this->price_to_play;
 
-        $nextRadar     = min($stat->current_radar + 1, 6);
-        $baseFails   = $nextRadar * 10;
-        $neededFails = $baseFails + mt_rand(-2, 2);
+        abort_if((float) $user->wallet_balance < $cost, 402, 'Not enough balance');
 
-        $stat->increment('fails_in_level');
-        $isSuccess = false;
+        /*
+         * Wrap wallet debit + stat update + scan row + wallet transaction in one
+         * DB transaction. Previous behaviour: if any step after the wallet
+         * decrement threw, the balance was already reduced but the client never
+         * got the new `wallet` value back, so the UI displayed the old balance
+         * until a full reload — exactly the "I have to reload" bug reported.
+         *
+         * The RNG that decides win/loss is unchanged — the transaction just
+         * guarantees all-or-nothing persistence around it.
+         */
+        return \Illuminate\Support\Facades\DB::transaction(function () use ($user, $cost) {
+            $user->refresh();
+            abort_if((float) $user->wallet_balance < $cost, 402, 'Not enough balance');
 
-        if ($stat->fails_in_level >= $neededFails) {
-            $isSuccess = (mt_rand(0, 1) === 1);
-            if ($isSuccess) {
-                $stat->current_radar     = $nextRadar;
-                $stat->successful_scans += 1;
-                $stat->fails_in_level    = 0;
+            $stat = $this->stats()->firstOrCreate(['user_id' => $user->id]);
+
+            $user->decrement('wallet_balance', $cost);
+            $stat->increment('amount_spent', $cost);
+            $this->increment('current_amount', $cost);
+
+            $nextRadar   = min($stat->current_radar + 1, 6);
+            $baseFails   = $nextRadar * 10;
+            $neededFails = $baseFails + mt_rand(-2, 2);
+
+            $stat->increment('fails_in_level');
+            $isSuccess = false;
+
+            if ($stat->fails_in_level >= $neededFails) {
+                $isSuccess = (mt_rand(0, 1) === 1);
+                if ($isSuccess) {
+                    $stat->current_radar     = $nextRadar;
+                    $stat->successful_scans += 1;
+                    $stat->fails_in_level    = 0;
+                }
             }
-        }
 
-        if (! $isSuccess) {
-            $stat->failed_scans += 1;
-        }
+            if (! $isSuccess) {
+                $stat->failed_scans += 1;
+            }
 
-        $stat->save();
+            $stat->save();
 
-        $scan = $this->scans()->create([
-            'user_id'     => $user->id,
-            'success'     => $isSuccess,
-            'radar_level' => $stat->current_radar ?? 0,
-            'cost'        => $cost,
-        ]);
+            $scan = $this->scans()->create([
+                'user_id'     => $user->id,
+                'success'     => $isSuccess,
+                'radar_level' => $stat->current_radar ?? 0,
+                'cost'        => $cost,
+            ]);
 
-        // Log wallet transaction for scan debit
-        // Note: Transaction is created even if scan fails (user pays regardless of success)
-        // Prevent duplicate transactions for the same scan_id
-        $user->refresh(); // Ensure we have the updated balance
-        WalletTransaction::firstOrCreate(
-            [
-                'scan_id' => $scan->id, // Unique constraint prevents duplicates
-            ],
-            [
-                'user_id'       => $user->id,
-                'game_id'       => $this->id, // Link transaction to the game being played
-                'type'          => 'debit', // Lowercase snake_case
-                'amount'        => $cost, // Must match scans.cost
-                'balance_after' => $user->wallet_balance,
-            ]
-        );
+            $user->refresh();
 
-        return [
-            'antenna_detected' => $isSuccess,
-            'progress'         => $this->progressFor($user),
-            'wallet'           => $user->wallet_balance,
-        ];
+            WalletTransaction::firstOrCreate(
+                ['scan_id' => $scan->id],
+                [
+                    'user_id'       => $user->id,
+                    'game_id'       => $this->id,
+                    'type'          => 'debit',
+                    'amount'        => $cost,
+                    'balance_after' => $user->wallet_balance,
+                ]
+            );
+
+            return [
+                'antenna_detected' => $isSuccess,
+                'progress'         => $this->progressFor($user),
+                'wallet'           => (float) $user->wallet_balance,
+            ];
+        });
     }
 
     protected function canUserWinFinal(User $user): bool

@@ -19,6 +19,17 @@ class EnsureAdminPortIsolation
             return $next($request);
         }
 
+        /*
+         * Filament dashboard widgets aggregate large tables (users, scans, wallet_transactions).
+         * PortBasedSessionIsolation only raises max_execution_time on port 8001; admin on :8000
+         * or production keeps php.ini's 30s default and hits "Maximum execution time exceeded".
+         */
+        $adminTimeLimit = (int) env('ADMIN_MAX_EXECUTION_TIME', 120);
+        if ($adminTimeLimit > 0) {
+            @set_time_limit($adminTimeLimit);
+            @ini_set('max_execution_time', (string) $adminTimeLimit);
+        }
+
         URL::forceRootUrl($request->getSchemeAndHttpHost());
 
         return $next($request);

@@ -23,12 +23,14 @@ Route::get('/', function () {
             'progress'   => $g->progressFromStat($statsByGame->get($g->id)),
             'is_enabled' => (bool) $g->is_enabled,
         ]),
-        'selectedGameId'  => $user->game_id,
-        'wallet_balance'  => $user->wallet_balance,
+        // Always start with no prize selected on page (re)entry — user must manually pick a prize
+        // so the balance / minimum-deposit checks in selectPrize() run every time.
+        'selectedGameId'  => null,
+        'wallet_balance'  => (float) $user->wallet_balance,
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get ('/radar/status',  [RadarController::class,'status']);
+Route::get('/radar/status', [RadarController::class, 'status'])->middleware('throttle:30,1');
 Route::get('/winners', function () {
     return \App\Models\Winner::select('game_name', 'user_name')->get();
 });

@@ -21,16 +21,22 @@ class StatsOverview extends BaseWidget
     {
         $today = now()->toDateString();
 
-        $stats = Cache::remember("admin_stats_{$today}", 30, function () use ($today) {
+        $stats = Cache::remember("admin_stats_{$today}", 120, function () use ($today) {
             $totalUsers = User::query()->excludeAdmins()->count();
 
             $scansToday = Scan::whereDate('created_at', $today)->count();
 
-            $todayRevenue = WalletTransaction::where('type', 'debit')
-                ->whereDate('created_at', $today)
-                ->sum('amount');
-
-            $totalRevenue = WalletTransaction::where('type', 'debit')->sum('amount');
+            /*
+             * Single pass over debit rows for revenue (two separate sums scanned the table twice).
+             */
+            $dateCol = DB::getDriverName() === 'pgsql' ? 'created_at::date' : 'DATE(created_at)';
+            $revenue = WalletTransaction::query()
+                ->where('type', 'debit')
+                ->selectRaw('COALESCE(SUM(amount), 0) as total_revenue')
+                ->selectRaw("COALESCE(SUM(CASE WHEN {$dateCol} = ? THEN amount ELSE 0 END), 0) as today_revenue", [$today])
+                ->first();
+            $totalRevenue = (float) ($revenue->total_revenue ?? 0);
+            $todayRevenue = (float) ($revenue->today_revenue ?? 0);
 
             $popularGameToday = Scan::whereDate('created_at', $today)
                 ->select('game_id', DB::raw('count(*) as scan_count'))

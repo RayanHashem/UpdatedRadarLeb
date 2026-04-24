@@ -24,20 +24,34 @@ class UserController extends Controller
         //
     }
     /**
-     * Update the user's selected game (prize). Rejects if the game is disabled.
+     * Update the user's selected game (prize).
+     *
+     * Accepts either:
+     *   - a valid games.id  → persists the selection (rejecting disabled games)
+     *   - null              → clears the selection, used by Dashboard.vue after
+     *                          a scan completes so the UI returns to a clean,
+     *                          "no-prize-picked" state and survives a reload.
      */
     public function updateGame(Request $request)
     {
         $request->validate([
-            'game_id' => ['required', 'exists:games,id'],
+            'game_id' => ['nullable', 'integer', 'exists:games,id'],
         ]);
 
-        $game = Game::findOrFail($request->game_id);
+        $gameId = $request->input('game_id');
+
+        if ($gameId === null) {
+            $request->user()->update(['game_id' => null]);
+
+            return response()->json(['message' => 'cleared']);
+        }
+
+        $game = Game::findOrFail($gameId);
         if (! $game->is_enabled) {
             return response()->json(['message' => 'Prize is disabled'], 403);
         }
 
-        $request->user()->update(['game_id' => $request->game_id]);
+        $request->user()->update(['game_id' => $gameId]);
 
         return response()->json(['message' => 'saved']);
     }

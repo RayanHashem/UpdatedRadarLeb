@@ -65,6 +65,14 @@
                                 <span class="winner-prize">WINNER DRAW 1 - CASH</span>
                             </div>
                         </div>
+                        <!--
+                          Explicit close button — on small phones the overlay content fills
+                          ~90% of the screen, leaving ≤18px of outside tap area to dismiss
+                          via @click.self. An obvious Back button is mandatory for mobile.
+                        -->
+                        <button class="a-btn a-btn-default overlay-back-btn" @click="activeOverlay = null">
+                            Back
+                        </button>
                     </div>
                 </template>
 
@@ -82,6 +90,11 @@
 
                             <button class="a-btn a-btn-default" @click="currentPage = 'password'">
                                 Change Password
+                            </button>
+
+                            <!-- Close the Settings overlay from the main page too (mobile UX). -->
+                            <button class="a-btn a-btn-default overlay-back-btn" @click="activeOverlay = null">
+                                Back
                             </button>
                         </div>
 
@@ -199,8 +212,9 @@
         <section v-show="!loading" id="game">
             <video autoplay
                    :muted="true"
-                   loop playsinline id="myVideo">
-                <source src="/assets/imgs/vid.webm" type="video/mp4">
+                   loop playsinline id="myVideo"
+                   preload="none">
+                <source v-if="videoSrcsReady" src="/assets/imgs/vid.webm" type="video/mp4">
                 Your browser does not support HTML5 video.
             </video>
 
@@ -215,10 +229,24 @@
                         </div>
                     </div>
                     <div class="bar-right">
-                        <img src="/assets/imgs/winners-button.png" class="menu-item" @click="activeOverlay = 'winners'" />
-                        <img src="/assets/imgs/help-button.png" class="menu-item" @click="activeOverlay = 'help'" />
-                        <img src="/assets/imgs/settings-button.png" class="menu-item" @click="activeOverlay = 'settings'" />
-                        <button class="btn-logout" @click="handleLogout" title="Logout">
+                        <!--
+                          Top-bar menu icons were previously bare <img @click>, which on mobile
+                          sometimes registered as a drag (finger jitter) instead of a tap, felt
+                          unresponsive, and was not reachable by assistive tech. They are now
+                          proper <button> elements with aria-labels and ≥44x44 tap targets via
+                          the .menu-item-btn CSS rule — the image is a child with pointer-events
+                          disabled so the tap always lands on the button.
+                        -->
+                        <button type="button" class="menu-item-btn" aria-label="Winners" @click="openOverlay('winners')">
+                            <img src="/assets/imgs/winners-button.png" class="menu-item" alt="" />
+                        </button>
+                        <button type="button" class="menu-item-btn" aria-label="Help" @click="openOverlay('help')">
+                            <img src="/assets/imgs/help-button.png" class="menu-item" alt="" />
+                        </button>
+                        <button type="button" class="menu-item-btn" aria-label="Settings" @click="openOverlay('settings')">
+                            <img src="/assets/imgs/settings-button.png" class="menu-item" alt="" />
+                        </button>
+                        <button class="btn-logout" @click="handleLogout" title="Logout" aria-label="Logout">
                             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                                 <polyline points="16 17 21 12 16 7"></polyline>
@@ -241,10 +269,18 @@
 
                     <div class="col-6 radar-col" style="padding:0px;">
                         <div class="radar">
-                            <video autoplay muted loop playsinline id="myVideo2" ref="radarVideo">
-
-
-                                <source src="/assets/imgs/radar.webm" type="video/webm" />
+                            <!--
+                              The radar.webm is only meaningful while a scan is in
+                              progress. We keep the element mounted (so the 77MB
+                              source is cached / warmed after the first scan) but
+                              toggle visibility with v-show tied to `scanning`, and
+                              drive play/pause explicitly from startScan(). The
+                              element no longer uses `autoplay` because it raced
+                              with the manual play() call and caused the video to
+                              stop on a black first-frame ~1s into the scan.
+                            -->
+                            <video v-show="scanning" muted loop playsinline id="myVideo2" ref="radarVideo" preload="auto">
+                                <source v-if="videoSrcsReady" src="/assets/imgs/radar.webm" type="video/webm" />
                                 Your browser does not support HTML5 video.
                             </video>
                         </div>
@@ -308,10 +344,18 @@
                         </button>
                     </div>
                     <div class="col-3 location-container">
+                        <!--
+                          Previously had @touchstart.prevent AND @click.prevent. On iOS the
+                          touchstart handler could fire before the synthetic click arrived
+                          and .prevent on touchstart sometimes blocked the click entirely,
+                          producing a "button didn't register" effect. onLocationTap is
+                          already debounced, so a single @click handler is enough and plays
+                          nicely with the mobile tap gesture.
+                        -->
                         <button
                             type="button"
                             class="location-button"
-                            @touchstart.prevent="onLocationTap"
+                            aria-label="Share my location"
                             @click.prevent="onLocationTap"
                             style="display: flex; justify-content: center; align-items: center; background: none; border: none; padding: 0; cursor: pointer;"
                         >
@@ -405,6 +449,15 @@ const antennaIconSrc = ref('/assets/imgs/an.png');
 // Ref for the radar video element
 const radarVideo = ref(null);
 
+/*
+ * radar.webm is ~77MB. `php artisan serve` (single-threaded on Windows) will
+ * stream that one file for a long time and starve every other asset request
+ * (prize icons, logo, header buttons). We only mount the <source> tags after
+ * the rest of the page has finished loading so icons appear instantly and the
+ * videos stream in afterwards — behavior (autoplay + loop) is unchanged.
+ */
+const videoSrcsReady = ref(false);
+
 const originalColors = [
     '#4AEBD5', '#7BE9DD', '#81D6C1',
     '#E97E7F', '#E77E7F', '#E95E72',
@@ -474,12 +527,25 @@ function showGameModal(config) {
     gameModalShow.value = true;
 }
 
-/** Prize-specific "minimum deposit" popup: message + Deposit (How to Play) and Cancel. */
+/*
+ * Prize-specific "minimum deposit" popup.
+ *
+ * A new user lands on the dashboard with $0 wallet and no prize selected.
+ * The first things they'll tap are (a) a prize tile → this modal, or
+ * (b) the Scan button → "Select a prize first" / "Not enough Radar Cash"
+ * modals in startScan(). ALL three flows must surface the SAME
+ * "How to play" call-to-action so the user has exactly one obvious next
+ * step — opening the Help overlay, which documents how to deposit money
+ * and actually play. Using inconsistent labels ("Deposit" here vs.
+ * "How to play" elsewhere) fragments that mental model, so we keep the
+ * label identical everywhere. Both labels trigger the same `openHelp`
+ * action, so the change is purely cosmetic/UX.
+ */
 function showMinDepositModal(message, secondaryLabel = 'Cancel') {
     showGameModal({
         title: 'Minimum deposit required',
         message,
-        primaryLabel: 'Deposit',
+        primaryLabel: 'How to play',
         primaryAction: 'openHelp',
         secondaryLabel,
     });
@@ -495,29 +561,56 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+/*
+ * Prize click flow — "instant" means the image swap paints on the SAME frame
+ * as the click, not the frame after. Two subtle things matter:
+ *
+ *   1. We used to schedule playClickSound() with queueMicrotask, but
+ *      microtasks run *before* the browser paints. On first interaction the
+ *      mp3 decode can chew 20–60ms of that microtask, which pushes the
+ *      paint back — visually indistinguishable from a "laggy button".
+ *      Switching to setTimeout(…, 0) defers the audio to after paint, so
+ *      the prize image always swaps first and the click sound follows.
+ *
+ *   2. The cheap synchronous guard (disabled / min deposit modal) still
+ *      runs first. If the prize is playable we flip `selectedGameId` in
+ *      the same tick so Vue's reactive DOM patch lands in the same frame.
+ *      The /me/game POST is fire-and-forget; a rollback only happens on 403.
+ */
 function onPrizeSlotClick(index) {
-    playClickSound();
     const prize = orderedPrizes.value[index];
     if (!prize) {
+        setTimeout(playClickSound, 0);
         showMinDepositModal(getMinDepositMessageBySlot(index), 'Cancel');
         return;
     }
     selectPrize(prize.id);
+    setTimeout(playClickSound, 0);
 }
 
 function onPrizeItemClick(prize) {
-    playClickSound();
     selectPrize(prize.id);
+    setTimeout(playClickSound, 0);
 }
 
-async function selectPrize(id) {
+function selectPrize(id) {
     const prize = prizes.value.find(p => p.id === id);
     if (!prize) return;
 
+    /*
+     * CRITICAL ORDER: the is_enabled (admin toggle in Filament → Prizes)
+     * check MUST run before the min-deposit check. When an operator turns a
+     * prize OFF in the admin panel every tap on that tile should surface the
+     * exact same "Coming soon" modal — regardless of whether the user has
+     * $0 or $1000 in their wallet. A disabled prize isn't a "minimum
+     * deposit" problem, it's a "not available right now" problem, and
+     * mixing those two messages would tell a well-funded user to deposit
+     * more money for a prize that literally cannot be played.
+     */
     if (!prize.is_enabled) {
         showGameModal({
-            title: 'Prize unavailable',
-            message: 'Prize unavailable. You can try other prizes instead.',
+            title: 'Coming soon',
+            message: 'Coming soon! Check out our other prizes for now!',
             primaryLabel: '',
             primaryAction: '',
             secondaryLabel: 'Close',
@@ -535,26 +628,33 @@ async function selectPrize(id) {
         return;
     }
 
+    const previousId = selectedGameId.value;
     selectedGameId.value = id;
-    updatePrizeSelectionUI();
 
-    try {
-        await axios.post('/me/game', { game_id: id });
-    } catch (error) {
+    /*
+     * Server-side safety net: if the admin flipped the toggle OFF between
+     * Inertia's initial page prop and this click (so our local copy of
+     * prize.is_enabled is stale), /me/game returns 403 "Prize is disabled".
+     * We roll back the optimistic selection and surface the same "Coming
+     * soon" modal as the client-side branch above, so the user experience
+     * is identical no matter which layer catches the disabled state.
+     */
+    axios.post('/me/game', { game_id: id }).catch((error) => {
         if (error.response?.status === 403 && error.response?.data?.message === 'Prize is disabled') {
-            selectedGameId.value = null;
-            updatePrizeSelectionUI();
+            selectedGameId.value = previousId;
+            const idx = prizes.value.findIndex(p => p.id === id);
+            if (idx !== -1) prizes.value[idx].is_enabled = false;
             showGameModal({
-                title: 'Prize unavailable',
-                message: 'Prize unavailable. You can try other prizes instead.',
+                title: 'Coming soon',
+                message: 'Coming soon! Check out our other prizes for now!',
                 primaryLabel: '',
                 primaryAction: '',
                 secondaryLabel: 'Close',
             });
             return;
         }
-        console.error('Failed to select prize:', error);
-    }
+        console.error('Failed to persist prize selection:', error);
+    });
 }
 const currentProgress = computed(() => {
     const g = prizes.value.find(p => p.id == selectedGameId.value)
@@ -579,6 +679,36 @@ const playClickSound = () => {
         });
     }
 };
+
+/**
+ * Open a top-bar overlay (winners/help/settings). The click sound is
+ * dispatched with setTimeout(…, 0) (a task, not a microtask) so the
+ * browser paints the overlay open first and decodes the click mp3 after.
+ * queueMicrotask would have run before paint, which on first-interaction
+ * Safari/iOS added 50–200ms of mp3 decode into the critical render path.
+ * The play() call still happens inside the same user-gesture turn, so the
+ * browser's autoplay policy does not block it.
+ */
+function openOverlay(name) {
+    activeOverlay.value = name;
+    setTimeout(playClickSound, 0);
+}
+
+/**
+ * Stop the middle radar.webm and rewind it so v-show="scanning" hides a
+ * clean first frame instead of whatever frame it happened to pause on.
+ * Called at every place the scan ends — normal completion, the three
+ * server-side error branches (402 / 403 / 423), and the post-animation
+ * cleanup block. Safe to call when the ref is null or already paused.
+ */
+function pauseRadarVideo() {
+    const el = radarVideo.value;
+    if (!el) return;
+    try {
+        el.pause();
+        el.currentTime = 0;
+    } catch { /* no-op */ }
+}
 
 function playScanSoundSequence() {
   if (!audioEnabled.value) return;
@@ -611,12 +741,27 @@ async function startScan() {
     const prize = selectedPrize.value;
     const rules = prize ? getPrizeRules(prize.name) : null;
     const balance = Number(walletBalance.value) || 0;
-    const minRadar = rules ? rules.minRadar : 0;
 
-    if (selectedGameId.value == null || balance < minRadar) {
+    if (selectedGameId.value == null) {
         showGameModal({
             title: 'Select a prize first',
             message: 'You need to select a prize first and add Radar Cash before you can scan.',
+            primaryLabel: 'How to play',
+            primaryAction: 'openHelp',
+        });
+        return;
+    }
+
+    /*
+     * Mirror the server-side check in Game::attemptScan which deducts
+     * `price_to_play` per scan. Blocking here avoids firing the scan audio /
+     * animation and then failing with a 402 from the API.
+     */
+    const scanCost = rules ? rules.scanCostDollars : 0;
+    if (balance < scanCost) {
+        showGameModal({
+            title: 'Not enough Radar Cash',
+            message: `You need at least ${scanCost}$ to scan for ${rules?.messageDisplayName ?? 'this prize'}. Add more Radar Cash and try again.`,
             primaryLabel: 'How to play',
             primaryAction: 'openHelp',
         });
@@ -630,12 +775,33 @@ async function startScan() {
     visibleCount.value = 0;
     antennaIconSrc.value = '/assets/imgs/an.png'; // Reset to default before scan
 
+    /*
+     * Drive the radar.webm playback explicitly rather than letting the
+     * element's `autoplay` attribute do it on page mount.
+     *
+     * The previous version combined `autoplay` + `loop` + a `setTimeout`
+     * pause. The setTimeout fired on a wall-clock 16 seconds from the
+     * click — so:
+     *   - on early-exit errors (402 / 403 / 423) it would still pause the
+     *     video 16 s later, even though no scan was in flight;
+     *   - if the user kicked off another scan in the meantime, the stale
+     *     timer would pause the fresh scan's video roughly a second in,
+     *     which is the "video disappears after ~1 sec" symptom.
+     *
+     * We now rewind to 0 and call play() here, and rely on the matching
+     * pauseRadarVideo() at every exit of startScan (success, all error
+     * branches, and the post-animation cleanup block) to stop it. The
+     * `loop` attribute on the element keeps the animation going for as
+     * long as the scan takes.
+     */
     if (radarVideo.value) {
-        radarVideo.value.play();
-        setTimeout(() => {
-            radarVideo.value.pause();
+        try {
             radarVideo.value.currentTime = 0;
-        }, 16000);
+            const p = radarVideo.value.play();
+            if (p && typeof p.catch === 'function') {
+                p.catch(() => { /* autoplay-policy failure is non-fatal */ });
+            }
+        } catch { /* no-op */ }
     }
 
     let found = false;
@@ -644,11 +810,30 @@ async function startScan() {
         const { data } = await axios.post('/scan/' + selectedGameId.value);
         found = !!data.antenna_detected;
         dat = data;
-        walletBalance.value = data.wallet;
+        if (data && data.wallet != null) {
+            walletBalance.value = Number(data.wallet);
+        }
     } catch (err) {
-        if (err.response?.status === 403 && err.response?.data?.message === 'Prize is disabled') {
+        const status = err.response?.status;
+        const payload = err.response?.data || {};
+
+        /*
+         * Server is the source of truth for Radar Cash. Every error response
+         * from /scan now includes the authoritative wallet value, so we sync
+         * the UI immediately — this is what fixes "money not deducted until I
+         * reload". If the error carries no payload (network drop), we fall
+         * back to GET /me.
+         */
+        if (payload.wallet != null) {
+            walletBalance.value = Number(payload.wallet);
+        } else {
+            refreshWalletFromServer();
+        }
+
+        if (status === 403 && payload.message === 'Prize is disabled') {
             scanning.value = false;
             detectionStatus.value = 'idle';
+            pauseRadarVideo();
             showGameModal({
                 title: 'Coming soon',
                 message: 'Coming soon! Check out our other prizes for now!',
@@ -657,6 +842,34 @@ async function startScan() {
             });
             return;
         }
+
+        if (status === 402) {
+            scanning.value = false;
+            detectionStatus.value = 'idle';
+            pauseRadarVideo();
+            const costMsg = rules ? `${rules.scanCostDollars}$ per scan for ${rules.messageDisplayName}` : 'enough Radar Cash';
+            showGameModal({
+                title: 'Not enough Radar Cash',
+                message: `You need at least ${costMsg}. Add more Radar Cash and try again.`,
+                primaryLabel: 'How to play',
+                primaryAction: 'openHelp',
+            });
+            return;
+        }
+
+        if (status === 423) {
+            scanning.value = false;
+            detectionStatus.value = 'idle';
+            pauseRadarVideo();
+            showGameModal({
+                title: 'Radar offline',
+                message: 'The radar is temporarily offline. Please try again in a moment.',
+                primaryLabel: '',
+                primaryAction: '',
+            });
+            return;
+        }
+
         found = false;
     }
 
@@ -671,6 +884,7 @@ async function startScan() {
 
     detectionStatus.value = found ? 'found' : 'not-found';
     scanning.value = false;
+    pauseRadarVideo();
     if (dat) {
         setGameProgress(selectedGameId.value, dat.progress);
     }
@@ -684,9 +898,34 @@ async function startScan() {
     await sleep(2000);
     detectionStatus.value = 'idle';
     visibleCount.value = 0;
-    // Only reset icon to default when antenna was detected; leave an3.png when not detected until next scan
-    if (found) {
-        antennaIconSrc.value = '/assets/imgs/an.png';
+
+    /*
+     * Post-scan cleanup (runs ONLY after the full result animation + the 2s
+     * "found/not-found" display above). We:
+     *
+     *   1. Reset the antenna icon back to the neutral an.png regardless of
+     *      outcome — previously an3.png stuck around on a failed scan until
+     *      the next scan started, which looked like the UI was still showing
+     *      stale state from the last attempt.
+     *
+     *   2. Auto-deselect the prize slot. Between scans we want a clean
+     *      "nothing chosen" board so the next click feels like a fresh
+     *      decision instead of a pre-committed one. We clear selectedGameId
+     *      locally and fire-and-forget a POST /me/game with game_id=null so
+     *      the server's users.game_id column stays in sync (otherwise a page
+     *      reload would snap the previous prize back into place).
+     *
+     * The /me/game endpoint accepts null as of the matching UserController
+     * change; any failure here is non-fatal and only affects persistence —
+     * the local UI still clears.
+     */
+    antennaIconSrc.value = '/assets/imgs/an.png';
+
+    if (selectedGameId.value != null) {
+        selectedGameId.value = null;
+        axios.post('/me/game', { game_id: null }).catch((error) => {
+            console.error('Failed to clear prize selection after scan:', error);
+        });
     }
 }
 async function fetchRadarStatus() {
@@ -946,13 +1185,50 @@ async function refreshGamesFromApi() {
     } catch { /* silent — Inertia props are the primary source */ }
 }
 
+/**
+ * Force-reads the authoritative wallet balance from the server.
+ * Called whenever the scan endpoint fails without a payload (e.g. network
+ * blip) so Radar Cash never drifts from the DB value.
+ */
+async function refreshWalletFromServer() {
+    try {
+        const { data } = await axios.get('/me');
+        if (data && data.wallet_balance != null) {
+            walletBalance.value = Number(data.wallet_balance);
+        }
+    } catch { /* silent */ }
+}
+
 onMounted(() => {
     if (!prizes.value || prizes.value.length === 0) {
         refreshGamesFromApi();
     }
 
+    /*
+     * Poll at a sane interval (30 s) and only while the tab is visible.
+     * Previously a 5 s interval piled up on `php artisan serve` whenever a
+     * single response was slow, which starved icons/videos from loading at all.
+     */
     fetchRadarStatus();
-    setInterval(fetchRadarStatus, 5_000);
+    let radarPollId = null;
+    const startRadarPolling = () => {
+        if (radarPollId != null) return;
+        radarPollId = setInterval(fetchRadarStatus, 30_000);
+    };
+    const stopRadarPolling = () => {
+        if (radarPollId == null) return;
+        clearInterval(radarPollId);
+        radarPollId = null;
+    };
+    startRadarPolling();
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+            stopRadarPolling();
+        } else {
+            fetchRadarStatus();
+            startRadarPolling();
+        }
+    });
 
     // Scan audio sequence is handled by playScanSoundSequence() function
     
@@ -994,9 +1270,33 @@ onMounted(() => {
     }
 
     const video = document.getElementById('myVideo');
-        video?.play().catch((e) => {
-            console.warn('Autoplay failed:', e);
+
+    /*
+     * Attach the <source> tags only after all other assets have loaded so the
+     * heavy radar.webm/vid.webm do not block icons on the dev server. Use
+     * requestIdleCallback where available, else a small timeout on `load`.
+     */
+    const attachVideoSources = () => {
+        videoSrcsReady.value = true;
+        nextTick(() => {
+            const bgVid = document.getElementById('myVideo');
+            bgVid?.load();
+            radarVideo.value?.load();
+            bgVid?.play().catch((e) => console.warn('Autoplay failed:', e));
         });
+    };
+    const scheduleVideoLoad = () => {
+        if ('requestIdleCallback' in window) {
+            window.requestIdleCallback(attachVideoSources, { timeout: 1500 });
+        } else {
+            setTimeout(attachVideoSources, 300);
+        }
+    };
+    if (document.readyState === 'complete') {
+        scheduleVideoLoad();
+    } else {
+        window.addEventListener('load', scheduleVideoLoad, { once: true });
+    }
     setTimeout(() => {
         loading.value = false;
         if (radarVideo.value) {
@@ -1028,28 +1328,13 @@ onMounted(() => {
         }
     });
 
-    const radarCashImg = document.querySelector('img[src="/assets/imgs/radar-cash.png"]');
-    if (radarCashImg) {
-        radarCashImg.addEventListener('click', playClickSound);
-    }
-
-    // My Location: handled by button @click (getUserLocation); no extra listener to avoid blocking first tap / gesture.
-
-    const menuItems = document.querySelectorAll('.menu-item');
-    menuItems.forEach(item => {
-        item.addEventListener('click', playClickSound);
-    });
-
-    const backButton = document.querySelector('.help-container .a-btn-default');
-    if (backButton) {
-        backButton.addEventListener('click', playClickSound);
-    }
-
-      const settingsMenuButtons = document.querySelectorAll('.settings-menu .a-btn');
-    settingsMenuButtons.forEach(button => {
-        button.addEventListener('click', playClickSound);
-    });
-
+    /*
+     * Click-sound DOM listeners were previously attached here for radar-cash,
+     * menu items, help back button and settings buttons. They ran in parallel
+     * with Vue @click handlers, firing twice on each tap, which on low-end
+     * mobile feels like "the button takes a while to register" (the second
+     * play() is queued behind the first). Vue @click is the sole driver now.
+     */
 
     updatePrizeSelectionUI();
 });

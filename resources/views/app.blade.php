@@ -15,8 +15,13 @@
 <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 {{-- End Favicon Links --}}
 
-        <link rel="preload" href="/assets/imgs/loading-bg.png" as="image">
-        <link rel="preload" href="/assets/imgs/sign-in-bg.jpg" as="image">
+        {{--
+            Removed global <link rel="preload"> for loading-bg.png and sign-in-bg.jpg.
+            Those are large backgrounds used by only one page each (dashboard / sign-in).
+            Preloading them on every page blocks the single-threaded `php artisan serve`
+            queue, which is why dashboard elements appeared to load slowly / partially.
+            Each page's CSS `background-image: url(...)` fetches them when actually needed.
+        --}}
 
         <style>
             html {

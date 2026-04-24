@@ -4,61 +4,72 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class AdminUserSeeder extends Seeder
 {
     /**
-     * Create real admin users for Filament panel. Removes the legacy fake admin.
+     * Upsert real admin users for the Filament panel.
+     *
+     * Passwords are always (re)generated so running this again after a
+     * lost-password incident produces fresh credentials instead of silently
+     * skipping existing users.  The new passwords are printed to the console
+     * — store them securely and change them via the Profile page after login.
+     *
      * Run: php artisan db:seed --class=AdminUserSeeder
-     * Temporary passwords are echoed at the end — change them after first login.
      */
     public function run(): void
     {
         // Remove legacy fake admin (no longer used)
         User::where('email', 'admin@admin.com')->delete();
 
+        $admins = [
+            [
+                'name'  => 'Ali Houdeib',
+                'email' => 'Ali_houdeib@hotmail.com',
+                'role'  => 'super_admin',
+            ],
+            [
+                'name'  => 'Rayan Hashem',
+                'email' => 'rayanehashem37@gmail.com',
+                'role'  => 'technical_admin',
+            ],
+        ];
+
         $rows = [];
 
-        // 1. Ali Houdeib — owner / super admin
-        $userAli = User::firstOrNew(['email' => 'Ali_houdeib@hotmail.com']);
-        $isNewAli = ! $userAli->exists;
-        if ($isNewAli) {
-            $userAli->password = Hash::make($passwordAli = Str::password(20));
-            $rows[] = ['Ali Houdeib', 'Ali_houdeib@hotmail.com', 'super_admin', $passwordAli];
-        }
-        $userAli->fill([
-            'name' => 'Ali Houdeib',
-            'role' => 'super_admin',
-            'phone_number' => null,
-            'game_id' => null,
-        ]);
-        $userAli->save();
+        foreach ($admins as $admin) {
+            $plainPassword = Str::password(20);
+            $hash          = Hash::make($plainPassword);
 
-        // 2. Rayan Hashem — technical admin / developer
-        $userRayan = User::firstOrNew(['email' => 'rayanehashem37@gmail.com']);
-        $isNewRayan = ! $userRayan->exists;
-        if ($isNewRayan) {
-            $userRayan->password = Hash::make($passwordRayan = Str::password(20));
-            $rows[] = ['Rayan Hashem', 'rayanehashem37@gmail.com', 'technical_admin', $passwordRayan];
-        }
-        $userRayan->fill([
-            'name' => 'Rayan Hashem',
-            'role' => 'technical_admin',
-            'phone_number' => null,
-            'game_id' => null,
-        ]);
-        $userRayan->save();
+            // Use a raw DB upsert to avoid the hashed cast double-hashing a
+            // pre-hashed value, and to guarantee the password is always reset.
+            DB::table('users')->updateOrInsert(
+                ['email' => $admin['email']],
+                [
+                    'name'         => $admin['name'],
+                    'role'         => $admin['role'],
+                    'password'     => $hash,
+                    'phone_number' => null,
+                    'game_id'      => null,
+                    'updated_at'   => now(),
+                    'created_at'   => now(),
+                ]
+            );
 
-        if (count($rows) > 0 && $this->command) {
+            $rows[] = [$admin['name'], $admin['email'], $admin['role'], $plainPassword];
+        }
+
+        if ($this->command) {
             $this->command->newLine();
-            $this->command->info('Admin users created. Temporary passwords (change after first login via Profile):');
+            $this->command->info('Admin users upserted. Temporary passwords (change after first login via Profile):');
             $this->command->table(
                 ['Name', 'Email', 'Role', 'Temporary password'],
                 $rows
             );
-            $this->command->warn('Store these passwords securely.');
+            $this->command->warn('Store these passwords securely — they will not be shown again.');
             $this->command->newLine();
         }
     }

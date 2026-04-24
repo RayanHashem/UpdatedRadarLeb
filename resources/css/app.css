@@ -1,10 +1,16 @@
 @import './bootstrap.css';
-@font-face {
-    font-family: 'GE Flow';
-    src: url('../fonts/GEFlow/GE-Flow-Regular.otf') format('opentype');
-    font-weight: normal;
-    font-style: normal;
-}
+/*
+ * NOTE: the 'GE Flow' @font-face rule used to live here pointing at
+ * `../fonts/GEFlow/GE-Flow-Regular.otf`, but that file was never
+ * committed to the repo. Keeping the rule caused `npm run build` to log a
+ * resolve warning on every build and made the browser fetch a 404 for
+ * the font on every page load. Every place that asks for 'GE Flow'
+ * already has a `sans-serif` fallback in its font stack, so dropping the
+ * @font-face skips the wasted 404 without changing the rendered output
+ * (the font was never actually loading). Restore here (and at the
+ * duplicate block further down in this file) if the .otf file is ever
+ * added back under `resources/fonts/GEFlow/`.
+ */
 :root {
     --bs-body-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --bs-heading-color: #FFFFFF;
@@ -212,7 +218,16 @@ background-color: rgba(255,255,255,0.3);
     cursor: pointer;
     margin: 0;
     padding: 0;
-    touch-action: manipulation; /* Avoid 300ms delay and scroll-stealing on mobile */
+    /* Kill mobile tap delay, iOS grey flash and accidental text selection so
+       every prize press feels instant even on low-end Android. */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.prize-selector .prize-item:active {
+    transform: scale(0.97);
 }
 
 .prize-selector .selectable {
@@ -348,6 +363,42 @@ background-color: rgba(255,255,255,0.3);
     padding: 10px;
     box-sizing: content-box;
     -webkit-tap-highlight-color: transparent;
+    pointer-events: none; /* tap lands on parent .menu-item-btn, not the raster image */
+    display: block;
+}
+
+/*
+ * .menu-item-btn wraps each top-bar icon so the actual hit target is a real
+ * <button> with a guaranteed ≥44x44 tap area on mobile (WCAG 2.5.5). Using an
+ * <img @click> alone made finger jitter register as a drag/pan, which on
+ * low-end Android phones was literally the "the button takes a while to
+ * register" symptom in the bug report.
+ */
+.menu-item-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    min-width: 44px;
+    min-height: 44px;
+    box-sizing: border-box;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.1s ease;
+}
+.menu-item-btn:active {
+    transform: scale(0.92);
+}
+.menu-item-btn:focus-visible {
+    outline: 2px solid rgba(102, 175, 219, 0.8);
+    outline-offset: 2px;
+    border-radius: 8px;
 }
 
 .btn-custom {
@@ -362,7 +413,22 @@ background-color: rgba(255,255,255,0.3);
     min-width: 150px;
     margin: 5px;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-    white-space: nowrap; /* Prevent text from wrapping to multiple lines */
+    white-space: nowrap;
+    /* Kill the 300ms mobile tap delay and iOS grey flash so Scan feels instant. */
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+}
+
+.btn-custom:active {
+    transform: scale(0.98);
+}
+
+.btn-custom:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
 }
 
 .btn-custom:hover {
@@ -394,8 +460,17 @@ background-color: rgba(255,255,255,0.3);
                 0 0 30px 15px rgba(6, 172, 6, 0.2); /* Even softer outer glow */
 }
 
+/*
+ * Split .btn-custom transitions so tactile feedback is INSTANT while the
+ * slower visual states (color swap from blue→red during scan, box shadow)
+ * still animate smoothly. Prior code used `transition: all 0.3s ease` on
+ * the second .btn-custom block below, which meant :active { transform:
+ * scale(0.98) } also animated over 300ms — longer than a tap lasts, so the
+ * user saw no press feedback and the button felt sluggish even though the
+ * click handler fires immediately.
+ */
 .btn-custom {
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 80ms ease-out, filter 0.15s ease;
 }
 
 .icon-box-2.red {
@@ -483,6 +558,16 @@ background-color: rgba(255,255,255,0.3);
         width: 22px;
         height: 22px;
     }
+    /*
+     * Hit area is controlled by min-width/height only — padding would add to
+     * the total box width (box-sizing: border-box, but Bootstrap resets can
+     * leak on edge cases) and push the bar past the viewport on 375–414 width.
+     */
+    .menu-item-btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+    }
     .bar-container {
         width: 40px;
     }
@@ -510,7 +595,18 @@ background-color: rgba(255,255,255,0.3);
     .menu-item {
         width: 20px;
         height: 20px;
-        padding: 8px;
+        padding: 0;
+    }
+    .menu-item-btn {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+    }
+    .bar-right {
+        gap: 4px;
+    }
+    .bar {
+        padding: 8px 10px;
     }
     .bar-container {
         width: 30px;
@@ -533,12 +629,7 @@ background-color: rgba(255,255,255,0.3);
 }
 
 
-@font-face {
-    font-family: 'GE Flow';
-    src: url('../fonts/GEFlow/GE-Flow-Regular.otf') format('opentype');
-    font-weight: normal;
-    font-style: normal;
-}
+/* Duplicate 'GE Flow' @font-face removed (see note at top of file). */
 :root {
     --bs-body-font-family: "SF Pro Text", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --bs-heading-color: #FFFFFF;
@@ -578,6 +669,24 @@ section {
     display: flex; flex-direction: column; align-items: center;
     color: white; overflow-y: auto;
     padding: 20px;
+    /* Momentum scroll on iOS so long help text / winner list scroll naturally. */
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+}
+
+/*
+ * Every overlay now ends with a guaranteed Back button (Winners + Settings main
+ * page previously had none). Using a class instead of inline styles so the
+ * mobile media queries can shrink and ensure 44x44 tap area. margin-top auto
+ * pins it to the bottom of a flex column when content is short.
+ */
+.overlay-back-btn {
+    margin-top: 1.5rem;
+    width: 100%;
+    max-width: 280px;
+    min-height: 44px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
 }
 .overlay-title {
     font-weight: bold; text-transform: uppercase; margin-bottom: 2rem;
@@ -684,6 +793,77 @@ section {
     .help-container { font-size: 0.9rem; }
 }
 
+/*
+ * Mobile-only layout tightening for the dashboard radar-row and button-row.
+ * On phones the prize-selection column was overflowing its parent and the
+ * last prize's label (SUPER CAR) was bleeding past the button-row. We
+ * compress the 5 prize items by reducing the inter-item gap and shrinking
+ * the icon/text so all 5 fit inside the radar-row's vertical budget.
+ */
+@media (max-width: 767px) {
+    /*
+     * Fit all 5 prize tiles inside the radar-row on phones without clipping.
+     * Each .prize-item is flex: 1 1 0 so the 5 items equally share the
+     * available vertical height of the column. No overflow is needed and no
+     * tile is ever hidden. Images and text stay centered within each slot.
+     */
+    #image-selector.prize-selector {
+        gap: 0;
+        justify-content: stretch;
+        padding-top: 2px;
+        padding-bottom: 2px;
+        height: 100%;
+        min-height: 0;
+    }
+    .prize-selector .prize-item {
+        flex: 1 1 0;
+        min-height: 0;
+        justify-content: center;
+    }
+    .prize-selection-col {
+        min-height: 0;
+        padding: 0 4px !important;
+    }
+    .prize-selector .selectable {
+        width: clamp(22px, 7vw, 34px);
+    }
+    .prize-selector .prize-label {
+        font-size: clamp(8px, 2.2vw, 11px);
+        line-height: 1.05;
+        margin-top: 2px;
+    }
+    .prize-selector .prize-price {
+        font-size: clamp(7px, 2vw, 10px);
+        line-height: 1;
+        margin-top: 0;
+    }
+    /*
+     * The .wallet-balance-display is absolutely positioned over the cash image.
+     * On narrow screens "RADAR CASH 299.75" is wider than the col-3 container
+     * so the text clips off the left edge. Let it flow naturally below the
+     * image on phones instead, so nothing is ever cut off.
+     */
+    .wallet-balance-display {
+        position: static;
+        transform: none;
+        left: auto;
+        bottom: auto;
+        margin-top: 2px;
+        font-size: 0.65em;
+        display: block;
+        text-align: center;
+        white-space: nowrap;
+    }
+    .cash-balance-container {
+        overflow: visible;
+        min-width: 0;
+    }
+    .location-container {
+        min-width: 0;
+        overflow: visible;
+    }
+}
+
 /* 360px (narrow phones): prevent overflow, readable forms and overlays */
 @media (max-width: 360px) {
     .overlay-content {
@@ -700,9 +880,55 @@ section {
     .winner-prize { font-size: 0.65rem; }
     .help-container { font-size: 0.85rem; padding: 0 4px; }
     .bar { padding: 8px 10px; }
-    .bar-right { gap: 8px; }
-    .menu-item { width: 18px; height: 18px; padding: 8px; }
-    .logo-nav { max-width: 85px; }
+    .bar-right { gap: 4px; }
+    .menu-item { width: 18px; height: 18px; padding: 0; }
+    .menu-item-btn { min-width: 40px; min-height: 40px; padding: 8px; }
+    .logo-nav { max-width: 80px; }
+    .btn-logout { width: 20px; height: 20px; padding: 8px; }
+    /* Shrink the bottom row so the radar-cash + Scan + my-location all fit side-by-side on 320–360px. */
+    .button-row { padding: 8px 6px; gap: 4px; }
+    .button-row img.location-button-img,
+    .cash-balance-container > img { max-width: 52px !important; }
+    .btn-custom { padding: 10px 8px !important; font-size: 14px !important; }
+    .location-label { font-size: 9px; margin-top: 4px; }
+    .wallet-balance-display { font-size: 0.7em; }
+    /* Keep the 6 antenna icons on a single line on very narrow screens. */
+    .antenna-container { gap: 4px; margin-bottom: 10px; flex-wrap: nowrap; }
+    .antenna-icon { width: 28px; }
+}
+
+/* Very narrow devices (iPhone SE 1st gen = 320px) */
+@media (max-width: 320px) {
+    .menu-item-btn { min-width: 36px; min-height: 36px; padding: 6px; }
+    .menu-item { width: 16px; height: 16px; }
+    .bar-right { gap: 2px; }
+    .logo-nav { max-width: 70px; }
+    .antenna-icon { width: 24px; }
+}
+
+/* Make sure the top-bar logout button is at least 44x44 tap area on mobile. */
+@media (max-width: 767px) {
+    .btn-logout {
+        min-width: 44px;
+        min-height: 44px;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    /* Floor the Scan button and prize items at 44x44 real tap area. */
+    .btn-custom { min-height: 44px; }
+    .prize-selector .prize-item { min-height: 44px; }
+    /* Location button on all phones. */
+    .location-button { min-width: 44px; min-height: 44px; }
+
+    /*
+     * On phones the original `flex: 1` on .bar-left and .bar-right forced them
+     * to the same width, which pushed the right-side menu icons off-screen
+     * whenever the icons together were wider than the logo space. Let each
+     * side size to its content and give .bar-center the remaining stretch.
+     */
+    .bar-left   { flex: 0 0 auto; min-width: 0; }
+    .bar-center { flex: 1 1 0;   min-width: 0; display: flex; justify-content: center; }
+    .bar-right  { flex: 0 0 auto; min-width: 0; }
 }
 
 /* Other existing styles from your app.css file should remain below */
@@ -914,7 +1140,14 @@ section {
     padding: 12px 25px; /* Padding */
     font-size: 1.1em;
     box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.42), 0 6px 20px 0 rgba(0, 0, 0, 0.84); /* Shadow */
-    transition: all 0.3s ease; /* Smooth transitions */
+    /*
+     * IMPORTANT: was `transition: all 0.3s ease` which made :active's
+     * scale(0.98) transform take 300ms — longer than a mobile tap lasts —
+     * so the Scan button visibly lagged under touch. Transform now snaps
+     * in 80ms for instant tactile feedback; color/shadow keep their 300ms
+     * ease for the blue→red scan state change so nothing looks choppy.
+     */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease, transform 80ms ease-out;
     border: none; /* No default border */
     flex: 1; /* Allow buttons to grow and shrink in flex container */
     min-width: 120px; /* Minimum width for buttons */

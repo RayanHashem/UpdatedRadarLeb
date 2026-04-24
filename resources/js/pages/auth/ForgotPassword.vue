@@ -44,6 +44,9 @@ const submit = () => {
                         v-model="form.email"
                     />
                     <InputError :message="form.errors.email" variant="material" />
+                    <p class="small text-white-50 text-center mb-0 px-2" style="opacity: 0.85;">
+                        Use the email address you signed up with (sign-in uses your phone number).
+                    </p>
 
                     <!-- Submit Button -->
                     <div class="d-flex justify-content-center align-items-center gap-3 mt-4 w-100">

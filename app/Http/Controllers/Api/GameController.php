@@ -23,17 +23,33 @@ class GameController extends Controller
         ]);
     }
 
-    /** POST /scan/{game} - guarded: disabled games return 403 */
+    /**
+     * POST /scan/{game}
+     * Always includes the authoritative wallet balance in every response
+     * (success or failure) so the UI can update Radar Cash on any outcome
+     * without requiring a page reload.
+     */
     public function scan(Game $game)
     {
+        $user = auth()->user();
+
         if (! $game->is_enabled) {
-            return response()->json(['message' => 'Prize is disabled'], 403);
+            return response()->json([
+                'message' => 'Prize is disabled',
+                'wallet'  => (float) $user->wallet_balance,
+            ], 403);
         }
 
-        return response()->json(
-            $game->attemptScan(auth()->user()),
-            200
-        );
+        try {
+            return response()->json($game->attemptScan($user), 200);
+        } catch (\Symfony\Component\HttpKernel\Exception\HttpException $e) {
+            $user->refresh();
+
+            return response()->json([
+                'message' => $e->getMessage() ?: 'Scan failed',
+                'wallet'  => (float) $user->wallet_balance,
+            ], $e->getStatusCode());
+        }
     }
 
     /**
