@@ -131,27 +131,79 @@ section {
     pointer-events: auto;
 }
 
-/* Bottom Bar - ensure taps reach Scan and My Location buttons */
-.button-row {
-    flex-shrink: 0;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    position: relative;
-    z-index: 2;
+/* Bottom controls: anchored, centered cluster; reserve space so flex layout does not swallow the row */
+#game .game-content-wrapper {
+    padding-bottom: clamp(92px, 21vh, 148px);
+    box-sizing: border-box;
 }
-.button-row > div {
+
+#game .button-row {
+    position: absolute;
+    left: 50%;
+    bottom: clamp(18px, 4vh, 42px);
+    transform: translateX(-50%);
+    width: min(92vw, 760px);
+
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: end;
+    column-gap: clamp(14px, 4vw, 42px);
+    box-sizing: border-box;
+    z-index: 5;
+    pointer-events: none;
+}
+
+#game .button-row .button-row__side,
+#game .button-row .button-row__center {
+    pointer-events: auto;
+}
+
+#game .button-row .button-row__side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    min-width: 0;
+}
+#game .button-row .button-row__side--lead {
+    justify-self: end;
+}
+#game .button-row .button-row__side--end {
+    justify-self: start;
+}
+#game .button-row .button-row__center {
+    justify-self: center;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-end;
+    min-width: 0;
 }
 
-.button-row .col-3:first-child {
-    justify-content: flex-start;
+#game .button-row .wallet-balance-display {
+    position: static;
+    transform: none;
+    left: auto;
+    bottom: auto;
+    display: block;
+    white-space: nowrap;
 }
 
+#game .button-row .wallet-balance-display,
+#game .button-row .location-label {
+    text-align: center;
+    width: max-content;
+    max-width: 120px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 6px;
+}
+
+@media (min-width: 900px) {
+    #game .button-row {
+        width: min(58vw, 900px);
+        bottom: clamp(18px, 3vh, 36px);
+    }
+}
 
 /* Content inside columns */
 .bar-container {
@@ -179,12 +231,27 @@ background-color: rgba(255,255,255,0.3);
     align-items: center;
     width: 100%;
     height: 100%;
+    position: relative;
+    overflow: hidden;
 }
 
-#myVideo2 {
+/* Center radar: idle PNG + in-scan webm; same box constraints, no overflow */
+.radar .radar-center-asset {
+    position: relative;
+    z-index: 1;
+    flex: 0 1 auto;
+    min-width: 0;
+    min-height: 0;
     max-width: 100%;
     max-height: 100%;
+    width: auto;
+    height: auto;
     object-fit: contain;
+}
+#radarIdleEllipse {
+    display: block;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 #image-selector {
@@ -365,6 +432,11 @@ background-color: rgba(255,255,255,0.3);
     -webkit-tap-highlight-color: transparent;
     pointer-events: none; /* tap lands on parent .menu-item-btn, not the raster image */
     display: block;
+}
+
+/* Logout: match muted grey of PNG menu icons (winners / help / settings) */
+.menu-item.logout-icon-stroke {
+    color: #9ca3af;
 }
 
 /*
@@ -884,9 +956,15 @@ section {
     .menu-item { width: 18px; height: 18px; padding: 0; }
     .menu-item-btn { min-width: 40px; min-height: 40px; padding: 8px; }
     .logo-nav { max-width: 80px; }
-    .btn-logout { width: 20px; height: 20px; padding: 8px; }
     /* Shrink the bottom row so the radar-cash + Scan + my-location all fit side-by-side on 320–360px. */
-    .button-row { padding: 8px 6px; gap: 4px; }
+    #game .button-row {
+        column-gap: clamp(8px, 3.5vw, 24px);
+        width: min(94vw, 760px);
+    }
+    #game .button-row .wallet-balance-display,
+    #game .button-row .location-label {
+        margin-top: 4px;
+    }
     .button-row img.location-button-img,
     .cash-balance-container > img { max-width: 52px !important; }
     .btn-custom { padding: 10px 8px !important; font-size: 14px !important; }
@@ -906,14 +984,8 @@ section {
     .antenna-icon { width: 24px; }
 }
 
-/* Make sure the top-bar logout button is at least 44x44 tap area on mobile. */
+/* Make sure the top-bar icon buttons (including logout) are at least 44x44 tap area on mobile. */
 @media (max-width: 767px) {
-    .btn-logout {
-        min-width: 44px;
-        min-height: 44px;
-        padding: 0;
-        box-sizing: border-box;
-    }
     /* Floor the Scan button and prize items at 44x44 real tap area. */
     .btn-custom { min-height: 44px; }
     .prize-selector .prize-item { min-height: 44px; }
@@ -938,8 +1010,7 @@ section {
 .bar-right { display: flex; justify-content: flex-end; gap: 15px; }
 .radar-row { flex-grow: 1; min-height: 0; display: flex; align-items: stretch; justify-content: space-between; padding: 1rem 0; width: 100%; }
 .antenna-detection-col, .prize-selection-col, .radar-col { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 10px; }
-.button-row { flex-shrink: 0; padding: 10px; display: flex; align-items: center; justify-content: space-between; width: 100%; }
-/* ... etc */
+/* .button-row layout is defined under #game .button-row above */
 
 
 

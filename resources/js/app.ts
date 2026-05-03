@@ -71,3 +71,15 @@ createInertiaApp({
 
 // This will set light / dark mode on page load...
 initializeTheme();
+
+// Fallback if the server returns 419 HTML for an Inertia request (stale CSRF) instead of 409 + X-Inertia-Location
+document.addEventListener(
+    'inertia:invalid',
+    (event: Event) => {
+        const e = event as CustomEvent<{ response?: { status?: number } }>;
+        if (e.detail?.response?.status === 419) {
+            window.location.reload();
+        }
+    },
+    { capture: true },
+);

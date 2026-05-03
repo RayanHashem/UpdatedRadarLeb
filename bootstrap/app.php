@@ -7,6 +7,8 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Session\TokenMismatchException;
+use Inertia\Inertia;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -28,6 +30,19 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        /*
+         * CSRF 419: Inertia would otherwise show the HTML error in a modal. Force a
+         * client-side full location visit with a fresh session + XSRF-TOKEN cookie
+         * (see https://inertiajs.com/csrf-protection).
+         */
+        $exceptions->renderable(function (TokenMismatchException $e, Request $request) {
+            if ($request->header('X-Inertia')) {
+                return Inertia::location($request->fullUrl());
+            }
+
+            return null;
+        });
+
         $exceptions->respond(function (mixed $response, \Throwable $e, Request $request) {
             if ($e instanceof HttpException && $e->getStatusCode() === 403 && str_starts_with($request->path(), 'admin')) {
                 auth('admin')->logout();

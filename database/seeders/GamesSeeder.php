@@ -13,13 +13,13 @@ class GamesSeeder extends Seeder
      */
     public function run(): void
     {
-        // Algorithm: base +10% = target_amount; price_to_play and minimum_deposit per prize
+        // target_amount = retail + 10% (marketing). price_to_play = Radar Cash units per scan (not $/radar × radars).
         $games = [
             [
                 'name' => 'Mobile',
                 'price' => 1650.00,
                 'target_amount' => 1650.00,   // base 1500 +10%
-                'price_to_play' => 0.25,
+                'price_to_play' => 1.00,      // 1 scan = 1 radar
                 'minimum_deposit' => 10.00,
                 'minimum_amount_for_winning' => 1650,
             ],
@@ -27,7 +27,7 @@ class GamesSeeder extends Seeder
                 'name' => 'Bike & Electronics',
                 'price' => 16500.00,
                 'target_amount' => 16500.00,  // base 15000 +10%
-                'price_to_play' => 4.00,
+                'price_to_play' => 4.00,      // 1 scan = 4 radars
                 'minimum_deposit' => 25.00,
                 'minimum_amount_for_winning' => 16500,
             ],
@@ -35,7 +35,7 @@ class GamesSeeder extends Seeder
                 'name' => 'SUV',
                 'price' => 55000.00,
                 'target_amount' => 55000.00,  // base 50000 +10%
-                'price_to_play' => 16.00,
+                'price_to_play' => 8.00,      // 1 scan = 8 radars
                 'minimum_deposit' => 30.00,
                 'minimum_amount_for_winning' => 55000,
             ],
@@ -43,7 +43,7 @@ class GamesSeeder extends Seeder
                 'name' => 'Muscle Car',
                 'price' => 165000.00,
                 'target_amount' => 165000.00, // base 150000 +10%
-                'price_to_play' => 144.00,
+                'price_to_play' => 24.00,     // 1 scan = 24 radars
                 'minimum_deposit' => 40.00,
                 'minimum_amount_for_winning' => 165000,
             ],
@@ -51,7 +51,7 @@ class GamesSeeder extends Seeder
                 'name' => 'Super Cash Prize',
                 'price' => 220000.00,
                 'target_amount' => 220000.00, // base 200000 +10%
-                'price_to_play' => 256.00,
+                'price_to_play' => 32.00,     // 1 scan = 32 radars
                 'minimum_deposit' => 50.00,
                 'minimum_amount_for_winning' => 220000,
             ],

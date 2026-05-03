@@ -1,27 +1,28 @@
 /**
  * Single source of truth for prize rules (UI side).
  *
- * Matches the server-side `games` table (see database/seeders/GamesSeeder.php):
+ * RD:Leb — retail + 10% is target/pool messaging. Wallet holds Radar Cash (same units as `games.price_to_play`):
  *
- *   Mobile              min deposit 10$   1 radar = 0.25$    1 scan = 1 radar    → 0.25$ / scan
- *   Bike & Electronics  min deposit 25$   1 radar = 1$       1 scan = 4 radars   → 4$ / scan
- *   SUV                 min deposit 30$   1 radar = 2$       1 scan = 8 radars   → 16$ / scan
- *   Muscle Car          min deposit 40$   1 radar = 6$       1 scan = 24 radars  → 144$ / scan
- *   Super Cash Prize    min deposit 50$   1 radar = 8$       1 scan = 32 radars  → 256$ / scan
+ *   Mobile              min deposit 10$    implied 1 radar = 0.25$   1 scan = 1 radar
+ *   Bike & Electronics  min deposit 25$    1 radar = 1$              1 scan = 4 radars
+ *   SUV                 min deposit 30$    1 radar = 2$              1 scan = 8 radars
+ *   Muscle Car          min deposit 40$    1 radar = 6$              1 scan = 24 radars
+ *   Super Cash Prize    min deposit 50$    1 radar = 8$              1 scan = 32 radars
+ *
+ * Per scan, Radar Cash debited = scanCostRadars (not radars × $/radar). Must match `Game::price_to_play`.
  *
  * Field meanings:
- *  - minDepositDollars: gate for SELECTING the prize button.
- *  - scanCostDollars:   exact $ cost deducted from wallet per scan (Game::price_to_play).
- *  - minRadar:          legacy alias kept to avoid breaking callers; equals minDepositDollars.
- *  - scanCostRadars:    radars per scan (purely informational for the UI).
- *  - messageDisplayName: exact label used in the "Minimum deposit is X$ to play for Y." popup.
+ *  - minDepositDollars: minimum wallet (Radar Cash) to SELECT that prize; aligns with `minimum_deposit` on the game.
+ *  - scanCostRadars:   Radar Cash cost per scan (must match `price_to_play` on the server).
+ *  - minRadar:         legacy alias; equals minDepositDollars.
+ *  - messageDisplayName: label in modals.
  */
 export const PRIZE_RULES = {
-    'Mobile':             { minDepositDollars: 10, scanCostDollars: 0.25, scanCostRadars: 1,  minRadar: 10, displayName: 'Mobile',            messageDisplayName: 'Mobile' },
-    'Bike & Electronics': { minDepositDollars: 25, scanCostDollars: 4,    scanCostRadars: 4,  minRadar: 25, displayName: 'Bike & Electronics', messageDisplayName: 'Bike / Electronics' },
-    'SUV':                { minDepositDollars: 30, scanCostDollars: 16,   scanCostRadars: 8,  minRadar: 30, displayName: 'SUV',               messageDisplayName: 'SUV' },
-    'Muscle Car':         { minDepositDollars: 40, scanCostDollars: 144,  scanCostRadars: 24, minRadar: 40, displayName: 'Muscle Car',        messageDisplayName: 'Muscle Car' },
-    'Super Cash Prize':   { minDepositDollars: 50, scanCostDollars: 256,  scanCostRadars: 32, minRadar: 50, displayName: 'Super Car',         messageDisplayName: 'Super Car / Cash Prize' },
+    'Mobile':             { minDepositDollars: 10, scanCostRadars: 1,  minRadar: 10, displayName: 'Mobile',            messageDisplayName: 'Mobile' },
+    'Bike & Electronics': { minDepositDollars: 25, scanCostRadars: 4,  minRadar: 25, displayName: 'Bike & Electronics', messageDisplayName: 'Bike / Electronics' },
+    'SUV':                { minDepositDollars: 30, scanCostRadars: 8,  minRadar: 30, displayName: 'SUV',               messageDisplayName: 'SUV' },
+    'Muscle Car':         { minDepositDollars: 40, scanCostRadars: 24, minRadar: 40, displayName: 'Muscle Car',        messageDisplayName: 'Muscle Car' },
+    'Super Cash Prize':   { minDepositDollars: 50, scanCostRadars: 32, minRadar: 50, displayName: 'Super Car',         messageDisplayName: 'Super Car / Cash Prize' },
 };
 
 /** Slot order matches Dashboard PRIZE_DISPLAY_CONFIG: 0=Mobile, 1=Bike/Electronics, 2=SUV, 3=Muscle Car, 4=Super. */
@@ -35,7 +36,7 @@ export const PRIZE_SLOT_RULES = [
 
 /**
  * @param {string} gameName - game.name from API (e.g. "Mobile", "Super Cash Prize")
- * @returns {{ minDepositDollars: number, scanCostDollars: number, scanCostRadars: number, minRadar: number, displayName: string, messageDisplayName: string }|null}
+ * @returns {{ minDepositDollars: number, scanCostRadars: number, minRadar: number, displayName: string, messageDisplayName: string }|null}
  */
 export function getPrizeRules(gameName) {
     if (!gameName) return null;
@@ -46,23 +47,23 @@ export function getPrizeRules(gameName) {
 }
 
 /**
- * Returns the "Minimum deposit is X$ to play for Y." message for a game (by name).
+ * User-facing copy when wallet is below the tier (matches each prize’s minimum_deposit in $).
  * @param {string} gameName - game.name from API
  * @returns {string|null}
  */
 export function getMinDepositMessage(gameName) {
     const rules = getPrizeRules(gameName);
     if (!rules) return null;
-    return `Minimum deposit is ${rules.minDepositDollars}$ to play for ${rules.messageDisplayName}.`;
+    return `You need a ${rules.minDepositDollars}$ minimum deposit to play for this prize.`;
 }
 
 /**
- * Returns the same message by slot index (0-4). Use when prize from API is missing for that slot.
- * @param {number} slotIndex - 0=Mobile, 1=Bike/Electronics, 2=SUV, 3=Muscle Car, 4=Super
+ * Same copy by slot index (0-4) when the API has no game for that slot.
+ * @param {number} slotIndex
  * @returns {string}
  */
 export function getMinDepositMessageBySlot(slotIndex) {
     const slot = PRIZE_SLOT_RULES[slotIndex];
-    if (!slot) return 'Minimum deposit required to play for this prize.';
-    return `Minimum deposit is ${slot.minDepositDollars}$ to play for ${slot.messageDisplayName}.`;
+    if (!slot) return 'You need a minimum deposit to play for this prize.';
+    return `You need a ${slot.minDepositDollars}$ minimum deposit to play for this prize.`;
 }

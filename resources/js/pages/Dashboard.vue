@@ -246,8 +246,8 @@
                         <button type="button" class="menu-item-btn" aria-label="Settings" @click="openOverlay('settings')">
                             <img src="/assets/imgs/settings-button.png" class="menu-item" alt="" />
                         </button>
-                        <button class="btn-logout" @click="handleLogout" title="Logout" aria-label="Logout">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <button type="button" class="menu-item-btn" @click="handleLogout" title="Logout" aria-label="Logout">
+                            <svg class="menu-item logout-icon-stroke" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                                 <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
                                 <polyline points="16 17 21 12 16 7"></polyline>
                                 <line x1="21" y1="12" x2="9" y2="12"></line>
@@ -270,16 +270,21 @@
                     <div class="col-6 radar-col" style="padding:0px;">
                         <div class="radar">
                             <!--
-                              The radar.webm is only meaningful while a scan is in
-                              progress. We keep the element mounted (so the 77MB
-                              source is cached / warmed after the first scan) but
-                              toggle visibility with v-show tied to `scanning`, and
-                              drive play/pause explicitly from startScan(). The
-                              element no longer uses `autoplay` because it raced
-                              with the manual play() call and caused the video to
-                              stop on a black first-frame ~1s into the scan.
+                              Idle: ellipse.png in the center; on Scan it hides and
+                              radar.webm shows. Video stays mounted for cache; v-show
+                              + explicit play/pause from startScan() (no autoplay race).
                             -->
-                            <video v-show="scanning" muted loop playsinline id="myVideo2" ref="radarVideo" preload="auto">
+                            <img
+                                v-show="!scanning"
+                                id="radarIdleEllipse"
+                                src="/assets/imgs/ellipse.png"
+                                alt=""
+                                class="radar-center-asset"
+                                width="800"
+                                height="800"
+                                decoding="async"
+                            />
+                            <video v-show="scanning" muted loop playsinline id="myVideo2" ref="radarVideo" class="radar-center-asset" preload="auto">
                                 <source v-if="videoSrcsReady" src="/assets/imgs/radar.webm" type="video/webm" />
                                 Your browser does not support HTML5 video.
                             </video>
@@ -331,19 +336,13 @@
 
 
                 <div class="button-row">
-                     <div class="col-3 cash-balance-container"> <img style="width:clamp(60px, 20vw, 100px); height:auto" src="/assets/imgs/radar-cash.png">
-            <span class="wallet-balance-display">RADAR CASH {{ walletBalance }}</span> </div>
-                    <div class="col-6">
-
-
-
-
-
+                     <div class="cash-balance-container button-row__side button-row__side--lead"><img style="width:clamp(60px, 20vw, 100px); height:auto" src="/assets/imgs/radar-cash.png"><span class="wallet-balance-display">RADAR CASH {{ walletBalance }}</span></div>
+                    <div class="button-row__center">
                         <button id="scan" class="btn btn-custom" :disabled="!canScan" :style="buttonStyle" @click="startScan">
                             {{ buttonText }}
                         </button>
                     </div>
-                    <div class="col-3 location-container">
+                    <div class="location-container button-row__side button-row__side--end">
                         <!--
                           Previously had @touchstart.prevent AND @click.prevent. On iOS the
                           touchstart handler could fire before the synthetic click arrived
@@ -376,7 +375,7 @@
         :primary-label="gameModalPrimaryLabel"
         :primary-route="gameModalPrimaryRoute"
         :primary-action="gameModalPrimaryAction"
-        secondary-label="Close"
+        :secondary-label="gameModalSecondaryLabel"
         @close="gameModalShow = false"
         @primary="onModalPrimary"
     />
@@ -438,6 +437,7 @@ const gameModalSubtext = ref('');
 const gameModalPrimaryLabel = ref('');
 const gameModalPrimaryRoute = ref('');
 const gameModalPrimaryAction = ref('');
+const gameModalSecondaryLabel = ref('Close');
 const loading = ref(true);
 
 const radarOnline = ref(true);
@@ -524,6 +524,7 @@ function showGameModal(config) {
     gameModalPrimaryLabel.value = config.primaryLabel ?? '';
     gameModalPrimaryRoute.value = config.primaryRoute ?? '';
     gameModalPrimaryAction.value = config.primaryAction ?? '';
+    gameModalSecondaryLabel.value = config.secondaryLabel ?? 'Close';
     gameModalShow.value = true;
 }
 
@@ -532,22 +533,16 @@ function showGameModal(config) {
  *
  * A new user lands on the dashboard with $0 wallet and no prize selected.
  * The first things they'll tap are (a) a prize tile → this modal, or
- * (b) the Scan button → "Select a prize first" / "Not enough Radar Cash"
- * modals in startScan(). ALL three flows must surface the SAME
- * "How to play" call-to-action so the user has exactly one obvious next
- * step — opening the Help overlay, which documents how to deposit money
- * and actually play. Using inconsistent labels ("Deposit" here vs.
- * "How to play" elsewhere) fragments that mental model, so we keep the
- * label identical everywhere. Both labels trigger the same `openHelp`
- * action, so the change is purely cosmetic/UX.
+ * (b) the Scan button → "Select a prize first" or minimum-deposit modals
+ * in startScan(). Help opens the same top-bar overlay as the menu.
  */
-function showMinDepositModal(message, secondaryLabel = 'Cancel') {
+function showMinDepositModal(message) {
     showGameModal({
         title: 'Minimum deposit required',
         message,
         primaryLabel: 'How to play',
         primaryAction: 'openHelp',
-        secondaryLabel,
+        secondaryLabel: 'OK',
     });
 }
 
@@ -581,7 +576,7 @@ function onPrizeSlotClick(index) {
     const prize = orderedPrizes.value[index];
     if (!prize) {
         setTimeout(playClickSound, 0);
-        showMinDepositModal(getMinDepositMessageBySlot(index), 'Cancel');
+        showMinDepositModal(getMinDepositMessageBySlot(index));
         return;
     }
     selectPrize(prize.id);
@@ -623,8 +618,8 @@ function selectPrize(id) {
     const minDepositDollars = rules?.minDepositDollars ?? 0;
 
     if (balance < minDepositDollars) {
-        const message = getMinDepositMessage(prize.name) || `Minimum deposit is ${minDepositDollars}$ to play for this prize.`;
-        showMinDepositModal(message, 'Cancel');
+        const message = getMinDepositMessage(prize.name) || `You need a ${minDepositDollars}$ minimum deposit to play for this prize.`;
+        showMinDepositModal(message);
         return;
     }
 
@@ -748,23 +743,22 @@ async function startScan() {
             message: 'You need to select a prize first and add Radar Cash before you can scan.',
             primaryLabel: 'How to play',
             primaryAction: 'openHelp',
+            secondaryLabel: 'OK',
         });
         return;
     }
 
     /*
-     * Mirror the server-side check in Game::attemptScan which deducts
-     * `price_to_play` per scan. Blocking here avoids firing the scan audio /
-     * animation and then failing with a 402 from the API.
+     * Wallet vs scan cost: Game::attemptScan debits `price_to_play` (radar
+     * units). Do not show radar numbers to the user; use the same minimum
+     * deposit copy as prize selection.
      */
-    const scanCost = rules ? rules.scanCostDollars : 0;
-    if (balance < scanCost) {
-        showGameModal({
-            title: 'Not enough Radar Cash',
-            message: `You need at least ${scanCost}$ to scan for ${rules?.messageDisplayName ?? 'this prize'}. Add more Radar Cash and try again.`,
-            primaryLabel: 'How to play',
-            primaryAction: 'openHelp',
-        });
+    const scanCost = rules ? rules.scanCostRadars : 0;
+    if (rules && balance < scanCost) {
+        const message =
+            getMinDepositMessage(prize.name)
+            || `You need a ${rules.minDepositDollars}$ minimum deposit to play for this prize.`;
+        showMinDepositModal(message);
         return;
     }
 
@@ -847,13 +841,10 @@ async function startScan() {
             scanning.value = false;
             detectionStatus.value = 'idle';
             pauseRadarVideo();
-            const costMsg = rules ? `${rules.scanCostDollars}$ per scan for ${rules.messageDisplayName}` : 'enough Radar Cash';
-            showGameModal({
-                title: 'Not enough Radar Cash',
-                message: `You need at least ${costMsg}. Add more Radar Cash and try again.`,
-                primaryLabel: 'How to play',
-                primaryAction: 'openHelp',
-            });
+            const message =
+                getMinDepositMessage(prize?.name)
+                || (rules ? `You need a ${rules.minDepositDollars}$ minimum deposit to play for this prize.` : 'You need a minimum deposit to play for this prize.');
+            showMinDepositModal(message);
             return;
         }
 
@@ -1486,30 +1477,6 @@ watch(selectedGameId, updatePrizeSelectionUI);
     .loader-progress {
         stroke-width: 5;
     }
-}
-
-.btn-logout {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: opacity 0.2s ease;
-    width: 25px;
-    height: 25px;
-    box-sizing: content-box;
-    -webkit-tap-highlight-color: transparent;
-}
-
-.btn-logout:hover {
-    opacity: 0.7;
-}
-
-.btn-logout svg {
-    width: 100%;
-    height: 100%;
 }
 
 .location-container {
