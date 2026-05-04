@@ -12,33 +12,41 @@ use Illuminate\Support\Str;
 class UserFactory extends Factory
 {
     /**
-     * The current password being used by the factory.
+     * Cache one bcrypt-hashed copy of the default password and reuse it across
+     * the whole factory invocation. Hashing is the slowest thing in tests; for
+     * the suite we don't need a unique hash per row.
      */
     protected static ?string $password;
 
-    /**
-     * Define the model's default state.
-     *
-     * @return array<string, mixed>
-     */
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-//            'email' => fake()->unique()->safeEmail(),
-//            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'name'           => fake()->name(),
+            'phone_number'   => fake()->unique()->numerify('7########'),  // Lebanese mobile prefix
+            'email'          => fake()->unique()->safeEmail(),
+            'date_of_birth'  => fake()->dateTimeBetween('-60 years', '-19 years')->format('Y-m-d'),
+            'password'       => static::$password ??= Hash::make('password'),
+            'wallet_balance' => 0,
+            'role'           => null,                                     // null = public app user
             'remember_token' => Str::random(10),
         ];
     }
 
-    /**
-     * Indicate that the model's email address should be unverified.
-     */
+    /** Skip email verification — used by tests asserting verification flow. */
     public function unverified(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
-        ]);
+        return $this->state(fn () => ['email_verified_at' => null]);
+    }
+
+    /** Pre-fund a user's wallet. */
+    public function withBalance(float $amount): static
+    {
+        return $this->state(fn () => ['wallet_balance' => $amount]);
+    }
+
+    /** Promote to a Filament admin role. Defaults to super_admin. */
+    public function admin(string $role = 'super_admin'): static
+    {
+        return $this->state(fn () => ['role' => $role]);
     }
 }
