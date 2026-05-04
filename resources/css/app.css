@@ -1,5 +1,12 @@
 @import './bootstrap.css';
 /*
+ * Design tokens (palette, typography, spacing, radii) extracted from the
+ * Figma file. New code should reach for `var(--rl-color-*)` / Tailwind
+ * `bg-radar-*` utilities instead of hardcoding hex values. Keeping this
+ * import at the top so :root vars are available to every rule below.
+ */
+@import './tokens.css';
+/*
  * NOTE: the 'GE Flow' @font-face rule used to live here pointing at
  * `../fonts/GEFlow/GE-Flow-Regular.otf`, but that file was never
  * committed to the repo. Keeping the rule caused `npm run build` to log a
@@ -76,25 +83,37 @@ section {
 }
 
 /* Top Bar */
+/*
+ * Top bar layout. Three columns:
+ *   .bar-left   — Lebanese-flag logo
+ *   .bar-center — radar status dot (online/offline)
+ *   .bar-right  — Winners / Help / Settings / Logout (icon + label stacked)
+ *
+ * `min-height` keeps the bar visually stable: without it the bar height jumps
+ * by ~12px when the labels render under each button (icon + label + gap is
+ * taller than icon alone). On desktop and tablets the left/right are sized to
+ * content while .bar-center stretches; the mobile media query below repeats
+ * this so we don't depend on cascade order.
+ */
 .bar {
     flex-shrink: 0;
-    padding: 10px 15px;
+    padding: 10px 16px;
+    min-height: 64px;
     background-color: rgba(0, 0, 0, 0.5);
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: 12px;
     width: 100%;
 }
-.bar-left, .bar-right {
-    flex: 1;
-}
-.bar-center {
-    flex-shrink: 0;
-}
+.bar-left   { flex: 0 0 auto; min-width: 0; }
+.bar-center { flex: 1 1 0;   min-width: 0; display: flex; justify-content: center; }
 .bar-right {
+    flex: 0 0 auto;
+    min-width: 0;
     display: flex;
+    align-items: center;
     justify-content: flex-end;
-    gap: 15px;
+    gap: 12px;
 }
 
 /* Middle Row */
@@ -137,17 +156,31 @@ section {
     box-sizing: border-box;
 }
 
+/*
+ * Bottom action row (Figma "Main Page"):
+ *   [ store-tile ]   [ ============ SCAN ============ ]   [ pin-tile ]
+ *
+ * Three columns. The grid is `auto 1fr auto` so the side tiles size to their
+ * intrinsic image width and SCAN claims everything between them. Per Figma
+ * there are no text labels under the side tiles — the icons are the affordance.
+ *
+ * `align-items: center` keeps the three controls vertically centered as a row;
+ * the side tile heights are matched to the SCAN button height (--rl-scan-h) so
+ * the row reads as one consistent control strip.
+ */
 #game .button-row {
+    --rl-scan-h: clamp(48px, 8vw, 64px);
+
     position: absolute;
     left: 50%;
     bottom: clamp(18px, 4vh, 42px);
     transform: translateX(-50%);
-    width: min(92vw, 760px);
+    width: min(94vw, 880px);
 
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
-    align-items: end;
-    column-gap: clamp(14px, 4vw, 42px);
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    column-gap: clamp(10px, 2.5vw, 24px);
     box-sizing: border-box;
     z-index: 5;
     pointer-events: none;
@@ -160,47 +193,44 @@ section {
 
 #game .button-row .button-row__side {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
+    justify-content: center;
     min-width: 0;
-}
-#game .button-row .button-row__side--lead {
-    justify-self: end;
-}
-#game .button-row .button-row__side--end {
-    justify-self: start;
+    height: var(--rl-scan-h);
+    aspect-ratio: 1 / 1;          /* square cyan tiles, per Figma */
 }
 #game .button-row .button-row__center {
-    justify-self: center;
     display: flex;
-    justify-content: center;
-    align-items: flex-end;
+    justify-content: stretch;
+    align-items: center;
     min-width: 0;
 }
 
-#game .button-row .wallet-balance-display {
-    position: static;
-    transform: none;
-    left: auto;
-    bottom: auto;
+/* Side-tile images fill their square slot, keeping the rounded-corner cyan
+   visual that's baked into the asset itself. */
+#game .button-row .cash-balance-img,
+#game .button-row .location-button-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     display: block;
-    white-space: nowrap;
 }
 
-#game .button-row .wallet-balance-display,
-#game .button-row .location-label {
-    text-align: center;
-    width: max-content;
-    max-width: 120px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-top: 6px;
+#game .button-row .location-button {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
 }
 
 @media (min-width: 900px) {
     #game .button-row {
-        width: min(58vw, 900px);
+        width: min(72vw, 960px);
         bottom: clamp(18px, 3vh, 36px);
     }
 }
@@ -423,20 +453,28 @@ background-color: rgba(255,255,255,0.3);
     backface-visibility: hidden;
 }
 
+/*
+ * Top-bar icon size. Border-box + no padding here — the parent
+ * .menu-item-btn provides the tap target via min-width/min-height. Mixing
+ * `padding: 10px` with `box-sizing: content-box` (the previous setup) made
+ * the rendered img 45×45 even though the rule said 25×25, which fought every
+ * subsequent layout calc.
+ */
 .menu-item {
-    width: 25px;
-    height: 25px;
+    width: 24px;
+    height: 24px;
+    box-sizing: border-box;
     cursor: pointer;
-    padding: 10px;
-    box-sizing: content-box;
     -webkit-tap-highlight-color: transparent;
     pointer-events: none; /* tap lands on parent .menu-item-btn, not the raster image */
     display: block;
+    flex-shrink: 0;
 }
 
-/* Logout: match muted grey of PNG menu icons (winners / help / settings) */
+/* Logout SVG color matches the muted text-dim used by the PNG menu icons
+   and the .menu-item-label below — keeps the row visually unified. */
 .menu-item.logout-icon-stroke {
-    color: #9ca3af;
+    color: var(--rl-color-text-muted, #c2ccce);
 }
 
 /*
@@ -448,12 +486,14 @@ background-color: rgba(255,255,255,0.3);
  */
 .menu-item-btn {
     display: inline-flex;
+    flex-direction: column;       /* icon stacked over text label, per Figma top-bar */
     align-items: center;
     justify-content: center;
+    gap: 4px;
     background: transparent;
     border: 0;
     margin: 0;
-    padding: 0;
+    padding: 4px 6px;
     min-width: 44px;
     min-height: 44px;
     box-sizing: border-box;
@@ -468,9 +508,48 @@ background-color: rgba(255,255,255,0.3);
     transform: scale(0.92);
 }
 .menu-item-btn:focus-visible {
-    outline: 2px solid rgba(102, 175, 219, 0.8);
+    outline: 2px solid rgba(98, 195, 255, 0.8);
     outline-offset: 2px;
     border-radius: 8px;
+}
+
+/*
+ * Visible text labels under the top-bar icons (Winners | Help | Settings |
+ * Logout). Per Figma "Big Screen" the icons sit above small word labels —
+ * helpful both for first-time users and for making the affordance scannable
+ * at a glance. On the very narrowest phones the labels would crowd the row,
+ * so we visually hide them below 380px; the aria-label on the button still
+ * announces the action to screen readers.
+ */
+.menu-item-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--rl-color-text-muted, #c2ccce);
+    line-height: 1;
+    pointer-events: none;
+    text-transform: uppercase;
+    white-space: nowrap;          /* "Settings" must not wrap inside a 44px button */
+}
+/*
+ * Hide labels on phones narrower than ~380px (covers iPhone SE 1st gen 320px,
+ * many Android 360px phones popular in Lebanon, and 375px iPhones). Below
+ * this width 4 buttons × ≥48px wide + the centered status dot would need to
+ * cover a 320px viewport with the logo — labels just don't fit. The
+ * aria-label on the button still announces the action to screen readers.
+ */
+@media (max-width: 380px) {
+    .menu-item-label {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+    }
 }
 
 .btn-custom {
@@ -492,6 +571,28 @@ background-color: rgba(255,255,255,0.3);
     user-select: none;
     -webkit-user-select: none;
     cursor: pointer;
+}
+
+/*
+ * SCAN button (the primary CTA in the bottom action row). Per Figma it fills
+ * its center grid column — wide pill flanked by the store/location tiles —
+ * and its height matches the side tiles via the shared --rl-scan-h variable
+ * so the three controls read as one row. Overrides the base .btn-custom
+ * sizing only when SCAN sits inside the bottom row.
+ */
+#game .button-row #scan.btn-custom {
+    width: 100%;
+    height: var(--rl-scan-h);
+    margin: 0;
+    border-radius: 14px;
+    font-size: clamp(15px, 2vw, 18px) !important;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding-inline: clamp(16px, 4vw, 32px);
+    box-shadow:
+        0 4px 14px rgba(98, 195, 255, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
 .btn-custom:active {
@@ -516,20 +617,29 @@ background-color: rgba(255,255,255,0.3);
     text-align: center;
 }
 
+/*
+ * Radar online/offline status dot in the top bar. Was previously 40px with
+ * a 30+15px halo on each side — about 130px of visual footprint on retina,
+ * which dominated the top bar and made the page feel unbalanced. Figma's
+ * "Game Data" panel shows this as a small ~12px dot with a subtle halo,
+ * more like a hardware-LED indicator. New sizes:
+ *   - dot   12px
+ *   - halo  ~12px (≈36px total on retina)
+ */
 .icon-box-2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 12px;
+    height: 12px;
     border-radius: 50%;
 }
 
 .icon-box-2.green {
-    background-color: #06ac06;
-     box-shadow:
-                0 0 5px 5px rgba(6, 172, 6, 0.2), /* Outer glow with opacity */
-                0 0 30px 15px rgba(6, 172, 6, 0.2); /* Even softer outer glow */
+    background-color: #3ddc84;
+    box-shadow:
+        0 0 4px rgba(61, 220, 132, 0.55),
+        0 0 12px rgba(61, 220, 132, 0.25);
 }
 
 /*
@@ -546,29 +656,22 @@ background-color: rgba(255,255,255,0.3);
 }
 
 .icon-box-2.red {
-    background: #ea3323;
-      box-shadow:
-                0 0 5px 5px rgba(234, 51, 35, 0.4); /* Outer glow with opacity */
-
+    background-color: #ff4757;
+    box-shadow:
+        0 0 4px rgba(255, 71, 87, 0.55),
+        0 0 12px rgba(255, 71, 87, 0.3);
 }
 
 .icon-box span {
     font-size: 12px;
 }
 
-@media (max-width: 768px) { /* Tablet size */
-    .icon-box-2 {
-        width: 40px;
-        height: 40px;
-    }
-}
-
-@media (max-width: 480px) { /* Mobile size */
-    .icon-box-2 {
-        width: 30px;
-        height: 30px;
-    }
-}
+/*
+ * Removed the responsive overrides that pumped .icon-box-2 back up to
+ * 40px / 30px at narrow widths. The new base size (12px) is intentionally
+ * the same on every viewport — it's a status LED, not a primary control,
+ * and Figma uses the same small dot in both Big Screen and Small Screen.
+ */
 
 
 /* Overlay and Modals */
@@ -623,6 +726,8 @@ background-color: rgba(255,255,255,0.3);
 
 /* Media Queries for fine-tuning */
 @media (max-width: 767px) {
+    .bar { padding: 8px 12px; min-height: 56px; gap: 8px; }
+    .bar-right { gap: 6px; }
     .logo-nav {
         width: 100px;
     }
@@ -630,15 +735,20 @@ background-color: rgba(255,255,255,0.3);
         width: 22px;
         height: 22px;
     }
+    .menu-item-label {
+        font-size: 9px;
+        letter-spacing: 0.02em;
+    }
     /*
-     * Hit area is controlled by min-width/height only — padding would add to
-     * the total box width (box-sizing: border-box, but Bootstrap resets can
-     * leak on edge cases) and push the bar past the viewport on 375–414 width.
+     * Keep the 44×44 tap target but allow a touch of padding so the icon and
+     * label have breathing room. The earlier `padding: 0` here was needed
+     * back when .menu-item had `padding: 10px` of its own — that's gone now,
+     * so the parent button can carry small padding without overflowing.
      */
     .menu-item-btn {
         min-width: 44px;
         min-height: 44px;
-        padding: 0;
+        padding: 2px 4px;
     }
     .bar-container {
         width: 40px;
@@ -646,14 +756,13 @@ background-color: rgba(255,255,255,0.3);
     .an {
         width: 50px;
     }
-    .button-row img {
-        width: 70px !important;
-        height: 70px !important;
-    }
+    /* Mobile bottom row: shrink the SCAN height shared variable so the SCAN
+       button and the side tiles all collapse to a tighter common height.
+       Side tile images fill the slot via `object-fit: contain` from the
+       canonical rule above, so we don't need to fix their pixel size here. */
+    #game .button-row { --rl-scan-h: 48px; }
     .btn-custom {
-        height: 40px;
         font-size: 16px !important;
-        width: 80%;
     }
 }
 
@@ -667,12 +776,11 @@ background-color: rgba(255,255,255,0.3);
     .menu-item {
         width: 20px;
         height: 20px;
-        padding: 0;
     }
     .menu-item-btn {
         min-width: 44px;
         min-height: 44px;
-        padding: 0;
+        padding: 2px;
     }
     .bar-right {
         gap: 4px;
@@ -686,14 +794,11 @@ background-color: rgba(255,255,255,0.3);
     .an {
         width: 40px;
     }
-    .button-row img {
-        width: 50px !important;
-        height: 50px !important;
-    }
+    /* Bottom row at ≤576px — sized via the --rl-scan-h variable on
+       #game .button-row, see canonical rule above. */
+    #game .button-row { --rl-scan-h: 46px; }
     .btn-custom {
-        height: 44px;
         font-size: 15px !important;
-        width: 90%;
     }
     .icon-box span {
         font-size: 10px;
@@ -909,27 +1014,11 @@ section {
         line-height: 1;
         margin-top: 0;
     }
-    /*
-     * The .wallet-balance-display is absolutely positioned over the cash image.
-     * On narrow screens "RADAR CASH 299.75" is wider than the col-3 container
-     * so the text clips off the left edge. Let it flow naturally below the
-     * image on phones instead, so nothing is ever cut off.
-     */
-    .wallet-balance-display {
-        position: static;
-        transform: none;
-        left: auto;
-        bottom: auto;
-        margin-top: 2px;
-        font-size: 0.65em;
-        display: block;
-        text-align: center;
-        white-space: nowrap;
-    }
-    .cash-balance-container {
-        overflow: visible;
-        min-width: 0;
-    }
+    /* The visible RADAR CASH / MY LOCATION text labels were retired per the
+       Figma "Main Page" — only the cyan tile icons remain in the bottom row.
+       The wallet balance is still announced to screen readers via a
+       .visually-hidden span next to the store icon (see Dashboard.vue). */
+    .cash-balance-container,
     .location-container {
         min-width: 0;
         overflow: visible;
@@ -951,25 +1040,19 @@ section {
     .winner-name { font-size: 0.85rem; }
     .winner-prize { font-size: 0.65rem; }
     .help-container { font-size: 0.85rem; padding: 0 4px; }
-    .bar { padding: 8px 10px; }
-    .bar-right { gap: 4px; }
-    .menu-item { width: 18px; height: 18px; padding: 0; }
-    .menu-item-btn { min-width: 40px; min-height: 40px; padding: 8px; }
+    .bar { padding: 8px 10px; min-height: 52px; gap: 4px; }
+    .bar-right { gap: 2px; }
+    .menu-item { width: 18px; height: 18px; }
+    .menu-item-btn { min-width: 40px; min-height: 40px; padding: 2px; gap: 0; }
     .logo-nav { max-width: 80px; }
-    /* Shrink the bottom row so the radar-cash + Scan + my-location all fit side-by-side on 320–360px. */
+    /* Tighten the bottom row on very narrow phones so SCAN can still claim
+       most of the width while the side tiles stay tappable. */
     #game .button-row {
-        column-gap: clamp(8px, 3.5vw, 24px);
-        width: min(94vw, 760px);
+        --rl-scan-h: 44px;          /* match .btn-custom min-height floor */
+        column-gap: clamp(8px, 3vw, 16px);
+        width: min(96vw, 760px);
     }
-    #game .button-row .wallet-balance-display,
-    #game .button-row .location-label {
-        margin-top: 4px;
-    }
-    .button-row img.location-button-img,
-    .cash-balance-container > img { max-width: 52px !important; }
     .btn-custom { padding: 10px 8px !important; font-size: 14px !important; }
-    .location-label { font-size: 9px; margin-top: 4px; }
-    .wallet-balance-display { font-size: 0.7em; }
     /* Keep the 6 antenna icons on a single line on very narrow screens. */
     .antenna-container { gap: 4px; margin-bottom: 10px; flex-wrap: nowrap; }
     .antenna-icon { width: 28px; }
@@ -977,7 +1060,7 @@ section {
 
 /* Very narrow devices (iPhone SE 1st gen = 320px) */
 @media (max-width: 320px) {
-    .menu-item-btn { min-width: 36px; min-height: 36px; padding: 6px; }
+    .menu-item-btn { min-width: 36px; min-height: 36px; padding: 2px; gap: 0; }
     .menu-item { width: 16px; height: 16px; }
     .bar-right { gap: 2px; }
     .logo-nav { max-width: 70px; }
@@ -993,21 +1076,19 @@ section {
     .location-button { min-width: 44px; min-height: 44px; }
 
     /*
-     * On phones the original `flex: 1` on .bar-left and .bar-right forced them
-     * to the same width, which pushed the right-side menu icons off-screen
-     * whenever the icons together were wider than the logo space. Let each
-     * side size to its content and give .bar-center the remaining stretch.
+     * The .bar flex sizing (left/right shrink, center stretches) lives in the
+     * canonical .bar / .bar-left / .bar-right rules at the top of this file
+     * — same values for every breakpoint, so we don't repeat them here.
      */
-    .bar-left   { flex: 0 0 auto; min-width: 0; }
-    .bar-center { flex: 1 1 0;   min-width: 0; display: flex; justify-content: center; }
-    .bar-right  { flex: 0 0 auto; min-width: 0; }
 }
 
-/* Other existing styles from your app.css file should remain below */
-.bar { flex-shrink: 0; padding: 10px 15px; background-color: rgba(0, 0, 0, 0.5); display: flex; justify-content: space-between; align-items: center; width: 100%; }
-.bar-left, .bar-right { flex: 1; }
-.bar-center { flex-shrink: 0; }
-.bar-right { display: flex; justify-content: flex-end; gap: 15px; }
+/*
+ * The four .bar / .bar-left / .bar-right / .bar-center declarations that used
+ * to live here were duplicates of the rules at the top of this file (a
+ * leftover from an old merge — both blocks set the exact same values). They
+ * were silently shadowing the top-of-file rules and any responsive overrides
+ * underneath. Removed; the canonical layout lives at lines 86–116.
+ */
 .radar-row { flex-grow: 1; min-height: 0; display: flex; align-items: stretch; justify-content: space-between; padding: 1rem 0; width: 100%; }
 .antenna-detection-col, .prize-selection-col, .radar-col { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0 10px; }
 /* .button-row layout is defined under #game .button-row above */
@@ -1017,36 +1098,18 @@ section {
 
 
 
+/*
+ * .cash-balance-container is the lead grid item in the bottom action row —
+ * it just hosts the cyan store-tile <img>. The previous rules here also
+ * absolutely-positioned a "RADAR CASH N" text label over the image; that
+ * label was retired per the Figma "Main Page" layout, so the container is
+ * now a simple centered image holder. The bottom-row grid in
+ * `#game .button-row` already enforces the tile's height/width.
+ */
 .cash-balance-container {
-    display: flex; /* Use flexbox for alignment */
-    flex-direction: column; /* Stack image and text vertically */
-    align-items: center; /* Center horizontally */
-    justify-content: center; /* Center vertically if container has height */
-    text-align: center; /* Ensure text itself is centered */
-    /* Add any padding/margin as needed */
-    position: relative; /* If you want to absolutely position the text relative to this container */
-}
-
-.wallet-balance-display {
-    color: white; /* A vibrant color that fits your theme */
-    font-size: 0.8em; /* Adjust size as needed */
-    margin-top: -15px; /* Adjust this value to move the text closer/further from the image.
-                          Negative margin can overlap. */
-
-
-    font-weight: lighter;
-    position: absolute; /* Allows precise positioning over the image if needed */
-    bottom: -9px; /* Adjust as needed, e.g., to place it at the bottom of the image area */
-    left: 50%;
-    transform: translateX(-50%); /* Center horizontally using transform */
-    white-space: nowrap; /* Keep text on one line */
-}
-
-/* Consider media queries for responsiveness if sizes need to change significantly on different screens */
-@media (max-width: 768px) {
-    .wallet-balance-display {
-        font-size: 0.8em; /* Smaller font on smaller screens */
-    }
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 
@@ -1500,32 +1563,10 @@ section {
     .btn-custom { min-width: 0; padding: 10px 12px; }
 }
 
-/* Existing wallet display styles (keeping them as is) */
-.wallet-image-container {
-    display: flex;
-    flex-direction: column; /* Stack image and text vertically */
-    align-items: center; /* Center horizontally */
-    justify-content: center; /* Center vertically if container has height */
-    text-align: center; /* Ensure text itself is centered */
-    position: relative; /* If you want to absolutely position the text relative to this container */
-}
-
-.wallet-balance-display {
-    color: white; /* A vibrant color that fits your theme */
-    font-size: 0.8em; /* Adjust size as needed */
-    margin-top: -15px; /* Adjust this value to move the text closer/further from the image.
-                          Negative margin can overlap. */
-    font-weight: lighter;
-    position: absolute; /* Allows precise positioning over the image if needed */
-    bottom: -9px; /* Adjust as needed, e.g., to place it at the bottom of the image area */
-    left: 50%;
-    transform: translateX(-50%); /* Center horizontally using transform */
-    white-space: nowrap; /* Keep text on one line */
-}
-
-/* Consider media queries for responsiveness if sizes need to change significantly on different screens */
-@media (max-width: 768px) {
-    .wallet-balance-display {
-        font-size: 0.8em; /* Smaller font on smaller screens */
-    }
-}
+/*
+ * Removed: a duplicate of .wallet-image-container + .wallet-balance-display
+ * lived here. The class was unreferenced anywhere in the templates, and the
+ * .wallet-balance-display rule was a stale duplicate of the one at the top
+ * of this file (which is itself now obsolete — Figma retired the visible
+ * "RADAR CASH N" label under the bottom-row store tile).
+ */
