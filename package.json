@@ -1,6 +1,10 @@
 {
     "private": true,
     "type": "module",
+    "engines": {
+        "node": ">=20.0.0",
+        "npm": ">=10.0.0"
+    },
     "scripts": {
         "build": "vite build",
         "build:ssr": "vite build && vite build --ssr",
@@ -44,9 +48,5 @@
         "vue": "^3.5.13",
         "ziggy-js": "^2.4.2"
     },
-    "optionalDependencies": {
-        "@rollup/rollup-linux-x64-gnu": "4.9.5",
-        "@tailwindcss/oxide-linux-x64-gnu": "^4.0.1",
-        "lightningcss-linux-x64-gnu": "^1.29.1"
-    }
+    "//optionalDependencies": "Removed: pinning Linux-x64-only native binaries broke builds on Linux-ARM64 hosts (Vercel migrated some build runners to arm64 in 2024). Modern Rollup, Tailwind oxide, and Lightningcss declare their own per-platform optional deps in their package.json — npm picks the right one automatically based on the install host. Don't reintroduce these pins."
 }
