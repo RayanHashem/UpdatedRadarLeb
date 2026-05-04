@@ -52,20 +52,29 @@ class DevAutoAuth
         // If user is not authenticated, auto-login the first user
         if (!Auth::check()) {
             $user = User::first();
-            
+
             if ($user) {
                 Auth::login($user);
             } else {
-                // If no user exists, create a dev user
+                // No user exists yet — bootstrap a dev user. The mass-assignable
+                // fields (name/email/phone_number/password/game_id) go through
+                // create(). `email_verified_at` and `wallet_balance` are
+                // intentionally NOT in $fillable on the User model (they're
+                // sensitive: verification status + money), so we set them via
+                // forceFill() in a second step. Same end result, but the
+                // model's mass-assignment guard stays intact.
                 $user = User::create([
                     'name' => 'Dev User',
                     'email' => 'dev@example.com',
                     'phone_number' => '1234567890',
                     'password' => bcrypt(env('DEV_PASSWORD', 'password')),
-                    'email_verified_at' => now(),
                     'game_id' => null, // no prize selected (do not use Main Game fallback)
-                    'wallet_balance' => '1000', // Default wallet balance
                 ]);
+                $user->forceFill([
+                    'email_verified_at' => now(),
+                    'wallet_balance'    => 1000, // dev starting balance
+                ])->save();
+
                 Auth::login($user);
             }
         }
