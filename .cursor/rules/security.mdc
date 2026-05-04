@@ -1,0 +1,245 @@
+---
+description: Security-sensitive code — auth, mass assignment, wallet logic, secrets
+globs:
+  - "app/Http/Middleware/**/*.php"
+  - "app/Http/Controllers/Auth/**/*.php"
+  - "app/Http/Requests/**/*.php"
+  - "app/Models/User.php"
+  - "app/Models/AdminUser.php"
+  - "app/Models/WalletTransaction.php"
+  - "app/Models/Game.php"
+  - "config/auth.php"
+  - "config/session.php"
+  - "routes/**/*.php"
+alwaysApply: false
+---
+
+# Security rules (RadarLeb)
+
+Read `docs/security.md` for the full picture, including the credential-rotation
+note. This file is a quick checklist for the AI: when you're modifying any of
+the files in the globs above, double-check these patterns.
+
+## ⚠️ Top-level concern: rotated credentials
+
+Production RDS credentials were committed to the public repo before today.
+They must be rotated. If you're touching anything DB-config-related, verify
+`docs/security.md` was acted on first.
+
+## Mass assignment
+
+Every Eloquent model that takes user input must declare `$fillable` (or
+`$guarded`).
+
+```php
+// ❌ Don't
+class User extends Authenticatable
+{
+    protected $guarded = [];   // wide-open: any column can be set from forms
+}
+
+// ✅ Do
+class User extends Authenticatable
+{
+    protected $fillable = [
+        'name', 'phone', 'password', 'date_of_birth', 'game_id',
+    ];
+    // wallet_balance, is_admin, etc. are NOT in $fillable on purpose —
+    // they're admin-only fields.
+}
+```
+
+When accepting input, use a Form Request:
+
+```php
+// ❌ Don't
+public function update(Request $request, User $user)
+{
+    $user->update($request->all());   // accepts any field
+}
+
+// ✅ Do
+public function update(UserUpdateRequest $request, User $user)
+{
+    $user->update($request->validated());   // only validated fields
+}
+```
+
+## DevAutoAuth has three layers — keep all three
+
+`app/Http/Middleware/DevAutoAuth.php`:
+
+1. `if (! app()->environment('local')) return $next($request);`  ← env check
+2. Hostname check refusing `.com`, `.net`, AWS domains, etc.       ← host check
+3. NOT registered in `bootstrap/app.php`.                         ← registration check
+
+Never remove any of them. Never register the middleware in production. Never
+change the env check from `local` to a permissive list.
+
+## Two auth guards
+
+Public users go through `web` guard, admins through `admin`. They are
+separate. Don't:
+
+```php
+// ❌ Don't unify the guards
+auth()->user()    // ambiguous — which guard?
+
+// ✅ Do
+auth('web')->user()
+auth('admin')->user()
+```
+
+`PortBasedSessionIsolation` middleware (which is actually path-based — see
+`docs/history.md`) keeps the two session cookies from clashing. Don't disable
+it on `/admin/*` routes.
+
+## Password handling
+
+```php
+// ✅ Storing
+'password' => Hash::make($plain),
+
+// ✅ Verifying
+if (Hash::check($plain, $user->password)) { /* ok */ }
+
+// ❌ NEVER
+'password' => bcrypt($plain),                      // works but Hash:: is preferred
+'password' => $plain,                               // ☠️
+'password' => md5($plain),                          // ☠️
+if ($user->password === $plain) { ... }             // ☠️
+```
+
+`User::$hidden` includes `password` and `remember_token`. Don't remove them
+from the array — that's what keeps passwords out of JSON responses.
+
+## CSRF & state-changing routes
+
+Every route that mutates state (POST, PUT, PATCH, DELETE) must be in the
+`web` middleware group, which adds CSRF. The default routes file does this
+automatically.
+
+For Inertia, the CSRF token is passed automatically. **Don't disable CSRF**
+on a route to "make it work". 419 errors mean a real CSRF mismatch — debug
+the cause, don't bypass.
+
+For genuine API endpoints (stateless, no session), use `routes/api.php` and
+add Sanctum or signed URLs. We don't have any of those yet.
+
+## Wallet rules — enforced by `WalletTransaction::boot()`
+
+Don't bypass these. If you need a one-off insert, use the model:
+
+```php
+// ✅ Through the model — boot hooks run
+WalletTransaction::create([
+    'user_id'  => $user->id,
+    'amount'   => $scan->cost,
+    'scan_id'  => $scan->id,
+    'game_id'  => $scan->game_id,
+    'type'     => 'debit',
+]);
+
+// ❌ Direct DB insert — bypasses validation
+DB::insert('INSERT INTO wallet_transactions ...');
+```
+
+Invariants the model enforces:
+- `type` is lowercased on save.
+- If `scan_id` is set, `amount` must equal `scans.cost` (1¢ tolerance).
+- Top-ups have `game_id = NULL` and `scan_id = NULL`.
+- One transaction per scan (UNIQUE partial index on `scan_id`).
+
+## XSS
+
+- Inertia/Vue auto-escapes `{{ value }}` — no special action needed.
+- Filament/Livewire auto-escapes its output.
+- Blade templates: use `{{ $value }}` (escaped). **Never `{!! $value !!}`**
+  unless you've sanitized with `Purifier` first and you have a clear reason.
+
+## SQL injection
+
+- Eloquent and the Query Builder parameterize automatically. Safe by default.
+- `DB::statement(...)` and `DB::raw(...)` are NOT parameterized. Use bindings:
+
+```php
+// ❌ Vulnerable
+DB::statement("UPDATE games SET price_to_play = $newPrice WHERE id = $id");
+
+// ✅ Safe
+DB::statement('UPDATE games SET price_to_play = ? WHERE id = ?', [$newPrice, $id]);
+
+// ✅ Even better — use the query builder
+DB::table('games')->where('id', $id)->update(['price_to_play' => $newPrice]);
+```
+
+We have a few `DB::statement(...)` calls in migrations for portable
+correlated subqueries. Those use no user input — they're safe. Don't
+introduce user input into raw SQL.
+
+## Secrets in code
+
+- Never commit `.env`. The `.gitignore` enforces this.
+- `env('VAR_NAME')` should only be called inside `config/*.php` files. Code
+  elsewhere should read `config('section.key')`. This makes config caching
+  work (`php artisan config:cache`) — `env()` returns `null` from cached
+  config in production.
+
+```php
+// ❌ Don't
+// In a controller:
+$secret = env('STRIPE_SECRET');
+
+// ✅ Do
+// In config/services.php:
+'stripe' => [
+    'secret' => env('STRIPE_SECRET'),
+],
+
+// In a controller:
+$secret = config('services.stripe.secret');
+```
+
+When you add an env var, update `.env.example` so the next dev/AI sees the
+field.
+
+## Rate limiting
+
+The `web` group has no rate limiting by default. Add `throttle:N,M` for any
+endpoint that's expensive or abusable:
+
+```php
+Route::middleware(['auth', 'throttle:30,1'])->group(function () {
+    Route::post('/scan/{game}', [GameController::class, 'scan']);
+    Route::get('/winners', [WinnerController::class, 'index']);
+});
+```
+
+`30,1` = 30 requests per minute per user.
+
+## File uploads
+
+We have no user-facing upload endpoints yet. If you add one:
+
+```php
+// In a Form Request
+public function rules(): array
+{
+    return [
+        'avatar' => ['required', 'image', 'mimes:jpg,jpeg,png', 'max:2048'],
+    ];
+}
+
+// In the controller — store with a generated name, never the user's name
+$path = $request->file('avatar')->store('avatars', 'public');
+```
+
+Never trust `$request->file('x')->getClientOriginalName()` for the path.
+
+## Logging
+
+- Don't log passwords, tokens, or wallet amounts in plaintext.
+- Use `Log::info('user_action', ['user_id' => $u->id, 'action' => 'scan'])` —
+  structured context, not interpolated strings.
+- Errors → `Log::error()`. Routine info → `Log::info()`. Debug → `Log::debug()`
+  (gated on `APP_DEBUG`).
