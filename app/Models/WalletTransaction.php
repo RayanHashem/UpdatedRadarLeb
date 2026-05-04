@@ -2,11 +2,31 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class WalletTransaction extends Model
 {
-    protected $guarded = [];
+    use HasFactory;
+
+    /**
+     * Mass-assignable attributes.
+     *
+     * Explicit allowlist instead of `$guarded = []`. Every column on this
+     * table represents money or audit metadata — keep the surface tight.
+     * The `id` and `created_at` / `updated_at` columns are managed by
+     * Eloquent itself.
+     */
+    protected $fillable = [
+        'user_id',
+        'game_id',
+        'scan_id',
+        'type',
+        'amount',
+        'balance_after',
+        'reference',
+        'notes',
+    ];
 
     protected function casts(): array
     {
