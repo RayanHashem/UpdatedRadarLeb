@@ -21,8 +21,15 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->prepend(\App\Http\Middleware\PortBasedSessionIsolation::class);
         $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
         ]);
+        // Trusted proxies for X-Forwarded-* — read directly from env() because
+        // bootstrap/app.php runs BEFORE the IoC container and the config
+        // service are wired up, so config('...') would throw a ReflectionException.
+        // The "env() only inside config files" rule deliberately does not apply
+        // here: env() works at this stage, and bootstrap/app.php is excluded
+        // from config caching.
         $proxies = env('APP_TRUSTED_PROXIES');
         if ($proxies !== null && $proxies !== '') {
             $at = $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies));
