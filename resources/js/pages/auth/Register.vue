@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import InputError from '@/components/InputError.vue';
 import { Link, useForm } from '@inertiajs/vue3';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 
 const form = useForm({
     name: '',
@@ -11,6 +11,26 @@ const form = useForm({
     password: '',
     password_confirmation: '',
     confirm_18_and_terms: false,
+});
+
+/*
+ * Pre-fill from /login → "Sign up" hand-off.
+ *
+ * Login.vue's goToSignUp() does `router.visit(route('register'), { method: 'get', data: { name, phone_number } })`
+ * which Inertia sends as ?name=...&phone_number=... query params. Hydrate the
+ * form from those on mount so a user who started typing on /login doesn't have
+ * to retype on /register.
+ *
+ * We do this client-side rather than via server-side props so this works even
+ * when the controller doesn't pass them through (no backend coupling).
+ */
+onMounted(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const prefilledName = params.get('name');
+    const prefilledPhone = params.get('phone_number');
+    if (prefilledName) form.name = prefilledName;
+    if (prefilledPhone) form.phone_number = prefilledPhone;
 });
 
 const dobDisplay = ref('');
@@ -244,7 +264,7 @@ const submit = () => {
                     <div class="d-flex justify-content-center align-items-center gap-2 mt-2 w-100 auth-button-row">
                         <button
                             class="btn btn-custom-1 btn-custom"
-                            style="font-weight: normal; background-color: #e4787e;"
+                            style="font-weight: normal; background-color: var(--rl-color-coral);"
                             type="submit"
                             :disabled="!canSubmit"
                             :tabindex="8"
@@ -256,7 +276,7 @@ const submit = () => {
                             :href="route('login')"
                             class="btn btn-custom-2 btn-custom"
                             :tabindex="9"
-                            style="background-color: rgb(102, 175, 219);"
+                            style="background-color: var(--rl-color-cyan);"
                         >
                             Sign in
                         </Link>
