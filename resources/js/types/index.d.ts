@@ -24,6 +24,11 @@ export interface SharedData extends PageProps {
     auth: Auth;
     ziggy: Config & { location: string };
     sidebarOpen: boolean;
+    // Pushed by HandleInertiaRequests::share — read via useTranslate() composable.
+    locale: string;
+    locales: Record<string, string>;
+    translations: Record<string, string>;
+    contact: { phone: string };
 }
 
 export interface User {
