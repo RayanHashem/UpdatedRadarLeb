@@ -111,6 +111,16 @@ class DrawResource extends Resource
         ];
     }
 
+    /**
+     * Eager-load `game` and `winner` so the table columns
+     * `game.name`, `winner.name`, `winner.phone_number` don't fire one
+     * SELECT per row.
+     */
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with(['game', 'winner']);
+    }
+
     public static function canCreate(): bool
     {
         return false;
