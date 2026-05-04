@@ -1,0 +1,136 @@
+# Render Blueprint — declarative infra config.
+# Push this file with the repo and on Render, click "New > Blueprint" and
+# point it at the repo. Render reads this file and provisions the service.
+#
+# Docs: https://render.com/docs/blueprint-spec
+#
+# Cost: $0 (free tier).
+#   Trade-off: web service sleeps after 15 minutes of inactivity. The first
+#   request after sleep wakes it (~30s cold start). Acceptable for staging
+#   and low-traffic production. If users complain about latency, upgrade
+#   the `plan:` line below to "starter" ($7/mo, no sleep, static outbound
+#   IPs which simplifies the AWS RDS security group).
+
+databases: []  # no Render-managed DB; we use the existing AWS RDS Postgres.
+
+services:
+  - type: web
+    name: radarleb
+    runtime: docker
+    plan: free
+    region: ohio          # Closest Render region to AWS us-east-1 (Virginia).
+
+    # Build is the Docker image; no separate build command needed.
+    dockerfilePath: ./Dockerfile
+
+    # Render hits this every minute to gauge liveness. Laravel's `health: '/up'`
+    # configured in bootstrap/app.php returns 200 OK. If health checks fail,
+    # Render restarts the container.
+    healthCheckPath: /up
+
+    # Auto-deploy on every push to the configured branch.
+    branch: cleanup/abed-radarleb     # CHANGE this to `main` after merging.
+
+    autoDeploy: true
+
+    envVars:
+      # Laravel core ----------------------------------------------------------
+      - key: APP_NAME
+        value: RadarLeb
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false                 # Set in Render dashboard. Generate with
+                                    # `php artisan key:generate --show` locally
+                                    # and paste the resulting `base64:...` value.
+      - key: APP_URL
+        sync: false                 # Set after first deploy: https://<service>.onrender.com
+      - key: APP_LOCALE
+        value: en
+      - key: APP_FALLBACK_LOCALE
+        value: en
+      - key: APP_TRUSTED_PROXIES
+        value: "*"                  # Render terminates TLS upstream of the container.
+
+      # Database --------------------------------------------------------------
+      # Connect to the existing AWS RDS Postgres. The friend's RDS security
+      # group must allow inbound on 5432 from the Render egress range. On the
+      # FREE plan Render does NOT publish static outbound IPs — set the SG
+      # source to 0.0.0.0/0 and rely on strong password + SSL, OR upgrade
+      # this service to "starter" plan to get static IPs.
+      - key: DB_CONNECTION
+        value: pgsql
+      - key: DB_HOST
+        sync: false                 # The RDS endpoint, e.g. <rotated>.us-east-1.rds.amazonaws.com
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_DATABASE
+        sync: false
+      - key: DB_USERNAME
+        sync: false
+      - key: DB_PASSWORD
+        sync: false                 # ROTATED password — see docs/security.md
+      - key: DB_SSLMODE
+        value: require              # Force TLS to RDS.
+
+      # Sessions / cache / queue ---------------------------------------------
+      # IMPORTANT: file driver does NOT survive container restart on Render's
+      # ephemeral filesystem. Use the database-backed drivers (the migrations
+      # for `sessions`, `cache`, `jobs` tables ship in Laravel 12 by default).
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync                 # No worker dyno on free tier — run jobs
+                                    # synchronously inside the request. If you
+                                    # have heavy jobs later, switch to
+                                    # `database` and add a separate Render
+                                    # worker service (paid).
+
+      # Storage ---------------------------------------------------------------
+      - key: FILESYSTEM_DISK
+        value: local                # Acceptable for now — RadarLeb has no
+                                    # user uploads. If you add any, switch to
+                                    # `s3` and fill the AWS_* vars below.
+      # - key: AWS_ACCESS_KEY_ID
+      #   sync: false
+      # - key: AWS_SECRET_ACCESS_KEY
+      #   sync: false
+      # - key: AWS_DEFAULT_REGION
+      #   value: us-east-1
+      # - key: AWS_BUCKET
+      #   sync: false
+
+      # Mail ------------------------------------------------------------------
+      - key: MAIL_MAILER
+        value: log                  # Switch to `ses` once SES creds are set.
+      - key: MAIL_FROM_ADDRESS
+        value: noreply@radarleb.com
+      - key: MAIL_FROM_NAME
+        value: RadarLeb
+
+      # Logs ------------------------------------------------------------------
+      - key: LOG_CHANNEL
+        value: stderr               # Render captures stderr into its log UI.
+      - key: LOG_LEVEL
+        value: info
+
+      # Operational -----------------------------------------------------------
+      - key: HEALTH_CHECK_SECRET
+        generateValue: true         # Render generates a random string. Use
+                                    # this when probing /db-check from outside.
+      - key: ADMIN_MAX_EXECUTION_TIME
+        value: "60"
+
+      # Frontend --------------------------------------------------------------
+      - key: VITE_APP_NAME
+        value: RadarLeb
+
+      # Dev-only flags — keep blank in prod -----------------------------------
+      - key: DEV_PASSWORD
+        value: ""
+      - key: SEEDER_PASSWORD
+        value: ""
