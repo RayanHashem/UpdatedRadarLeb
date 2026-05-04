@@ -109,6 +109,15 @@ class ScanResource extends Resource
         ];
     }
 
+    /**
+     * Eager-load `user` and `game` so the table columns `user.name`,
+     * `user.phone_number`, and `game.name` don't fire per-row SELECTs.
+     */
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with(['user', 'game']);
+    }
+
     public static function canCreate(): bool
     {
         return false;
