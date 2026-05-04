@@ -17,6 +17,18 @@
 {{-- End Favicon Links --}}
 
         {{--
+            Google Fonts preconnect + Bungee stylesheet. Hoisted out of
+            Dashboard.vue: the original spot inserted these <link> tags into
+            the rendered template on every Inertia visit, which caused the
+            browser to re-resolve preconnects per navigation and briefly
+            re-apply font-face mid-render. The layout is the right place —
+            it's parsed once per full document load.
+        --}}
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
+
+        {{--
             Removed global <link rel="preload"> for loading-bg.png and sign-in-bg.jpg.
             Those are large backgrounds used by only one page each (dashboard / sign-in).
             Preloading them on every page blocks the single-threaded `php artisan serve`
