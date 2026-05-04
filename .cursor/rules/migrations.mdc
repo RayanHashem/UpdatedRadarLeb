@@ -1,0 +1,130 @@
+---
+description: Database-portable migration patterns — common pitfalls and fixes
+globs:
+  - "database/migrations/**/*.php"
+alwaysApply: false
+---
+
+# Database migration patterns
+
+This project runs SQLite locally and PostgreSQL in production. Every migration
+must execute cleanly on both. Three patterns commonly break this rule — here's
+the portable fix for each.
+
+## ❌ Don't: `ALTER COLUMN ... TYPE`
+
+```php
+// Postgres-only — fails on SQLite
+DB::statement('ALTER TABLE games ALTER COLUMN price TYPE DECIMAL(12,2) USING price::DECIMAL(12,2)');
+```
+
+## ✅ Do: `Schema::change()`
+
+```php
+Schema::table('games', function (Blueprint $table) {
+    $table->decimal('price', 12, 2)->default(1)->change();
+});
+```
+
+Laravel's Schema builder generates the right SQL for whatever driver you're on
+(including SQLite's table-recreation dance for column type changes).
+
+---
+
+## ❌ Don't: `UPDATE ... FROM` join
+
+```php
+// Postgres-only
+DB::statement('
+    UPDATE wallet_transactions wt
+    SET game_id = s.game_id
+    FROM scans s
+    WHERE wt.scan_id = s.id AND wt.game_id IS NULL
+');
+```
+
+## ✅ Do: SQL-standard correlated subquery
+
+```php
+DB::statement('
+    UPDATE wallet_transactions
+    SET game_id = (
+        SELECT scans.game_id
+        FROM scans
+        WHERE scans.id = wallet_transactions.scan_id
+    )
+    WHERE game_id IS NULL
+      AND scan_id IS NOT NULL
+      AND EXISTS (
+          SELECT 1 FROM scans
+          WHERE scans.id = wallet_transactions.scan_id
+            AND scans.game_id IS NOT NULL
+      )
+');
+```
+
+This works on SQLite, PostgreSQL, and MySQL identically.
+
+---
+
+## ❌ Don't: `DELETE ... USING`
+
+```php
+// Postgres-only
+DB::statement('
+    DELETE FROM wallet_transactions wt1
+    USING wallet_transactions wt2
+    WHERE wt1.scan_id = wt2.scan_id AND wt1.id > wt2.id
+');
+```
+
+## ✅ Do: two-step ID-based delete
+
+```php
+$duplicateIds = DB::table('wallet_transactions as wt1')
+    ->join('wallet_transactions as wt2', function ($join) {
+        $join->on('wt1.scan_id', '=', 'wt2.scan_id')
+            ->whereColumn('wt1.id', '>', 'wt2.id');
+    })
+    ->whereNotNull('wt1.scan_id')
+    ->pluck('wt1.id')
+    ->unique()
+    ->all();
+
+if (! empty($duplicateIds)) {
+    DB::table('wallet_transactions')->whereIn('id', $duplicateIds)->delete();
+}
+```
+
+This pattern is portable and avoids MySQL's "can't reference target table in
+subquery" restriction.
+
+---
+
+## When you need vendor-specific SQL
+
+Sometimes you legitimately need a database-specific feature (jsonb operators,
+window functions, partial indexes outside MySQL, etc). Branch on driver:
+
+```php
+if (DB::connection()->getDriverName() === 'pgsql') {
+    DB::statement('CREATE INDEX ... USING gin (...)');
+} else {
+    Schema::table(..., fn ($t) => $t->index(...));
+}
+```
+
+Document why the branch exists.
+
+---
+
+## Other migration rules
+
+- **Always implement `down()`.** No-op is acceptable for irreversible data
+  backfills, but say so explicitly: `// No-op: cannot reliably reverse`.
+- **Backfills go in their own migration**, not mixed with schema changes.
+- **Test migrations both ways** before merging: `php artisan migrate` then
+  `php artisan migrate:rollback`.
+- **Don't reference Eloquent models from migrations.** Use `DB::table()` —
+  models change over time, raw table queries don't.
+- **Add indexes for foreign keys you'll query by.** It's almost always faster.
