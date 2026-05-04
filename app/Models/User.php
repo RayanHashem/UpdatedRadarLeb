@@ -19,11 +19,24 @@ class User extends Authenticatable implements FilamentUser
     public const ADMIN_ROLES = ['super_admin', 'technical_admin', 'admin', 'staff'];
 
     /**
-     * The attributes that are mass assignable.
+     * Mass-assignable attributes.
+     *
+     * Explicit allowlist instead of `$guarded = []` so that future
+     * `$user->update($request->validated())` calls cannot accidentally set
+     * `wallet_balance`, `role`, or `email_verified_at`. Money is mutated
+     * only through dedicated paths (App\Actions\Game\AttemptScan / Filament topoff
+     * actions); the admin role is set only by seeders.
      *
      * @var list<string>
      */
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'phone_number',
+        'email',
+        'password',
+        'date_of_birth',
+        'game_id',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
