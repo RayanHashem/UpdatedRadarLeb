@@ -6,7 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Draw extends Model
 {
-    protected $guarded = [];
+    /**
+     * Mass-assignable attributes. Draws are administrative records — opened
+     * by seeders / Filament actions, closed by the cron-driven draw runner.
+     * Never written from public user input.
+     */
+    protected $fillable = [
+        'game_id',
+        'draw_number',
+        'status',
+        'opened_at',
+        'closed_at',
+        'winner_user_id',
+        'winning_scan_id',
+    ];
 
     protected function casts(): array
     {
