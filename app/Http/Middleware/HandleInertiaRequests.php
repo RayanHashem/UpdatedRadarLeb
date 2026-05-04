@@ -42,6 +42,41 @@ class HandleInertiaRequests extends Middleware
                 'location' => $request->url(),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+
+            // i18n payload — see resources/js/composables/useTranslate.ts.
+            'locale' => app()->getLocale(),
+            'locales' => config('contact.locales'),
+            'translations' => $this->loadTranslations(app()->getLocale()),
+
+            // Public values we used to hardcode in Vue components.
+            'contact' => [
+                'phone' => config('contact.support_phone'),
+            ],
         ];
+    }
+
+    /**
+     * Read the translation map for $locale from lang/<locale>.json.
+     *
+     * We deliberately ship the full map per request so Vue's useTranslate()
+     * stays synchronous. The file is small (a few KB) and the JSON parses
+     * are cheap; we cache the decoded array statically to avoid re-reading
+     * on the same request lifecycle.
+     */
+    protected function loadTranslations(string $locale): array
+    {
+        static $cache = [];
+
+        if (isset($cache[$locale])) {
+            return $cache[$locale];
+        }
+
+        $path = base_path("lang/{$locale}.json");
+
+        if (! is_file($path)) {
+            return $cache[$locale] = [];
+        }
+
+        return $cache[$locale] = json_decode(file_get_contents($path), true) ?? [];
     }
 }
