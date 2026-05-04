@@ -1,0 +1,225 @@
+---
+description: Filament 3 admin panel — resources, pages, widgets, common pitfalls
+globs:
+  - "app/Filament/**/*.php"
+alwaysApply: false
+---
+
+# Filament 3 patterns (RadarLeb-specific)
+
+The admin panel at `/admin` is built with Filament 3. Filament uses Livewire
+under the hood — never try to render Inertia/Vue inside Filament. Read
+`docs/architecture.md` for the cohabitation rules.
+
+## Generating new resources
+
+Always use the artisan generator. Never hand-create the scaffolding.
+
+```bash
+php artisan make:filament-resource GameRule
+# Generates:
+#   app/Filament/Resources/GameRuleResource.php
+#   app/Filament/Resources/GameRuleResource/Pages/CreateGameRule.php
+#   app/Filament/Resources/GameRuleResource/Pages/EditGameRule.php
+#   app/Filament/Resources/GameRuleResource/Pages/ListGameRules.php
+```
+
+Add `--view` if you need a read-only ViewPage. Add `--simple` for a single-
+form-on-a-modal flow.
+
+## Where things live
+
+```
+app/Filament/
+├── Pages/                          Custom pages (not tied to a model)
+│   ├── MobileUsers.php             Users-by-game pages
+│   ├── BikeElectronicsUsers.php
+│   ├── SUVUsers.php
+│   ├── MuscleCarUsers.php
+│   ├── SuperCashPrizeUsers.php
+│   └── Profile.php
+├── Resources/
+│   ├── DrawResource.php            Each resource has its own .php + Pages/ dir
+│   ├── DrawResource/Pages/{List,Create,Edit,View}Draw.php
+│   ├── GameResource.php
+│   ├── GameResource/Pages/...
+│   ├── ScanResource.php
+│   ├── UserResource.php
+│   ├── WalletTransactionResource.php
+│   └── WinnerResource.php
+└── Widgets/                        Dashboard widgets
+    ├── LatestWinners.php
+    ├── ScansChart.php
+    └── StatsOverview.php
+```
+
+## Resource pattern (concrete)
+
+A typical RadarLeb resource looks like this. Match this shape — don't reinvent.
+
+```php
+namespace App\Filament\Resources;
+
+use App\Models\Game;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+
+class GameResource extends Resource
+{
+    protected static ?string $model = Game::class;
+    protected static ?string $navigationIcon = 'heroicon-o-trophy';
+    protected static ?string $navigationGroup = 'Gameplay';
+
+    public static function form(Form $form): Form
+    {
+        return $form->schema([
+            Forms\Components\TextInput::make('name')->required(),
+            Forms\Components\TextInput::make('price_to_play')
+                ->numeric()
+                ->required()
+                ->helperText('Radar units per scan (1, 4, 8, 24, 32)'),
+            // ⚠️ price_to_play is RADAR UNITS, not USD. Don't add a $ prefix here.
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')->searchable(),
+                Tables\Columns\TextColumn::make('price_to_play')
+                    ->label('Cost (radar units)'),
+                Tables\Columns\TextColumn::make('current_amount')
+                    ->money('USD'),  // current_amount IS in USD-equivalent
+            ])
+            ->actions([Tables\Actions\EditAction::make()]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index'  => Pages\ListGames::route('/'),
+            'create' => Pages\CreateGame::route('/create'),
+            'edit'   => Pages\EditGame::route('/{record}/edit'),
+        ];
+    }
+}
+```
+
+## Disabling actions intentionally
+
+Many of our resources block create/delete because admins shouldn't add users
+through the panel — that's seeders' job. Pattern:
+
+```php
+public static function canCreate(): bool { return false; }
+public static function canEdit($record): bool { return true; }
+public static function canDelete($record): bool { return false; }
+```
+
+If you see this on a resource, it's intentional. Don't "fix" it.
+
+## Custom action — top-up wallet (concrete example)
+
+`UserResource` has a `topoffRadarCash` action. Pattern for any custom admin
+action that mutates state:
+
+```php
+Tables\Actions\Action::make('topoffRadarCash')
+    ->label('Top up Radar Cash')
+    ->icon('heroicon-o-banknotes')
+    ->form([
+        Forms\Components\TextInput::make('amount')
+            ->numeric()->required()->minValue(1),
+    ])
+    ->action(function (User $record, array $data) {
+        DB::transaction(function () use ($record, $data) {
+            $record->wallet_balance += $data['amount'];
+            $record->save();
+
+            WalletTransaction::create([
+                'user_id'  => $record->id,
+                'amount'   => $data['amount'],
+                'type'     => 'topup',
+                'game_id'  => null,            // Top-ups have NO game
+                'scan_id'  => null,
+            ]);
+        });
+
+        Notification::make()
+            ->title('Top-up complete')
+            ->success()
+            ->send();
+    })
+    ->requiresConfirmation();
+```
+
+Key rules in that action:
+- `DB::transaction()` so the balance update + wallet row are atomic
+- `game_id = null` for top-ups (see `docs/architecture.md` wallet rule #3)
+- Use `Notification::make()` — never `dd()` or `flash()`
+- `requiresConfirmation()` for any destructive or money-moving action
+
+## Filtering by wallet history (the multi-game pattern)
+
+The "Users by game" pages filter by `wallet_transactions.game_id`, NOT
+`users.game_id`. This is because users can spend on multiple games. Pattern:
+
+```php
+// In e.g. app/Filament/Pages/MobileUsers.php
+protected function getTableQuery(): Builder
+{
+    $gameId = Game::where('name', 'Mobile')->value('id');
+
+    return User::query()
+        ->whereHas('walletTransactions', function (Builder $q) use ($gameId) {
+            $q->where('game_id', $gameId)
+              ->whereIn('type', ['debit', 'play', 'spend']);
+        });
+}
+```
+
+Don't filter by `users.game_id` on these pages — that breaks multi-game
+spending visibility. See `docs/history.md` for context.
+
+## Widgets — keep queries bounded
+
+Dashboard widgets (`StatsOverview`, `LatestWinners`, `ScansChart`) currently
+have unbounded queries. When adding a new widget, always:
+
+```php
+// Bound the query
+return Winner::query()
+    ->latest('created_at')
+    ->limit(10)
+    ->with(['user:id,name', 'game:id,name'])  // Eager load + select only what you need
+    ->get();
+```
+
+If a widget depends on `groupBy()`, add an explicit `limit()` after it. Don't
+return unbounded data to the dashboard.
+
+## After `composer update` or new Filament packages
+
+```bash
+php artisan filament:upgrade
+```
+
+This republishes `public/{js,css}/filament/`. Skip it and the admin panel
+will render with broken styles after a dep bump.
+
+## What NOT to do
+
+- **Don't render Inertia/Vue inside Filament.** Different rendering pipelines.
+- **Don't `dd()` or `var_dump()` inside an action handler.** It breaks the
+  Livewire round-trip. Use `Notification::make()` for visible feedback or
+  `Log::info()` for diagnostics.
+- **Don't put `$` in front of `price_to_play`.** It's radar units. Use a
+  `helperText('Radar units')` instead.
+- **Don't bypass `WalletTransaction::boot()` validation** by inserting via
+  `DB::insert`. Always go through the Eloquent model.
+- **Don't re-enable `canCreate()` on `UserResource` without thinking.** Users
+  belong to seeders; admins don't create real customers via the panel.
