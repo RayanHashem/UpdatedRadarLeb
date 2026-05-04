@@ -52,7 +52,7 @@ const submit = () => {
                     <div class="d-flex justify-content-center align-items-center gap-3 mt-4 w-100">
                         <button
                             class="btn btn-custom-1 btn-custom"
-                            style="background-color:rgb(102, 175, 219);"
+                            style="background-color: var(--rl-color-cyan);"
                             type="submit"
                             :tabindex="2"
                             :disabled="form.processing"
@@ -70,7 +70,7 @@ const submit = () => {
                         <Link
                             href="/login"
                             class="btn btn-custom-1 btn-custom"
-                            style="background-color:rgb(102, 175, 219); color: white;"
+                            style="background-color: var(--rl-color-cyan); color: var(--rl-color-text);"
                             :tabindex="3"
                         >
                             Back to Login
