@@ -2,11 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Winner extends Model
 {
-    protected $guarded = [];
+    use HasFactory;
+
+    /**
+     * Mass-assignable attributes. Winner rows are recorded by the scan
+     * pipeline / admin actions only — never from user input — so this list
+     * is more for documentation than defence. Still explicit > implicit.
+     */
+    protected $fillable = [
+        'game_id',
+        'game_name',
+        'user_id',
+        'user_name',
+        'winner_user_id',
+        'scan_id',
+        'won_at',
+    ];
 
     protected function casts(): array
     {
