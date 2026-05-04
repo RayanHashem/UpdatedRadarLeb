@@ -1,0 +1,86 @@
+# Cursor project rules — RadarLeb
+#
+# This file is read by Cursor on every prompt. It is intentionally short.
+# The full project context is in CLAUDE.md (also linked from AGENTS.md).
+# Per-domain rule files in .cursor/rules/*.mdc activate automatically by
+# file glob — you don't need to mention them in prompts.
+
+You are working on RadarLeb: a Laravel 12 + Filament 3 + Inertia/Vue 3 + Tailwind 4
+sweepstakes app. Backend runs on PHP 8.4 against SQLite locally and PostgreSQL
+in production. **Read CLAUDE.md before making any non-trivial change** — it's
+the source of truth for project conventions, and links into docs/{architecture,
+security,deploy,history}.md and the per-domain Cursor rule files.
+
+## Non-negotiable rules
+
+1. **Migrations are SQLite + Postgres portable.** Never write `ALTER COLUMN ... TYPE`,
+   `UPDATE ... FROM`, or `DELETE ... USING` raw SQL. Use Laravel's `Schema::change()`
+   or SQL-standard correlated subqueries. See `.cursor/rules/migrations.mdc` for
+   concrete before/after examples.
+
+2. **Two auth guards exist:** `web` (public, App\Models\User) and `admin`
+   (Filament, App\Models\AdminUser). Don't merge them. `PortBasedSessionIsolation`
+   middleware separates their session cookies (despite the misleading name —
+   it's actually path-based, see docs/history.md).
+
+3. **`DevAutoAuth` has 3 layers of defense** (environment check + hostname check +
+   not registered in bootstrap/app.php). Keep all three. Never register it in
+   production. See docs/security.md.
+
+4. **Wallet invariants are real.** `wallet_transactions.amount` must equal
+   `scans.cost` (1¢ tolerance, validated in `WalletTransaction::boot()`).
+   Top-ups have `game_id = NULL`. Type values are lowercase. One transaction
+   per scan (UNIQUE partial index on `scan_id`). Always go through the Eloquent
+   model — never `DB::insert` directly. See docs/architecture.md.
+
+5. **Public UI = Inertia/Vue. Admin UI = Filament/Livewire.** Don't cross-render
+   between them. They share routes/middleware but render through totally
+   different pipelines.
+
+6. **No files at the project root** unless they're in the whitelist inside
+   `scripts/cleanup-phase-2.sh`. New code goes in its proper subdirectory.
+
+7. **Mass assignment hygiene.** Every Eloquent model has `$fillable`. Controllers
+   use Form Requests for validation: `function update(UserUpdateRequest $req)`.
+   Never `$user->update($request->all())`.
+
+8. **`env()` only inside `config/*.php`.** Code reads `config('section.key')`.
+   This makes `php artisan config:cache` work.
+
+9. **When you add an env var, also add it to `.env.example`** so the next
+   dev/AI sees the field.
+
+10. **Never commit:** `.env`, `bootstrap/cache/*`, `storage/{logs,framework,pail,debugbar}/*`,
+    `database/database.sqlite`, `*.log`, `composer.phar`. The `.gitignore`
+    enforces this; if you find yourself fighting it, ask why.
+
+## Tone & style
+
+- Match the project's existing code style (Laravel Pint + Prettier + ESLint config in repo).
+- Don't add comments for trivial code. Do add comments when fixing a non-obvious bug,
+  citing the symptom you saw and why the fix works.
+- Prefer Eloquent over raw SQL. Prefer Form Requests over inline validation.
+- TypeScript over JS for new frontend code. Composition API (`<script setup>`).
+- Pure functions and small components; pull logic out of templates.
+- For money-moving code, write a test (`tests/Feature/`) — coverage is thin.
+
+## Quick commands
+
+- `bash scripts/dev-setup.sh` — first-time / re-bootstrap
+- `composer run dev` — start all dev services
+- `composer test` — run PHPUnit
+- `npm run lint && ./vendor/bin/pint` — lint everything
+- `php artisan filament:upgrade` — refresh Filament admin assets after deps change
+
+## Known issues / fragile areas
+
+(Don't refactor these without thinking — see docs/history.md and the
+audit notes in CLAUDE.md "10 things you must know":)
+
+- `games.price_to_play` is RADAR UNITS, not USD. Some Filament UI labels still print `$`.
+- Service Worker registration in `resources/js/app.ts` is intentionally disabled.
+- Money-path tests live in `tests/Feature/`. Run `composer test` before pushing. New money-touching code needs tests.
+- `/scan/{game}` and `/winners` have no rate limiting.
+- Empty stub controller methods in `app/Http/Controllers/Api/GameController.php` — delete on sight.
+
+When in doubt, read CLAUDE.md and the docs/ folder.
