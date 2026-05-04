@@ -1,0 +1,112 @@
+/*
+ * RadarLeb design tokens — extracted from the Figma file
+ *   https://www.figma.com/design/LhjX8xwsIhXyyqepZoMJ9V/Radar-Leb-initial-files
+ *
+ * Two surfaces:
+ *   1. CSS custom properties (`:root`) — usable from any stylesheet via
+ *      `var(--rl-color-navy)` etc. Existing hand-written CSS in app.css uses
+ *      hex codes inline today; new code should reach for these vars first.
+ *
+ *   2. Tailwind 4 `@theme` block — generates utility classes like
+ *      `bg-radar-navy`, `text-radar-cyan`, `rounded-radar-pill`. Use these
+ *      in Vue templates instead of arbitrary `style="..."` strings.
+ *
+ * The token names are deliberately prefixed `rl-` / `radar-` so they can't
+ * collide with Tailwind's defaults or with Bootstrap's `--bs-*`.
+ *
+ * If you change a value here, every place that uses it via the variable
+ * updates automatically. If you change a value via inline hex in some Vue
+ * template, you've created a divergence — fix the template to use the var.
+ */
+
+/* -----------------------------------------------------------------------
+ * 1. CSS custom properties
+ * --------------------------------------------------------------------- */
+:root {
+    /* ---- Surfaces (backgrounds, panels, dialogs) ---------------------- */
+    --rl-color-navy:        #06212e;       /* page bg + html bg          */
+    --rl-color-navy-deep:   #04333f;       /* slightly lighter ink color */
+    --rl-color-navy-panel:  rgba(6, 33, 46, 0.8); /* overlay sheet bg    */
+    --rl-color-glass:       rgba(217, 217, 217, 0.9); /* light panel bg  */
+
+    /* ---- Brand accents ----------------------------------------------- */
+    --rl-color-cyan:        #62c3ff;       /* "Sign in" + radar progress */
+    --rl-color-cyan-soft:   #48fdd0;       /* gradient companion         */
+    --rl-color-coral:       #e4787e;       /* "Sign up" + warning chips  */
+    --rl-color-coral-soft:  rgba(228, 120, 126, 0.2);
+
+    /* ---- Status (radar online / offline, success / error) ----------- */
+    --rl-color-green:       #3ddc84;       /* radar online dot           */
+    --rl-color-green-deep:  #06ac06;       /* deeper success in widgets  */
+    --rl-color-red:         #ff4757;       /* radar offline dot          */
+    --rl-color-blue:        #5aaefc;       /* music-on toggle, info pill */
+
+    /* ---- Text -------------------------------------------------------- */
+    --rl-color-text:        #ffffff;
+    --rl-color-text-muted:  #c2ccce;
+    --rl-color-text-dim:    #9ca3af;
+    --rl-color-text-on-light: #04333f;
+
+    /* ---- Typography -------------------------------------------------- */
+    --rl-font-display:      'Bungee', 'GE Flow', sans-serif;
+    --rl-font-body:         'SF Pro Text', -apple-system, BlinkMacSystemFont,
+                            'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    --rl-fs-display:        clamp(28px, 6vw, 48px);   /* "RADAR LEB"     */
+    --rl-fs-h1:             clamp(22px, 4vw, 32px);
+    --rl-fs-h2:             clamp(18px, 3vw, 24px);
+    --rl-fs-body:           16px;
+    --rl-fs-small:          14px;
+
+    /* ---- Radii (Figma uses pill-shaped CTAs everywhere) ------------- */
+    --rl-radius-pill:       999px;          /* sign in / sign up buttons */
+    --rl-radius-card:       16px;           /* prize cards               */
+    --rl-radius-input:      32px;           /* phone / password fields   */
+    --rl-radius-tile:       12px;           /* small icon tiles          */
+
+    /* ---- Spacing (8-pt grid) ---------------------------------------- */
+    --rl-space-1:           4px;
+    --rl-space-2:           8px;
+    --rl-space-3:           12px;
+    --rl-space-4:           16px;
+    --rl-space-6:           24px;
+    --rl-space-8:           32px;
+    --rl-space-12:          48px;
+    --rl-space-16:          64px;
+
+    /* ---- Shadows (subtle on dark; mostly inner-shadow for fields) --- */
+    --rl-shadow-glow-cyan:  0 0 24px rgba(98, 195, 255, 0.35);
+    --rl-shadow-glow-coral: 0 0 24px rgba(228, 120, 126, 0.35);
+    --rl-shadow-card:       0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* -----------------------------------------------------------------------
+ * 2. Tailwind 4 theme — utilities derived from the same tokens
+ *
+ * Tailwind 4 reads `@theme` blocks at build time and generates utility
+ * classes for every key. Keep the names ergonomic: `bg-radar-navy` vs
+ * `bg-rl-color-navy`. The `--color-*` and `--font-*` namespaces are
+ * Tailwind conventions — see https://tailwindcss.com/docs/theme.
+ * --------------------------------------------------------------------- */
+@theme {
+    /* Colors */
+    --color-radar-navy:        #06212e;
+    --color-radar-navy-deep:   #04333f;
+    --color-radar-cyan:        #62c3ff;
+    --color-radar-cyan-soft:   #48fdd0;
+    --color-radar-coral:       #e4787e;
+    --color-radar-green:       #3ddc84;
+    --color-radar-red:         #ff4757;
+    --color-radar-blue:        #5aaefc;
+    --color-radar-text-dim:    #c2ccce;
+
+    /* Fonts */
+    --font-display: 'Bungee', 'GE Flow', sans-serif;
+    --font-body:    'SF Pro Text', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+    /* Radii */
+    --radius-radar-pill:  999px;
+    --radius-radar-card:  16px;
+    --radius-radar-input: 32px;
+    --radius-radar-tile:  12px;
+}
