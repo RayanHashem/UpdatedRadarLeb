@@ -1,0 +1,47 @@
+# Files the Docker build doesn't need (and that bloat the build context).
+
+# Local secrets / state
+.env
+.env.*
+!.env.example
+.git
+.github
+.idea
+.vscode
+.zed
+
+# Local DB
+database/database.sqlite
+database/database.sqlite-journal
+
+# Already-installed deps — re-installed inside the build
+node_modules
+vendor
+public/build
+public/hot
+
+# Laravel runtime caches
+bootstrap/cache/*
+!bootstrap/cache/.gitignore
+storage/logs/*
+!storage/logs/.gitignore
+storage/framework/cache/*
+!storage/framework/cache/.gitignore
+storage/framework/sessions/*
+!storage/framework/sessions/.gitignore
+storage/framework/views/*
+!storage/framework/views/.gitignore
+storage/pail/*
+!storage/pail/.gitignore
+
+# Tests
+.phpunit.cache
+.phpunit.result.cache
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Plain test scripts that didn't get pruned
+**/*.swp
+**/*.swo
