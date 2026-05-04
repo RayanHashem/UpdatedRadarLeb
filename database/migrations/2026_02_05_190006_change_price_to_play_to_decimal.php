@@ -3,24 +3,27 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
     /**
-     * Run the migrations.
+     * Convert games.price_to_play from INTEGER to DECIMAL(12,2).
+     *
+     * Originally written with raw Postgres-only SQL (`ALTER COLUMN ... TYPE ... USING ...`),
+     * which broke local SQLite dev. Rewritten to use Laravel's Schema builder so the same
+     * migration runs on SQLite, MySQL, and Postgres.
      */
     public function up(): void
     {
-        // PostgreSQL requires explicit type cast
-        DB::statement('ALTER TABLE games ALTER COLUMN price_to_play TYPE DECIMAL(12,2) USING price_to_play::DECIMAL(12,2)');
+        Schema::table('games', function (Blueprint $table) {
+            $table->decimal('price_to_play', 12, 2)->default(1)->change();
+        });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        DB::statement('ALTER TABLE games ALTER COLUMN price_to_play TYPE INTEGER USING price_to_play::INTEGER');
+        Schema::table('games', function (Blueprint $table) {
+            $table->integer('price_to_play')->default(1)->change();
+        });
     }
 };
