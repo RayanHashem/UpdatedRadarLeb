@@ -6,19 +6,28 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
-     * Run the migrations.
-     * Fix amount mismatches: ensure wallet_transactions.amount = scans.cost for scan-related transactions.
+     * Fix amount mismatches: ensure wallet_transactions.amount = scans.cost for
+     * scan-related transactions (allowing 1¢ tolerance for rounding).
+     *
+     * Originally used Postgres-only `UPDATE ... FROM` join syntax. Rewritten as a
+     * SQL-standard correlated subquery so it runs on SQLite, MySQL, and Postgres.
      */
     public function up(): void
     {
-        // Update wallet_transactions.amount to match scans.cost where they differ
-        // (Allow 1 cent tolerance for rounding differences)
         DB::statement("
-            UPDATE wallet_transactions wt
-            SET amount = s.cost
-            FROM scans s
-            WHERE wt.scan_id = s.id
-            AND ABS(wt.amount - s.cost) > 0.01
+            UPDATE wallet_transactions
+            SET amount = (
+                SELECT scans.cost
+                FROM scans
+                WHERE scans.id = wallet_transactions.scan_id
+            )
+            WHERE scan_id IS NOT NULL
+              AND EXISTS (
+                  SELECT 1
+                  FROM scans
+                  WHERE scans.id = wallet_transactions.scan_id
+                    AND ABS(wallet_transactions.amount - scans.cost) > 0.01
+              )
         ");
     }
 
@@ -27,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Cannot reliably reverse amount corrections
+        // Cannot reliably reverse amount corrections.
     }
 };
