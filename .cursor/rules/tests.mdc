@@ -1,0 +1,200 @@
+---
+description: Testing patterns — PHPUnit, feature tests, factories, friendly to a Laravel beginner
+globs:
+  - "tests/**/*.php"
+  - "database/factories/**/*.php"
+alwaysApply: false
+---
+
+# Tests (Laravel 12 / PHPUnit)
+
+Money-path test coverage lives in `tests/Feature/`:
+
+- `ScanFlowTest` — POST /scan/{game}: happy path, insufficient funds, disabled game, radar offline, atomicity, auth.
+- `WalletTransactionInvariantsTest` — model boot hooks: type lowercasing + amount/cost match (1¢ tolerance).
+- `AuthFlowTest` — register, login, logout, under-18 rejection, unique phone.
+- `Api/ApiEndpointsTest` — /games, /me, /me/game, /winners (auth, pagination, hard cap).
+- `MassAssignmentGuardTest` — regression for $fillable lockdown (wallet_balance / role / current_amount can't be mass-assigned).
+- `HealthAndLocaleTest` — /db-check auth + locale switching.
+
+Run `composer test` before pushing. When you add money-touching code, add a
+test before merging.
+
+If you're new to Laravel testing, the headline is: Laravel ships PHPUnit
+configured and ready. Run all tests with `composer test`. Run one file with
+`php artisan test --filter=AuthenticationTest`. The first time you run them,
+the test runner uses an **in-memory SQLite database** (config'd in
+`phpunit.xml`), so your real `database/database.sqlite` is untouched.
+
+## Two flavors of test
+
+```
+tests/
+├── Feature/    HTTP-level tests. Hit a route, assert response. Use the DB.
+├── Unit/       Pure logic tests. No DB, no HTTP, no Laravel. Just PHP.
+└── TestCase.php    Base class — extend this in feature tests
+```
+
+If you're testing "what happens when a user POSTs to /scan/3", that's a
+**Feature test**. If you're testing "does this currency formatter return the
+right string for negative values", that's a **Unit test**.
+
+When in doubt, write a Feature test. Real bugs live in the integration
+between layers — controller, model, DB — and Feature tests cover all three.
+
+## Anatomy of a good Feature test
+
+```php
+namespace Tests\Feature;
+
+use App\Models\Game;
+use App\Models\User;
+use App\Models\WalletTransaction;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ScanTest extends TestCase
+{
+    use RefreshDatabase;  // Wipes DB between tests
+
+    /** @test */
+    public function a_user_can_scan_a_game_they_can_afford(): void
+    {
+        // Arrange
+        $game = Game::factory()->create(['price_to_play' => 4, 'name' => 'Bike & Electronics']);
+        $user = User::factory()->create(['wallet_balance' => 10]);
+
+        // Act
+        $response = $this->actingAs($user)->post("/scan/{$game->id}");
+
+        // Assert
+        $response->assertOk();
+
+        $this->assertDatabaseHas('scans', [
+            'user_id' => $user->id,
+            'game_id' => $game->id,
+            'cost'    => 4,
+        ]);
+
+        $this->assertDatabaseHas('wallet_transactions', [
+            'user_id' => $user->id,
+            'game_id' => $game->id,
+            'amount'  => 4,
+            'type'    => 'debit',
+        ]);
+
+        $this->assertEquals(6, $user->fresh()->wallet_balance);
+    }
+
+    /** @test */
+    public function a_user_cannot_scan_if_they_cannot_afford_it(): void
+    {
+        $game = Game::factory()->create(['price_to_play' => 32]);
+        $user = User::factory()->create(['wallet_balance' => 5]);
+
+        $response = $this->actingAs($user)->post("/scan/{$game->id}");
+
+        $response->assertStatus(422);
+        $this->assertDatabaseCount('scans', 0);
+        $this->assertDatabaseCount('wallet_transactions', 0);
+    }
+}
+```
+
+The pattern: **Arrange → Act → Assert.** Three blocks, each one or two lines
+unless it's a complex setup.
+
+## Factories you have available
+
+Models with factories (in `database/factories/`):
+- `UserFactory` — public users (web guard)
+- `GameFactory` — the five games
+- `ScanFactory`, `WinnerFactory`, `WalletTransactionFactory`, `DrawFactory`
+
+Use them; don't `Model::create([...])` in tests. Factories are how you
+declare "I need a fixture, give me one" without spelling out every required
+field.
+
+```php
+// Good
+$user = User::factory()->create(['wallet_balance' => 100]);
+
+// Bad — verbose, breaks when migrations add required columns
+$user = User::create([
+    'name' => 'Test', 'phone' => '...', 'password' => '...',
+    'wallet_balance' => 100, /* every other required field */
+]);
+```
+
+## Asserting against the DB
+
+| Helper | Use when |
+|---|---|
+| `assertDatabaseHas('table', [...])` | "A row with these values exists" |
+| `assertDatabaseMissing('table', [...])` | "No row with these values" |
+| `assertDatabaseCount('table', N)` | "Exactly N rows in this table" |
+| `assertModelExists($model)` | "This particular Eloquent instance still exists" |
+| `assertModelMissing($model)` | "This was deleted" |
+
+For wallet/scan tests, use `assertDatabaseHas('wallet_transactions', ...)`
+rather than fetching with `WalletTransaction::where(...)` — the helper has
+better diff output when it fails.
+
+## Authentication in tests
+
+```php
+$user = User::factory()->create();
+
+// Web guard (public users)
+$this->actingAs($user)->get('/dashboard');
+
+// Admin guard (Filament)
+$admin = AdminUser::factory()->create();
+$this->actingAs($admin, 'admin')->get('/admin');
+```
+
+For routes that need auth, `actingAs($user)` swaps in a logged-in user for
+the duration of the test. No need to POST to /login.
+
+## Don't run real migrations against your dev DB
+
+`phpunit.xml` is configured to use **`:memory:` SQLite** for tests. That's
+why `RefreshDatabase` is fast and doesn't delete your local seed data. If
+you ever see tests touching `database/database.sqlite`, something is
+misconfigured — open `phpunit.xml` and check `DB_CONNECTION=sqlite` and
+`DB_DATABASE=:memory:` are set in the `<php>` block.
+
+## What to test first (priority order)
+
+1. **`Game::attemptScan()`** — the core money-moving method. Test:
+   - happy path (user can afford → scan happens, wallet drops, transaction created)
+   - insufficient funds → 422, no scan, no transaction
+   - duplicate scan_id → second one returns the existing transaction (`firstOrCreate`)
+   - failed scan still creates a transaction (`scan.success = false` but row exists)
+
+2. **Auth flows** — `RegisteredUserController`, `AuthenticatedSessionController`.
+   Test:
+   - register with valid phone + password → user created, logged in
+   - login with wrong password → 422
+   - logout clears the session
+
+3. **Admin top-up action** — the `topoffRadarCash` action in `UserResource`.
+   Test:
+   - admin tops up → wallet rises, transaction has `game_id = null`, `type = topup`
+   - non-admin can't reach it
+
+4. **Wallet invariants** (the `WalletTransaction::boot()` rules):
+   - saving with mismatched amount/cost throws / fails
+   - saving with `'TOPUP'` normalizes to `'topup'`
+
+## Don't
+
+- **Don't share state between tests.** That's what `RefreshDatabase` is for.
+  If you find yourself writing `setUp()` that depends on the previous test,
+  rethink.
+- **Don't seed in tests.** Factories make exactly the data you need.
+- **Don't sleep.** No `sleep(1)`, no `usleep()`. If you're waiting on async
+  work, use `Bus::fake()` / `Queue::fake()` / `Mail::fake()`.
+- **Don't make HTTP calls to external services.** Mock with `Http::fake()`.
+- **Don't catch and `assertTrue(true)`.** Either expect a specific exception
+  with `$this->expectException(...)` or assert the actual outcome.
