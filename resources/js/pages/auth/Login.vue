@@ -1,14 +1,20 @@
 <script setup lang="ts">
+/*
+ * Login page — adapted from the Figma "Sign-in Page" (full-page 6 desktop /
+ * full-page 7 mobile). Combines visual sign-up + sign-in entry in one view:
+ *   - Sign in posts the form to /login (uses Mobile Number + Password).
+ *     The "Name" field is decorative for sign-in (Figma includes it but
+ *     login doesn't need it on the backend).
+ *   - Sign up navigates to /register and prefills name + phone if entered
+ *     so the user doesn't have to retype them.
+ *
+ * Layout: centered on mobile (Figma "Small Screen"), right-anchored on
+ * desktop (Figma "Big Screen"). The .page-login background image stays
+ * full-bleed; the form container is positioned via Bootstrap utilities.
+ */
 import InputError from '@/components/InputError.vue';
-import TextLink from '@/components/TextLink.vue';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import AuthBase from '@/layouts/AuthLayout.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, useForm, router } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
-import { Link } from '@inertiajs/vue3';
 
 defineProps<{
     status?: string;
@@ -16,6 +22,7 @@ defineProps<{
 }>();
 
 const form = useForm({
+    name: '',                    // decorative for sign-in, prefilled into /register on Sign up
     phone_number: '',
     password: '',
     remember: false,
@@ -26,82 +33,124 @@ const submit = () => {
         onFinish: () => form.reset('password'),
     });
 };
+
+/**
+ * Sign Up: take the user to /register and pass through whatever they've
+ * already typed (name + phone) via Inertia history state. Register.vue
+ * reads these on mount and pre-fills the matching inputs so the user
+ * doesn't lose what they wrote.
+ */
+const goToSignUp = () => {
+    router.visit(route('register'), {
+        method: 'get',
+        data: {
+            name: form.name,
+            phone_number: form.phone_number,
+        },
+    });
+};
 </script>
 
 <template>
-    <section id="sign-in" class="w-100 page-login">
-        <!-- The d-flex align-items-center flex-column h-100 p-3-5 ensures content is centered vertically and horizontally -->
-        <div class="d-flex align-items-center flex-column h-100 p-3-5">
-            <!-- Flag container, centered above the form -->
-            <div class="d-flex gap-4 flex-column w-100 align-items-center">
+    <section id="sign-in" class="w-100 page-login login-figma">
+        <!--
+          Layout responsive to Figma frames:
+            • Mobile  (Small Screen): logo centred above the form, form centred.
+            • Desktop (Big Screen)  : logo top-right, form pinned to the right
+                                       half. Driven by the .login-figma rules
+                                       in the <style> block at the bottom of
+                                       this file (avoid Tailwind/Bootstrap
+                                       class-name mixing).
+        -->
+        <div class="login-figma__layout d-flex align-items-center flex-column h-100 p-3-5">
+
+            <!-- Logo block. Centred on mobile, parked top-right on desktop. -->
+            <div class="login-figma__logo d-flex gap-4 flex-column align-items-center">
                 <img src="/assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
             </div>
-            <!-- Form container with custom styling defined in app.css -->
-            <div class="form-container d-flex flex-column gap-5">
+
+            <!--
+              Form container — same .form-container CSS as before so the
+              pill-shaped fields and dark-glass background still apply. On
+              desktop we cap the width and pad it from the right edge via
+              .login-figma__form-shell below.
+            -->
+            <div class="login-figma__form-shell form-container d-flex flex-column gap-5">
                 <form @submit.prevent="submit">
-                    <!-- Phone Number Input -->
+
+                    <!-- Name (decorative for sign-in, pre-fills /register on Sign up). -->
                     <input
                         type="text"
                         class="form-control mb-3 custom-input"
-                        placeholder="Phone Number"
+                        placeholder="Name"
+                        id="name"
+                        :tabindex="1"
+                        autocomplete="name"
+                        v-model="form.name"
+                    />
+                    <InputError :message="form.errors.name" variant="material" />
+
+                    <!-- Mobile Number (login credential 1 of 2). -->
+                    <input
+                        type="text"
+                        class="form-control mb-3 custom-input"
+                        placeholder="Mobile Number"
                         id="phone_number"
                         required
-                        autofocus
-                        :tabindex="1"
-                        autocomplete="username"
+                        :tabindex="2"
+                        autocomplete="tel"
+                        inputmode="numeric"
                         v-model="form.phone_number"
                     />
                     <InputError :message="form.errors.phone_number" variant="material" />
 
-                    <!-- Password Input -->
+                    <!-- Password (login credential 2 of 2). -->
                     <input
                         type="password"
                         class="form-control mb-3 custom-input"
                         placeholder="Password"
                         id="password"
                         required
-                        :tabindex="2"
+                        :tabindex="3"
                         autocomplete="current-password"
                         v-model="form.password"
                     />
                     <InputError :message="form.errors.password" variant="material" />
 
-                    <!-- Buttons and Forgot Password link, centered -->
-                    <!-- Changed from flex-column to flex-row for side-by-side buttons -->
+                    <!--
+                      Buttons row: Sign up (coral) | Sign in (cyan). Colors
+                      sourced from the Figma "Game Data" palette via
+                      design tokens (resources/css/tokens.css).
+                    -->
                     <div class="d-flex justify-content-center align-items-center gap-3 mt-4 w-100 auth-button-row">
-                        <!-- Sign Up button (darker style) -->
-                        <Link
-                            as="button"
-                            :href="route('register')"
+                        <button
+                            type="button"
                             class="btn btn-custom-2 btn-custom"
-                            style="font-weight: normal;
-                                   background-color: #e4787e;"
+                            style="font-weight: normal; background-color: var(--rl-color-coral);"
                             :tabindex="5"
+                            @click="goToSignUp"
                         >
                             Sign up
-                        </Link>
-                        <!-- Sign In button (blue gradient style) -->
+                        </button>
                         <button
                             class="btn btn-custom-1 btn-custom"
-                            style="background-color:rgb(102, 175, 219);"
+                            style="background-color: var(--rl-color-cyan);"
                             type="submit"
                             :tabindex="4"
                             :disabled="form.processing"
                         >
                             <span v-if="!form.processing">Sign in</span>
-                            <!-- Show loading spinner if form is processing -->
                             <LoaderCircle v-else class="animate-spin" />
                         </button>
                     </div>
 
-                    <!-- Horizontal rule with shadow -->
                     <hr class="auth-divider">
-                    <!-- Forgot Password button -->
+
                     <div class="d-flex justify-content-center mt-3 w-100">
                         <a
                             href="/forgot-password"
                             class="btn btn-custom-1 btn-custom forgot-password-btn"
-                            style="background-color:rgb(102, 175, 219); color: white;"
+                            style="background-color: var(--rl-color-cyan); color: var(--rl-color-text);"
                             :tabindex="6"
                         >
                             Forgot Password?
@@ -113,3 +162,40 @@ const submit = () => {
     </section>
 </template>
 
+<style scoped>
+/*
+ * Responsive layout overrides for the Figma "Big Screen" variant.
+ * 768px is the Tailwind / Bootstrap md breakpoint we standardise on
+ * elsewhere in the app. On screens narrower than that the layout falls
+ * through to the centered mobile rendering.
+ *
+ * Cap the form width even on mobile so very wide phones (or tablets in
+ * portrait) don't stretch the pill inputs unnecessarily.
+ */
+.login-figma__form-shell {
+    width: 100%;
+    max-width: 28rem;
+}
+
+@media (min-width: 768px) {
+    .login-figma__layout {
+        flex-direction: row !important;          /* override .flex-column */
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .login-figma__logo {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: auto;
+        padding: 1.5rem;
+    }
+
+    .login-figma__form-shell {
+        margin-right: clamp(2rem, 8vw, 6rem);
+        margin-top: auto;
+        margin-bottom: auto;
+    }
+}
+</style>
