@@ -1,0 +1,75 @@
+---
+description: Laravel backend conventions — controllers, models, migrations, Filament
+globs:
+  - "app/**/*.php"
+  - "database/**/*.php"
+  - "routes/**/*.php"
+  - "config/**/*.php"
+  - "tests/**/*.php"
+alwaysApply: false
+---
+
+# Backend rules (Laravel 12)
+
+## Migrations
+
+- **Must run on both SQLite and PostgreSQL.** SQLite is local dev, Postgres is prod.
+- Use `Schema::table()->change()` instead of raw `ALTER TABLE ... ALTER COLUMN ... TYPE`.
+- For multi-row updates that join, use SQL-standard correlated subqueries, not
+  Postgres `UPDATE ... FROM` or MySQL `UPDATE ... JOIN`.
+- For dedup deletes, use the two-step pattern (collect IDs first, then `whereIn`-delete)
+  rather than `DELETE ... USING`.
+- Partial indexes (`CREATE UNIQUE INDEX ... WHERE ...`) work on both SQLite and Postgres
+  but **not MySQL** — note this if the project ever targets MySQL.
+- Always implement `down()` properly. No-op `down()` is acceptable for irreversible
+  data backfills, but say so in a comment.
+
+## Models
+
+- One Eloquent model per domain entity, lives in `app/Models/`.
+- Define `$fillable` (or `$guarded = []` with care), casts, and relations explicitly.
+- Use accessors/mutators (`Attribute::make`) for derived fields, not raw `getXAttribute`
+  unless you have to.
+
+## Controllers
+
+- Web (Inertia) controllers: `app/Http/Controllers/`.
+- API (JSON) controllers: `app/Http/Controllers/Api/`.
+- Auth controllers stay in `app/Http/Controllers/Auth/`.
+- Form Requests for validation in `app/Http/Requests/`.
+- Don't put business logic in controllers. Extract to Services or model methods.
+
+## Filament
+
+- New resource: `php artisan make:filament-resource <Name>` — never hand-create the
+  scaffolding. Customize `XResource.php` (form/table/relations) and the generated
+  pages in `XResource/Pages/`.
+- Custom admin pages live in `app/Filament/Pages/`. Widgets in `app/Filament/Widgets/`.
+- Run `php artisan filament:upgrade` after `composer update` to refresh
+  `public/{js,css}/filament/`.
+- Filament uses Livewire under the hood. Don't try to render Inertia/Vue inside
+  the admin panel.
+
+## Routes
+
+- `routes/web.php` for Inertia + traditional web routes.
+- `routes/api.php` for stateless JSON.
+- `routes/auth.php` for auth flows.
+- `routes/console.php` for scheduled artisan commands (use `Schedule::command()->daily()`).
+- Keep route names consistent: `resource.action` (e.g. `games.index`, `scans.store`).
+
+## Testing
+
+- Feature tests in `tests/Feature/` exercise HTTP endpoints with `RefreshDatabase`.
+- Unit tests in `tests/Unit/` for pure logic.
+- Use factories from `database/factories/`.
+- Run `composer test` (which clears config first to avoid stale env caching).
+
+## Money
+
+- Wallet amounts are decimals, not integers.
+- `wallet_transactions.amount` should equal `scans.cost` for scan-related rows
+  within 1¢ tolerance. There's a backfill migration; if you change the relationship,
+  update the backfill or replace it with a new migration.
+- `games.price_to_play` is **radar units** (1, 4, 8, 24, 32), not USD. Don't mix
+  semantics.
