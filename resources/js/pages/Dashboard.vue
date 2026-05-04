@@ -1,80 +1,29 @@
 <template>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bungee&display=swap" rel="stylesheet">
-<!--    <link href="https://db.onlinewebfonts.com/c/85040c569cc6193905af9f9ee765baf4?family=GE+Flow" rel="stylesheet">-->
+    <!--
+      Bungee + preconnect <link> tags moved to resources/views/app.blade.php
+      so they're declared once per document load instead of once per Inertia
+      visit. See the comment in app.blade.php near the @vite directive.
+
+      The locale switcher used to render here as `position: fixed; top: 12px;
+      inset-inline-end: 12px;` — that put it right where the new top-bar
+      labeled icons sit, so EN/AR was overlapping LOGOUT. It now lives inside
+      `.bar-right` (see the top bar below), so it flows with the layout.
+    -->
 
     <div>
         <div v-if="activeOverlay" class="overlay" @click.self="activeOverlay = null">
 
              <div class="overlay-content">
-                <template v-if="activeOverlay === 'help'">
-                    <div class="help-container">
-                        <h1 class="overlay-title">RADAR LEB</h1>
-                        <p dir="rtl">
-                            هي لعبة ممتعة تجمع بين الاستراتيجية و الحظ. الهدف الرئيسي من اللعبة هو قيام اللاعبين بمسح من عدة مناطق على طول الأراضي اللبنانية وجمع الهوائيات باستخدام واجهة رادار. كل عملية مسح ناجحة تضيف إلى عداد الهوائيات الخاص باللاعب. عند اكتشاف ستة هوائيات نشطة, يفوز اللاعب بعد اختياره من مجموعة متنوعة من الجوائز القيمة, بما في ذلك الهواتف المحموله, الإلكترونيات, الدراجات النارية, سيارات الدفع الرباعي والسيارات الخارقة.
-                        </p>
-                        <h2 class="overlay-subtitle" dir="rtl">كيفية المشاركة ولعب <span class="ltr-inline">RADAR LEB</span></h2>
-                        <ol dir="rtl">
-                            <li>قم بتحميل تطبيق WISH OR OMT OR SUYOOLعلى هاتفك او خدمة DOOR TO DOOR PICK UP CASH</li>
-                            <li>اشحن محفظتك بالدولار بالمبلغ الأدنى المذكور في النص أدناه, ثم قم بتحويل المبلغ إلى الرقم 71484833 وأكد التحويل عبر خدمة الواتساب مع إضافة اسمك الكامل ورقم الهاتف ومبلغ الحد الأدنى المطلوب لكل جائزة ب ال NOTE OR REASON</li>
-                            <li>تحتاج عملية تشريج الرادارات إلى محفظتك ل٢٤ ساعة كحد أقصى</li>
-                            <li>اضغط على الجائزة التي تختارها</li>
-                            <li>اضغط على زر المسح الضوئي SCAN الذي يساعدك على اكتشاف الهوائيات الموزعة على كافة المناطق اللبنانية</li>
-                            <li>بمجرد مسح واكتشاف ستة هوائيات نشطة, يفوز اللاعب بالجائزة المختارة</li>
-                        </ol>
-                        <p dir="rtl">
-                            ملاحظة: يجب استخدام زر المسح الضوئي في مواقع مختلفة داخل الأراضي اللبنانية لضمان اكتشاف الهوائيات النشطة, بعد عملية تشريج الرادارات إلى محفظتك لا يسمح للمشترك المطالبة بإعادة المبلغ نقدا
-                            يحق فقط لرابح الجائزة أن يستلمها
-                        </p>
+                <!--
+                  Help + Winners overlays — extracted to dedicated components
+                  (resources/js/components/dashboard/{HelpOverlay,WinnersOverlay}.vue)
+                  so this page file isn't carrying their template + their copy.
+                  Settings overlay stays inline below because it's intertwined
+                  with the page's password-form state.
+                -->
+                <HelpOverlay v-if="activeOverlay === 'help'" @close="activeOverlay = null" />
 
-                         <button class="a-btn a-btn-default" @click="activeOverlay = null" >
-  Back
-</button>
-
-                    </div>
-                </template>
-
-                <template v-else-if="activeOverlay === 'winners'">
-                    <div class="winners-container">
-                        <h1 class="overlay-title">WINNERS</h1>
-                        <div class="winner-card">
-                            <div class="winner-icon">
-                                <img src="/assets/imgs/winner.png" alt="Winner Icon">
-                            </div>
-                            <div class="winner-details">
-                                <span class="winner-name">USER.NAME01</span>
-                                <span class="winner-prize">WINNER DRAW 1 - BIKE</span>
-                            </div>
-                        </div>
-                        <div class="winner-card">
-                            <div class="winner-icon">
-                                <img src="/assets/imgs/winner.png" alt="Winner Icon">
-                            </div>
-                            <div class="winner-details">
-                                <span class="winner-name">USER.NAME02</span>
-                                <span class="winner-prize">WINNER DRAW 1 - SUV</span>
-                            </div>
-                        </div>
-                        <div class="winner-card">
-                             <div class="winner-icon">
-                                <img src="/assets/imgs/winner.png" alt="Winner Icon">
-                            </div>
-                            <div class="winner-details">
-                                <span class="winner-name">USER.NAME03</span>
-                                <span class="winner-prize">WINNER DRAW 1 - CASH</span>
-                            </div>
-                        </div>
-                        <!--
-                          Explicit close button — on small phones the overlay content fills
-                          ~90% of the screen, leaving ≤18px of outside tap area to dismiss
-                          via @click.self. An obvious Back button is mandatory for mobile.
-                        -->
-                        <button class="a-btn a-btn-default overlay-back-btn" @click="activeOverlay = null">
-                            Back
-                        </button>
-                    </div>
-                </template>
+                <WinnersOverlay v-else-if="activeOverlay === 'winners'" @close="activeOverlay = null" />
 
                 <template v-else-if="activeOverlay === 'settings'">
                     <div class="settings-container">
@@ -91,6 +40,18 @@
                             <button class="a-btn a-btn-default" @click="currentPage = 'password'">
                                 Change Password
                             </button>
+
+                            <!--
+                              Credits / About link. Inertia-link instead of <button>+router.visit
+                              so the user gets normal browser-back behavior from the credits page.
+                            -->
+                            <Link
+                                as="button"
+                                :href="route('credits')"
+                                class="a-btn a-btn-default"
+                            >
+                                Credits
+                            </Link>
 
                             <!-- Close the Settings overlay from the main page too (mobile UX). -->
                             <button class="a-btn a-btn-default overlay-back-btn" @click="activeOverlay = null">
@@ -137,7 +98,7 @@
                                     @click="resetPasswordFlow"
                                     style="width: 100%;"
                                 >
-                                    Back
+                                    {{ t('common.back') }}
                                 </button>
                             </div>
 
@@ -179,7 +140,7 @@
                                     @click="resetPasswordFlow"
                                     style="width: 100%;"
                                 >
-                                    Back
+                                    {{ t('common.back') }}
                                 </button>
                             </div>
                         </div>
@@ -230,6 +191,29 @@
                     </div>
                     <div class="bar-right">
                         <!--
+                          RADAR CASH balance chip. We removed the visible "RADAR CASH N"
+                          label under the store icon (Figma "Main Page" shows only the
+                          tile, no label) — but the user still needs to see their balance
+                          at a glance. Surface it here as a small pill next to the locale
+                          switcher. Same source-of-truth (`walletBalance` ref) as before;
+                          updates automatically when a scan completes or the wallet is
+                          topped up.
+                        -->
+                        <div class="bar-balance" :title="`Radar cash: ${walletBalance}`" aria-label="Radar cash balance">
+                            <img src="/assets/imgs/radar-cash.png" class="bar-balance__icon" alt="" />
+                            <span class="bar-balance__value">{{ walletBalance }}</span>
+                        </div>
+
+                        <!--
+                          Locale switcher (EN/AR) lives leftmost in the right cluster — it's
+                          meta-action (changes the whole UI language) so it sits visually
+                          separated from the navigation icons by the .bar-right gap.
+                        -->
+                        <div class="bar-locale">
+                            <LocaleSwitcher />
+                        </div>
+
+                        <!--
                           Top-bar menu icons were previously bare <img @click>, which on mobile
                           sometimes registered as a drag (finger jitter) instead of a tap, felt
                           unresponsive, and was not reachable by assistive tech. They are now
@@ -239,12 +223,15 @@
                         -->
                         <button type="button" class="menu-item-btn" aria-label="Winners" @click="openOverlay('winners')">
                             <img src="/assets/imgs/winners-button.png" class="menu-item" alt="" />
+                            <span class="menu-item-label">Winners</span>
                         </button>
                         <button type="button" class="menu-item-btn" aria-label="Help" @click="openOverlay('help')">
                             <img src="/assets/imgs/help-button.png" class="menu-item" alt="" />
+                            <span class="menu-item-label">Help</span>
                         </button>
                         <button type="button" class="menu-item-btn" aria-label="Settings" @click="openOverlay('settings')">
                             <img src="/assets/imgs/settings-button.png" class="menu-item" alt="" />
+                            <span class="menu-item-label">Settings</span>
                         </button>
                         <button type="button" class="menu-item-btn" @click="handleLogout" title="Logout" aria-label="Logout">
                             <svg class="menu-item logout-icon-stroke" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -252,6 +239,7 @@
                                 <polyline points="16 17 21 12 16 7"></polyline>
                                 <line x1="21" y1="12" x2="9" y2="12"></line>
                             </svg>
+                            <span class="menu-item-label">Logout</span>
                         </button>
                     </div>
                 </div>
@@ -297,6 +285,10 @@
                                 v-for="(config, index) in PRIZE_DISPLAY_CONFIG"
                                 :key="index"
                                 class="prize-item"
+                                :class="{
+                                    'prize-item--selected':
+                                        orderedPrizes[index] && selectedGameId === orderedPrizes[index].id,
+                                }"
                                 role="button"
                                 tabindex="0"
                                 @click="onPrizeSlotClick(index)"
@@ -335,8 +327,20 @@
 
 
 
+                <!--
+                  Bottom action row — matches Figma "Main Page": three controls
+                  on a baseline. Left and right are square cyan tile buttons
+                  (store, my-location); the center is a wide pill SCAN button.
+                  No text labels under either side icon; the wallet balance
+                  used to live under the store as "RADAR CASH N" but Figma
+                  doesn't show it here, so we'll surface it elsewhere if/when
+                  the design calls for it.
+                -->
                 <div class="button-row">
-                     <div class="cash-balance-container button-row__side button-row__side--lead"><img style="width:clamp(60px, 20vw, 100px); height:auto" src="/assets/imgs/radar-cash.png"><span class="wallet-balance-display">RADAR CASH {{ walletBalance }}</span></div>
+                    <div class="cash-balance-container button-row__side button-row__side--lead">
+                        <img class="cash-balance-img" src="/assets/imgs/radar-cash.png" alt="Store">
+                        <span class="visually-hidden">Radar cash {{ walletBalance }}</span>
+                    </div>
                     <div class="button-row__center">
                         <button id="scan" class="btn btn-custom" :disabled="!canScan" :style="buttonStyle" @click="startScan">
                             {{ buttonText }}
@@ -356,11 +360,9 @@
                             class="location-button"
                             aria-label="Share my location"
                             @click.prevent="onLocationTap"
-                            style="display: flex; justify-content: center; align-items: center; background: none; border: none; padding: 0; cursor: pointer;"
                         >
-                            <img class="location-button-img" style="width:clamp(60px, 20vw, 100px); height:auto; object-fit: contain;" src="/assets/imgs/my-location.png" alt="My Location">
+                            <img class="location-button-img" src="/assets/imgs/my-location.png" alt="">
                         </button>
-                        <span class="location-label">MY LOCATION</span>
                     </div>
                 </div>
             </div>
@@ -388,9 +390,18 @@
 <script setup>
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue';
 import axios from 'axios';
-import { router, Link } from '@inertiajs/vue3';
+import { router, Link, usePage } from '@inertiajs/vue3';
 import GameModal from '@/components/GameModal.vue';
+import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
+import HelpOverlay from '@/components/dashboard/HelpOverlay.vue';
+import WinnersOverlay from '@/components/dashboard/WinnersOverlay.vue';
 import { getPrizeRules, getMinDepositMessage, getMinDepositMessageBySlot } from '@/lib/prizeRules.js';
+import { useTranslate } from '@/composables/useTranslate';
+
+// i18n bindings — `t` is still used for the (still-inline) settings overlay
+// and a few one-off strings on the page. The Help and Winners overlays now
+// own their own translation lookups internally.
+const { t } = useTranslate();
 
 const PRIZE_DISPLAY_ORDER = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car', 'Super Cash Prize'];
 
@@ -1479,34 +1490,29 @@ watch(selectedGameId, updatePrizeSelectionUI);
     }
 }
 
+/*
+ * Location tile — the rightmost slot in the bottom action row.
+ *
+ * The visible "MY LOCATION" text label was retired per the Figma "Main
+ * Page" — only the cyan rounded-square icon remains. The container is the
+ * grid item that hosts the <button>, and the button itself fills the tile;
+ * the canonical sizing (height matched to --rl-scan-h, square aspect) lives
+ * with the rest of the .button-row rules in resources/css/app.css.
+ */
 .location-container {
     display: flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    text-align: center;
-}
-
-.location-label {
-    color: white;
-    font-size: clamp(9px, 2.5vw, 0.8em);
-    margin-top: 8px;
-    text-align: center;
-    white-space: nowrap;
+    pointer-events: auto;
 }
 
 .location-button {
     -webkit-tap-highlight-color: transparent;
     pointer-events: auto;
     touch-action: manipulation;
-    min-width: 60px;
-    min-height: 44px;
 }
 .location-button-img {
     pointer-events: none;
-}
-.location-container {
-    pointer-events: auto;
 }
 .location-button:focus {
     outline: none;
@@ -1514,6 +1520,269 @@ watch(selectedGameId, updatePrizeSelectionUI);
 .location-button:focus-visible {
     outline: 2px solid rgba(255, 255, 255, 0.6);
     outline-offset: 2px;
+}
+
+/*
+ * Locale switcher slot inside .bar-right.
+ *
+ * The previous `.locale-switcher-floating` (position: fixed; top: 12px;
+ * inset-inline-end: 12px) put EN/AR exactly where the new top-bar LOGOUT
+ * button now lives, so the two stacked. The switcher now sits inside
+ * `.bar-right` as the first item (visually leftmost in the right cluster),
+ * separated from the icon group by the .bar-right gap. A small right margin
+ * + a vertical hairline create a visual boundary so it doesn't read as part
+ * of the icon row.
+ */
+/*
+ * RADAR CASH balance pill in the top bar. Uses the same cyan-tinted glass
+ * treatment as the radar status indicator so the eye groups them together
+ * as "live state about my account". Compact pill on mobile (icon hidden
+ * <380px to save horizontal room next to the icon cluster).
+ */
+.bar-balance {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(98, 195, 255, 0.12);
+    border: 1px solid rgba(98, 195, 255, 0.35);
+    color: var(--rl-color-text);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1;
+    margin-inline-end: 4px;
+    white-space: nowrap;
+}
+.bar-balance__icon {
+    width: 16px;
+    height: 16px;
+    object-fit: contain;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+.bar-balance__value {
+    line-height: 1;
+}
+@media (max-width: 576px) {
+    .bar-balance {
+        padding: 3px 8px;
+        font-size: 11px;
+        gap: 4px;
+    }
+    .bar-balance__icon { width: 14px; height: 14px; }
+}
+@media (max-width: 380px) {
+    /* On the narrowest phones we hide menu-item labels too — drop the icon
+       here as well so just the number remains, which is what really matters. */
+    .bar-balance { padding: 2px 7px; gap: 0; }
+    .bar-balance__icon { display: none; }
+}
+
+.bar-locale {
+    display: inline-flex;
+    align-items: center;
+    color: rgba(255, 255, 255, 0.85);
+    padding-inline-end: 10px;
+    margin-inline-end: 2px;
+    border-inline-end: 1px solid rgba(255, 255, 255, 0.12);
+}
+@media (max-width: 576px) {
+    /* Tighten on phones — the icon row is already at gap: 4px here. */
+    .bar-locale {
+        padding-inline-end: 6px;
+        margin-inline-end: 0;
+    }
+}
+@media (max-width: 380px) {
+    /* On the narrowest phones the EN/AR pills compete with 4 icons + the
+       status dot + the logo. Hide the divider so it doesn't add visual noise
+       when every pixel is precious. */
+    .bar-locale {
+        border-inline-end: 0;
+        padding-inline-end: 4px;
+    }
+}
+
+/* -----------------------------------------------------------------------
+ * Radar visualization — Figma "Main Page" parity.
+ *
+ * The .radar element is a flex container holding the idle ellipse PNG and
+ * the in-scan webm video. It used to render as a plain dark circle; Figma
+ * shows concentric rings, a crosshair, and a soft cyan glow around the
+ * outer rim. We add those purely with CSS so the existing assets keep
+ * working unchanged.
+ *
+ * The rings/crosshair/glow live as pseudo-elements so they don't disturb
+ * the flex layout or block clicks on the actual scan video.
+ * --------------------------------------------------------------------- */
+.radar {
+    /*
+     * Force a 1:1 aspect ratio so the rings + glow render as a perfect
+     * circle regardless of the parent column's dimensions. The radar-col
+     * is a Bootstrap col-6 which is wider than tall on desktop — without
+     * this the rings stretch into a flat ellipse.
+     *
+     * `width: min(100%, …)` prevents the radar from overflowing taller
+     * viewports and keeps it visually centred inside its column.
+     */
+    aspect-ratio: 1 / 1;
+    width: min(100%, 70vh);
+    height: auto !important;
+    margin-inline: auto;
+
+    /* Outer rim with cyan glow + a subtle inner gradient. The radial
+     * gradient keeps the centre dark so the ellipse PNG sits on top. */
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at center,
+            rgba(6, 33, 46, 0.0) 0%,
+            rgba(6, 33, 46, 0.0) 55%,
+            rgba(98, 195, 255, 0.08) 70%,
+            rgba(98, 195, 255, 0.18) 92%,
+            rgba(98, 195, 255, 0.0) 100%);
+    box-shadow:
+        inset 0 0 0 1px rgba(98, 195, 255, 0.18),
+        inset 0 0 60px rgba(98, 195, 255, 0.07),
+        0 0 20px rgba(98, 195, 255, 0.18);
+}
+
+/* Concentric rings — drawn with repeating-radial-gradient on a ::before
+ * absolutely positioned over the radar. */
+.radar::before {
+    content: "";
+    position: absolute;
+    inset: 8%;
+    border-radius: 50%;
+    background:
+        repeating-radial-gradient(circle at center,
+            rgba(98, 195, 255, 0.0) 0,
+            rgba(98, 195, 255, 0.0) 24%,
+            rgba(98, 195, 255, 0.16) 24%,
+            rgba(98, 195, 255, 0.16) 24.4%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Crosshair — vertical + horizontal hairline through the centre. Drawn on
+ * a ::after, positioned absolutely. The two lines use linear-gradients so
+ * they fade out at the edges of the radar (more elegant than hard cuts). */
+.radar::after {
+    content: "";
+    position: absolute;
+    inset: 8%;
+    border-radius: 50%;
+    background:
+        linear-gradient(to right,
+            transparent 0%,
+            rgba(98, 195, 255, 0.0) 5%,
+            rgba(98, 195, 255, 0.18) 50%,
+            rgba(98, 195, 255, 0.0) 95%,
+            transparent 100%) 0 50% / 100% 1px no-repeat,
+        linear-gradient(to bottom,
+            transparent 0%,
+            rgba(98, 195, 255, 0.0) 5%,
+            rgba(98, 195, 255, 0.18) 50%,
+            rgba(98, 195, 255, 0.0) 95%,
+            transparent 100%) 50% 0 / 1px 100% no-repeat;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* The actual centre image (idle ellipse / scan video) sits ABOVE the rings
+ * + crosshair — they're decoration, not interaction. */
+.radar .radar-center-asset {
+    position: relative;
+    z-index: 1;
+}
+
+/* -----------------------------------------------------------------------
+ * Antenna detection thermometer (left column).
+ *
+ * The base .bar-container was a flat translucent rectangle. Figma shows a
+ * thermometer with horizontal tick marks for each of the 6 antenna levels
+ * and a subtle gradient outline so it reads as "ready to fill" even when
+ * empty. The .fill-bar inside (gradient red→blue) animates up as antennas
+ * are detected — that markup already existed.
+ * --------------------------------------------------------------------- */
+.bar-container {
+    position: relative;
+    /* 6 evenly-spaced tick marks (one per antenna). repeating-linear-gradient
+     * draws hairlines every 1/6th of the height; the first is hidden by
+     * being at the bottom edge. */
+    background-image:
+        repeating-linear-gradient(
+            to top,
+            transparent 0,
+            transparent calc(100% / 6 - 1px),
+            rgba(255, 255, 255, 0.18) calc(100% / 6 - 1px),
+            rgba(255, 255, 255, 0.18) calc(100% / 6)
+        );
+    border: 1px solid rgba(98, 195, 255, 0.18);
+    box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.3),
+        inset 0 0 12px rgba(98, 195, 255, 0.08);
+}
+
+/* -----------------------------------------------------------------------
+ * Prize-card selected state (right column).
+ *
+ * Existing UX: clicking a prize swaps the icon to its "detected" variant.
+ * Subtle. Figma shows the picked prize wrapped in a blue/cyan card.
+ * Adding a halo ring + cyan tint behind the icon makes the affordance
+ * obvious without changing the icon swap behaviour.
+ * --------------------------------------------------------------------- */
+.prize-item {
+    border-radius: 16px;
+    padding: 6px 4px;
+    transition: background 200ms ease, box-shadow 200ms ease, transform 100ms ease;
+}
+
+.prize-item:hover {
+    background: rgba(98, 195, 255, 0.07);
+}
+
+.prize-item--selected {
+    background: linear-gradient(
+        180deg,
+        rgba(98, 195, 255, 0.22) 0%,
+        rgba(98, 195, 255, 0.08) 100%
+    );
+    box-shadow:
+        inset 0 0 0 1px rgba(98, 195, 255, 0.55),
+        0 0 12px rgba(98, 195, 255, 0.25);
+}
+
+.prize-item--selected .prize-label,
+.prize-item--selected .prize-price {
+    color: var(--rl-color-text);
+    text-shadow: 0 0 6px rgba(98, 195, 255, 0.45);
+}
+
+/* -----------------------------------------------------------------------
+ * Scan button — wider pill matching Figma's "SCAN" CTA.
+ *
+ * The default .btn-custom from app.css renders as a small fixed-width
+ * button. Figma shows the SCAN button as the visual anchor of the
+ * button row — the widest control between Radar Cash and My Location.
+ * --------------------------------------------------------------------- */
+#scan.btn-custom {
+    min-width: clamp(120px, 22vw, 200px);
+    padding-inline: 1.5rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    box-shadow:
+        0 4px 14px rgba(98, 195, 255, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+#scan.btn-custom:not(:disabled):hover {
+    filter: brightness(1.06);
+    box-shadow:
+        0 6px 18px rgba(98, 195, 255, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 </style>
