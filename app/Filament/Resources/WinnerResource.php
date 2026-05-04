@@ -96,6 +96,16 @@ class WinnerResource extends Resource
         ];
     }
 
+    /**
+     * Eager-load `winner` and `game` so the table columns
+     * `winner.name`, `winner.phone_number`, and `game.name` don't fire
+     * per-row SELECTs.
+     */
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()->with(['winner', 'game']);
+    }
+
     public static function canCreate(): bool
     {
         return false;
