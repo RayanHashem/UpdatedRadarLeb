@@ -2,62 +2,15 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Resources\UserResource;
-use App\Models\User;
-use App\Models\Game;
-use Filament\Pages\Page;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Tables\Concerns\InteractsWithTable;
-use Filament\Tables\Contracts\HasTable;
-use Illuminate\Support\Facades\Schema;
-
-class BikeElectronicsUsers extends Page implements HasTable
+class BikeElectronicsUsers extends UsersByGamePage
 {
-    use InteractsWithTable;
-
-    protected static ?string $navigationIcon = 'heroicon-o-truck';
-
-    protected static ?string $navigationGroup = 'Users';
-
+    protected static ?string $navigationIcon  = 'heroicon-o-truck';
     protected static ?string $navigationLabel = 'Bike & Electronics';
+    protected static ?int $navigationSort     = 3;
+    protected static ?string $title           = 'Bike & Electronics Users';
 
-    protected static ?int $navigationSort = 3;
-
-    protected static string $view = 'filament.pages.users-by-game';
-
-    protected static ?string $title = 'Bike & Electronics Users';
-
-    public function table(Table $table): Table
+    protected function gameName(): string
     {
-        $gameId = Game::where('name', 'Bike & Electronics')->first()?->id;
-
-        $hasGameIdColumn = Schema::hasColumn('wallet_transactions', 'game_id');
-
-        $query = User::query()
-            ->excludeAdmins()
-            ->withRadarCashSpent()
-            ->withDistinctGameCount();
-
-        if ($hasGameIdColumn) {
-            $query->whereHas('walletTransactions', function ($q) use ($gameId) {
-                $q->where('game_id', $gameId)
-                    ->whereIn('type', ['debit', 'play', 'spend']);
-            });
-        } else {
-            $query->whereNotNull('game_id')
-                ->where('game_id', $gameId);
-        }
-
-        return $table
-            ->query($query)
-            ->columns(UserResource::getTableColumns())
-            ->filters([])
-            ->actions(UserResource::getTableActions())
-            ->bulkActions([])
-            ->emptyState(view('filament.tables.empty-state-with-headers', [
-                'headings' => ['ID', 'Name', 'Phone nb', 'Prize', 'Radar cash balance', 'Radar cash spent', 'Draw #', 'Created at'],
-                'message'  => 'No users yet',
-            ]));
+        return 'Bike & Electronics';
     }
 }
