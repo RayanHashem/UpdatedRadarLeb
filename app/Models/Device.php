@@ -6,7 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Device extends Model
 {
-    protected $guarded = [];
+    /**
+     * Mass-assignable attributes. A Device is created/updated by the
+     * fingerprint capture pipeline; the values it stores all originate
+     * from request headers we already trust enough to log.
+     */
+    protected $fillable = [
+        'user_id',
+        'device_hash',
+        'platform',
+        'user_agent',
+        'first_seen_at',
+        'last_seen_at',
+    ];
 
     protected function casts(): array
     {
