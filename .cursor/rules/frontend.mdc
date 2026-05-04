@@ -1,0 +1,68 @@
+---
+description: Frontend conventions — Inertia + Vue 3 + Tailwind 4 + reka-ui
+globs:
+  - "resources/js/**/*.{ts,vue}"
+  - "resources/css/**/*.css"
+  - "vite.config.ts"
+  - "tsconfig.json"
+alwaysApply: false
+---
+
+# Frontend rules (Inertia 2 + Vue 3)
+
+## Project structure
+
+- Entry point: `resources/js/app.ts`.
+- Page components (Inertia pages): `resources/js/pages/` — match the route name.
+- Reusable components: `resources/js/components/`.
+- shadcn-vue / reka-ui primitives: `resources/js/components/ui/<kind>/`. Don't
+  hand-write new primitives — extend the existing ones.
+- Layouts: `resources/js/layouts/{app,auth,settings}/`.
+- Composables: `resources/js/composables/`.
+- Helpers / utils: `resources/js/lib/utils.ts`.
+- TypeScript types: `resources/js/types/`.
+
+## Vue / TypeScript
+
+- Use `<script setup lang="ts">` for new components — never the Options API.
+- Type props explicitly (`defineProps<{ ... }>()`); don't rely on inference for public APIs.
+- Provide defaults via `withDefaults()` so the component renders without required props.
+- Use `defineEmits<{ (e: 'name', payload: T): void }>()` for typed events.
+- Prefer composables (`useX`) over mixins. There's `composables/useAppearance.ts`,
+  `useInitials.ts` — match that pattern.
+- Imports use the `@/` alias (configured in `vite.config.ts`) for `resources/js/*`.
+
+## Tailwind
+
+- Tailwind 4 — utilities-first; no `@apply` for trivial styling.
+- Use `cn()` from `@/lib/utils` for conditional class names — never string concat.
+- Stick to existing design tokens (defined in `resources/css/app.css`). If you need
+  a new color/spacing, add it to the Tailwind config / CSS variables, not inline.
+- Mobile-first responsive: default styles are mobile, scale up with `md:`, `lg:`.
+
+## Inertia
+
+- Page components must default-export.
+- Use `usePage()` for shared props passed from `HandleInertiaRequests` middleware.
+- Form helpers: `useForm()` from `@inertiajs/vue3` for submissions — don't roll your own.
+- Navigation: `<Link>` component or `router.visit()`, never `<a href>` for in-app routes.
+- CSRF 419 errors are handled centrally in `bootstrap/app.php` via a full location visit.
+  Don't try to handle them in components.
+
+## Forms / inputs
+
+- Use the `Input`, `Label`, `Button`, `Checkbox` components from `components/ui/`.
+- Validation errors come from `useForm().errors`. Display next to the field.
+- Submit on `@submit.prevent` with `form.post(route('...'))`.
+
+## Icons
+
+- Use `lucide-vue-next` (already installed). Import only what you use:
+  `import { Camera, User } from 'lucide-vue-next'`.
+- Don't pull in Font Awesome or Heroicons — keeps bundle small.
+
+## Don't
+
+- Don't reach into Filament from the Vue side; they're separate apps on the same domain.
+- Don't add new dependencies without checking they're not already in `package.json`.
+- Don't bypass `vite.config.ts` aliases — fix the alias instead.
