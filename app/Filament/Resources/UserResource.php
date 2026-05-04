@@ -129,23 +129,17 @@ class UserResource extends Resource
                 ])
                 ->modalSubmitActionLabel('Confirm')
                 ->action(function (array $data, User $record): void {
-                    $raw = trim((string) ($data['amount'] ?? ''));
-                    $normalized = str_replace(',', '.', $raw);
-                    $amount = (float) $normalized;
+                    // Normalise comma decimals (e.g. "12,50") and reject
+                    // anything below the 1¢ floor.
+                    $amount = (float) str_replace(',', '.', trim((string) ($data['amount'] ?? '')));
                     if ($amount < 0.01) {
                         return;
                     }
-                    DB::transaction(function () use ($record, $amount) {
-                        $record->increment('wallet_balance', $amount);
-                        $record->refresh();
-                        WalletTransaction::create([
-                            'user_id'       => $record->id,
-                            'type'          => 'topup',
-                            'amount'        => $amount,
-                            'balance_after' => $record->wallet_balance,
-                            'notes'         => 'Admin topoff',
-                        ]);
-                    });
+
+                    // Delegate to the action — same atomic credit logic any
+                    // future code path (vouchers, scheduled bonuses, etc.)
+                    // can reuse without copy-pasting the DB::transaction.
+                    app(\App\Actions\Wallet\TopOffWallet::class)($record, $amount, 'Admin topoff');
                 })
                 ->successNotificationTitle('Balance updated.'),
         ];
@@ -162,6 +156,30 @@ class UserResource extends Resource
             ])
             ->actions(self::getTableActions())
             ->bulkActions([]);
+    }
+
+    /**
+     * Eager-load + scope-apply for the table query.
+     *
+     * Four things happen here, several of which were broken before:
+     *   1. `with(['game'])` — kills the per-row N+1 on the `Current Game`
+     *      and `Draw #` columns. ~25 rows × 2 columns = ~50 queries → 1.
+     *   2. `withRadarCashSpent()` — adds the `radar_cash_spent` aggregate
+     *      column the table renders. Without it the column was silently
+     *      rendering 0 for every user.
+     *   3. `withDistinctGameCount()` — drives the "Plays multiple games"
+     *      hint under the Current Game column. Without this scope the
+     *      hint never showed.
+     *   4. `excludeAdmins()` — admin accounts are operational; they don't
+     *      belong in a list of customers. Matches the per-game pages.
+     */
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return parent::getEloquentQuery()
+            ->excludeAdmins()
+            ->with(['game'])
+            ->withRadarCashSpent()
+            ->withDistinctGameCount();
     }
 
     public static function getRelations(): array
