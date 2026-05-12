@@ -18,6 +18,10 @@
     "dashboard.help.step5": "Tap SCAN to start detecting antennas across Lebanon.",
     "dashboard.help.step6": "Once you discover six active antennas, you win the selected prize.",
     "dashboard.help.notes": "Notes: scan from different locations within Lebanon to ensure detection. After radar charging, refunds are not available. Only the prize winner can claim the prize.",
+    "dashboard.help.locationTitle": "My Location",
+    "dashboard.help.locationText": "Use My Location to keep your real-world position active, helping RadarLeb deliver the best antenna-hunting experience around you.",
+    "dashboard.help.radarCashTitle": "Radar Cash",
+    "dashboard.help.radarCashText": "Radar Cash stores your game balance. Use it to scan, build progress, and play for the prizes you want to win.",
 
     "dashboard.winners.title": "WINNERS",
 

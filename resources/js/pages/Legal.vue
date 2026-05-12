@@ -4,20 +4,20 @@
  *
  * One component, three modes — they share the same chrome (.page-login bg,
  * dark glass form container, pill CTA) so the user doesn't get yanked into
- * a different design language when they tap the link. Terms + Privacy are
- * still placeholder copy (the friend's lawyer needs to supply the real
- * text); Credits is real attribution and links back to wherever the user
- * came from (Settings overlay or Sign-up screen).
+ * a different design language when they tap the link. /terms shows the full
+ * Terms & Conditions (including Privacy Policy incorporation by reference);
+ * /privacy remains a shorter placeholder unless updated separately.
  */
 import { Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
+import { RADARLEB_TERMS_FULL } from '@/content/radarlebTermsFull';
 
 const props = defineProps<{
     type: 'terms' | 'privacy' | 'credits';
 }>();
 
 const title = computed(() => {
-    if (props.type === 'terms') return 'Terms of Service';
+    if (props.type === 'terms') return 'Terms & Conditions';
     if (props.type === 'privacy') return 'Privacy Policy';
     return 'Credits';
 });
@@ -38,13 +38,18 @@ const backLabel = computed(() => props.type === 'credits' ? 'Back to game' : 'Ba
                 <img src="/assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
             </div>
 
-            <div class="legal-shell form-container d-flex flex-column gap-4">
-                <h1 class="legal-title text-center mb-0">{{ title }}</h1>
+            <div
+                class="legal-shell form-container d-flex flex-column gap-4"
+                :class="{ 'legal-shell--terms': type === 'terms' }"
+            >
+                <h1 v-if="type !== 'terms'" class="legal-title text-center mb-0">{{ title }}</h1>
+
+                <!-- Full Terms & Privacy (by reference): compact, scrollable on mobile -->
+                <div v-if="type === 'terms'" class="terms-scroll-panel">
+                    <pre class="terms-full-text">{{ RADARLEB_TERMS_FULL }}</pre>
+                </div>
 
                 <!-- Terms / Privacy: placeholder copy for now -->
-                <p v-if="type === 'terms'" class="legal-body mb-0">
-                    Terms of service content will be available here. This is a placeholder.
-                </p>
                 <p v-else-if="type === 'privacy'" class="legal-body mb-0">
                     Privacy policy content will be available here. This is a placeholder.
                 </p>
@@ -122,7 +127,18 @@ const backLabel = computed(() => props.type === 'credits' ? 'Back to game' : 'Ba
     line-height: 1.6;
 }
 
-.legal-back-btn {
+/*
+ * `.btn-custom` sets flex: 1 — in a column flex (this shell), that stretches
+ * the back control to fill leftover height. Chain both classes to beat it.
+ */
+.legal-back-btn.btn-custom {
+    flex: 0 0 auto;
+    width: fit-content;
+    max-width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: unset;
     background-color: var(--rl-color-cyan);
     color: var(--rl-color-text-on-light);
     align-self: center;
@@ -148,5 +164,37 @@ const backLabel = computed(() => props.type === 'credits' ? 'Back to game' : 'Ba
     font-size: var(--rl-fs-body);
     line-height: 1.55;
     margin: 0;
+}
+
+/* Full terms: small type, scrollable body (mobile-friendly). */
+.legal-shell--terms {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: min(92vh, 52rem);
+}
+
+.terms-scroll-panel {
+    flex: 1 1 auto;
+    min-height: 10rem;
+    max-height: min(68vh, 26rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.6rem 0.75rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(98, 195, 255, 0.12);
+}
+
+.terms-full-text {
+    margin: 0;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.6875rem;
+    line-height: 1.45;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    color: var(--rl-color-text-muted);
 }
 </style>

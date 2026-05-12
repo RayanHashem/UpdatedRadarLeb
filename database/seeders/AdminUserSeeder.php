@@ -28,7 +28,7 @@ class AdminUserSeeder extends Seeder
         $admins = [
             [
                 'name'  => 'Ali Houdeib',
-                'email' => 'Ali_houdeib@hotmail.com',
+                'email' => 'ali_houdeib@hotmail.com',
                 'role'  => 'super_admin',
             ],
             [
@@ -39,6 +39,19 @@ class AdminUserSeeder extends Seeder
         ];
 
         $rows = [];
+
+        // Normalize the older mixed-case Ali admin email. PostgreSQL string
+        // comparisons are case-sensitive, so the login form must match casing.
+        $canonicalAliEmail = 'ali_houdeib@hotmail.com';
+        $legacyAliEmail = 'Ali_houdeib@hotmail.com';
+
+        if (DB::table('users')->where('email', $canonicalAliEmail)->exists()) {
+            DB::table('users')->where('email', $legacyAliEmail)->delete();
+        } else {
+            DB::table('users')
+                ->where('email', $legacyAliEmail)
+                ->update(['email' => $canonicalAliEmail]);
+        }
 
         foreach ($admins as $admin) {
             $plainPassword = Str::password(20);

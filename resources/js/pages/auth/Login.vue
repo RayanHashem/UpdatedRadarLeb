@@ -2,18 +2,16 @@
 /*
  * Login page — adapted from the Figma "Sign-in Page" (full-page 6 desktop /
  * full-page 7 mobile). Combines visual sign-up + sign-in entry in one view:
- *   - Sign in posts the form to /login (uses Mobile Number + Password).
- *     The "Name" field is decorative for sign-in (Figma includes it but
- *     login doesn't need it on the backend).
- *   - Sign up navigates to /register and prefills name + phone if entered
- *     so the user doesn't have to retype them.
+ *   - Sign in posts the form to /login (Mobile Number + Password only).
+ *   - Sign up navigates to /register and prefills phone if entered so the user
+ *     doesn't have to retype it.
  *
  * Layout: centered on mobile (Figma "Small Screen"), right-anchored on
  * desktop (Figma "Big Screen"). The .page-login background image stays
  * full-bleed; the form container is positioned via Bootstrap utilities.
  */
 import InputError from '@/components/InputError.vue';
-import { Head, useForm, router } from '@inertiajs/vue3';
+import { useForm, router } from '@inertiajs/vue3';
 import { LoaderCircle } from 'lucide-vue-next';
 
 defineProps<{
@@ -22,7 +20,6 @@ defineProps<{
 }>();
 
 const form = useForm({
-    name: '',                    // decorative for sign-in, prefilled into /register on Sign up
     phone_number: '',
     password: '',
     remember: false,
@@ -36,15 +33,12 @@ const submit = () => {
 
 /**
  * Sign Up: take the user to /register and pass through whatever they've
- * already typed (name + phone) via Inertia history state. Register.vue
- * reads these on mount and pre-fills the matching inputs so the user
- * doesn't lose what they wrote.
+ * already typed (phone) via query params. Register.vue reads these on mount.
  */
 const goToSignUp = () => {
     router.visit(route('register'), {
         method: 'get',
         data: {
-            name: form.name,
             phone_number: form.phone_number,
         },
     });
@@ -78,18 +72,6 @@ const goToSignUp = () => {
             <div class="login-figma__form-shell form-container d-flex flex-column gap-5">
                 <form @submit.prevent="submit">
 
-                    <!-- Name (decorative for sign-in, pre-fills /register on Sign up). -->
-                    <input
-                        type="text"
-                        class="form-control mb-3 custom-input"
-                        placeholder="Name"
-                        id="name"
-                        :tabindex="1"
-                        autocomplete="name"
-                        v-model="form.name"
-                    />
-                    <InputError :message="form.errors.name" variant="material" />
-
                     <!-- Mobile Number (login credential 1 of 2). -->
                     <input
                         type="text"
@@ -97,7 +79,7 @@ const goToSignUp = () => {
                         placeholder="Mobile Number"
                         id="phone_number"
                         required
-                        :tabindex="2"
+                        :tabindex="1"
                         autocomplete="tel"
                         inputmode="numeric"
                         v-model="form.phone_number"
@@ -111,7 +93,7 @@ const goToSignUp = () => {
                         placeholder="Password"
                         id="password"
                         required
-                        :tabindex="3"
+                        :tabindex="2"
                         autocomplete="current-password"
                         v-model="form.password"
                     />
@@ -127,7 +109,7 @@ const goToSignUp = () => {
                             type="button"
                             class="btn btn-custom-2 btn-custom"
                             style="font-weight: normal; background-color: var(--rl-color-coral);"
-                            :tabindex="5"
+                            :tabindex="3"
                             @click="goToSignUp"
                         >
                             Sign up
@@ -151,7 +133,7 @@ const goToSignUp = () => {
                             href="/forgot-password"
                             class="btn btn-custom-1 btn-custom forgot-password-btn"
                             style="background-color: var(--rl-color-cyan); color: var(--rl-color-text);"
-                            :tabindex="6"
+                            :tabindex="5"
                         >
                             Forgot Password?
                         </a>

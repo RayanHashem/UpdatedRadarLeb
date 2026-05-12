@@ -252,11 +252,15 @@ const submit = () => {
                             class="mt-1 form-check-input flex-shrink-0"
                             :tabindex="7"
                         />
-                        <label for="confirm_18_and_terms" class="form-check-label text-white small">
-                            I confirm I'm at least 18 years old and I agree to the
-                            <Link :href="route('terms')" class="text-decoration-underline text-white">Terms</Link>
-                            &amp;
-                            <Link :href="route('privacy')" class="text-decoration-underline text-white">Privacy Policy</Link>.
+                        <label for="confirm_18_and_terms" class="flex-grow-1 form-check-label text-white small mb-0 terms-consent-label">
+                            I confirm I'm at least 18 years old and I agree to&nbsp;<span class="terms-consent-tail"
+                                >the <Link
+                                    :href="route('terms')"
+                                    class="text-decoration-underline text-white terms-privacy-unified-link"
+                                    @click.stop
+                                    >Terms &amp; Privacy Policy</Link
+                                >.</span
+                            >
                         </label>
                     </div>
                     <InputError :message="form.errors.confirm_18_and_terms" variant="material" />
@@ -286,3 +290,10 @@ const submit = () => {
         </div>
     </section>
 </template>
+
+<style scoped>
+/* Keep “the” + link on one line so it doesn’t stack as “the” / “Terms…” */
+.terms-consent-tail {
+    white-space: nowrap;
+}
+</style>

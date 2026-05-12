@@ -6,8 +6,8 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration
 {
     /**
-     * Per-scan cost is radar units (Radar Cash) per game, not (radars per scan) × (marketing $/radar).
-     * Matches database/seeders/GameSeeder.php and product rules: 1, 4, 8, 24, 32.
+     * Per-scan cost is Radar Cash units per game.
+     * Matches product rules: 1, 4, 8, 24, 32.
      */
     public function up(): void
     {

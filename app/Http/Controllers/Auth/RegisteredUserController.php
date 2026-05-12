@@ -50,6 +50,6 @@ class RegisteredUserController extends Controller
 
         ($this->registerUser)($validated);
 
-        return to_route('dashboard');
+        return to_route('dashboard')->with('show_help_overlay', true);
     }
 }

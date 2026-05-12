@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
  * Abstract base for the "Users who have spent on game X" admin pages.
  *
  * The five concrete pages (Mobile / Bike & Electronics / SUV / Muscle Car /
- * Super Cash Prize) used to be near-identical 60-line copy-pastes. Each one
+ * Super Car) used to be near-identical 60-line copy-pastes. Each one
  * only varied by:
  *   1. The game name to filter on.
  *   2. The navigation label / icon / sort order / title.

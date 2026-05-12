@@ -13,23 +13,23 @@ class GamesSeeder extends Seeder
      */
     public function run(): void
     {
-        // target_amount = retail + 10% (marketing). price_to_play = Radar Cash units per scan (not $/radar × radars).
+        // Algorithm: target_amount is base + margin. price_to_play is Radar Cash units debited per scan.
         $games = [
             [
                 'name' => 'Mobile',
-                'price' => 1650.00,
-                'target_amount' => 1650.00,   // base 1500 +10%
+                'price' => 1800.00,
+                'target_amount' => 1800.00,   // base 1500 +20%
                 'price_to_play' => 1.00,      // 1 scan = 1 radar
                 'minimum_deposit' => 10.00,
-                'minimum_amount_for_winning' => 1650,
+                'minimum_amount_for_winning' => 1800,
             ],
             [
                 'name' => 'Bike & Electronics',
-                'price' => 16500.00,
-                'target_amount' => 16500.00,  // base 15000 +10%
+                'price' => 18000.00,
+                'target_amount' => 18000.00,  // base 15000 +20%
                 'price_to_play' => 4.00,      // 1 scan = 4 radars
                 'minimum_deposit' => 25.00,
-                'minimum_amount_for_winning' => 16500,
+                'minimum_amount_for_winning' => 18000,
             ],
             [
                 'name' => 'SUV',
@@ -48,7 +48,7 @@ class GamesSeeder extends Seeder
                 'minimum_amount_for_winning' => 165000,
             ],
             [
-                'name' => 'Super Cash Prize',
+                'name' => 'Super Car',
                 'price' => 220000.00,
                 'target_amount' => 220000.00, // base 200000 +10%
                 'price_to_play' => 32.00,     // 1 scan = 32 radars

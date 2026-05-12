@@ -19,9 +19,9 @@ class GameFactory extends Factory
             'price'                      => 1500,
             'image_path'                 => '/assets/imgs/mobile1.png',
             'price_to_play'              => 1,
-            'minimum_amount_for_winning' => 1650,
+            'minimum_amount_for_winning' => 1800,
             'minimum_deposit'            => 10,
-            'target_amount'              => 1650,
+            'target_amount'              => 1800,
             'current_amount'             => 0,
             'draw_number'                => '1',
             'is_enabled'                 => true,
@@ -34,7 +34,7 @@ class GameFactory extends Factory
         return $this->state(fn () => ['is_enabled' => false]);
     }
 
-    /** Override the per-scan radar cost. */
+    /** Override the per-scan Radar Cash cost. */
     public function pricedAt(float $cost): static
     {
         return $this->state(fn () => ['price_to_play' => $cost]);

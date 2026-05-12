@@ -45,6 +45,7 @@ class DashboardController extends Controller
             ]),
             'selectedGameId' => null,
             'wallet_balance' => (float) $user->wallet_balance,
+            'showHelpOnLoad' => (bool) $request->session()->pull('show_help_overlay', false),
         ]);
     }
 }

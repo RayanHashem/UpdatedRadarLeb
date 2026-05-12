@@ -173,7 +173,7 @@ php artisan make:request StoreFooRequest     # form-request for validation
 
 (Each is detailed elsewhere — this is the headline + link.)
 
-1. **`games.price_to_play` is now radar units, not USD** — so `1, 4, 8, 24, 32`, not `0.25, 4.00, 16, 144, 256`. Some Filament UI labels still print `$` — that's a bug. → `docs/history.md`
+1. **`games.price_to_play` is radar units, not USD** — so `1, 4, 8, 24, 32`. Mobile scans debit 1 Radar Cash. → `docs/history.md`
 2. **`PortBasedSessionIsolation` is actually path-based** — class name is misleading. Don't refactor based on the name. → `docs/history.md`
 3. **`DevAutoAuth` has 3 layers of defense** — env check + host check + not registered. Keep all three. → `docs/security.md`
 4. **`wallet_transactions.amount` MUST equal `scans.cost`** — 1¢ tolerance, validated in `WalletTransaction::boot()`. Don't bypass. → `docs/architecture.md`

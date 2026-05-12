@@ -55,6 +55,19 @@ class ScanFlowTest extends TestCase
         $this->assertEqualsWithDelta(42.0, (float) $response->json('wallet'), 0.001);
     }
 
+    public function test_mobile_scan_debits_one_radar_cash(): void
+    {
+        $game = Game::factory()->pricedAt(1)->create(['name' => 'Mobile']);
+        $user = User::factory()->withBalance(40)->create();
+
+        $response = $this->actingAs($user)->postJson("/scan/{$game->id}");
+
+        $response->assertOk();
+        $this->assertEqualsWithDelta(39, (float) $response->json('wallet'), 0.001);
+        $this->assertEqualsWithDelta(1, (float) Scan::where('user_id', $user->id)->sole()->cost, 0.001);
+        $this->assertEqualsWithDelta(1, (float) WalletTransaction::where('user_id', $user->id)->sole()->amount, 0.001);
+    }
+
     public function test_wallet_transaction_amount_matches_scan_cost(): void
     {
         $game = Game::factory()->pricedAt(24)->create();

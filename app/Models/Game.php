@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Game — one of the five sweepstakes prizes (Mobile, Bike & Electronics, SUV,
- * Muscle Car, Super Cash Prize).
+ * Muscle Car, Super Car).
  *
  * Intentionally thin. Business logic lives in App\Actions\Game\*:
  *   - AttemptScan        : run a scan + write Scan + WalletTransaction

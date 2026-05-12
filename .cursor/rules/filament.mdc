@@ -80,8 +80,8 @@ class GameResource extends Resource
             Forms\Components\TextInput::make('price_to_play')
                 ->numeric()
                 ->required()
-                ->helperText('Radar units per scan (1, 4, 8, 24, 32)'),
-            // ⚠️ price_to_play is RADAR UNITS, not USD. Don't add a $ prefix here.
+                ->helperText('Radar Cash units debited per scan (1, 4, 8, 24, 32)'),
+            // price_to_play is Radar Cash units, not a dollar amount.
         ]);
     }
 
@@ -91,7 +91,7 @@ class GameResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('name')->searchable(),
                 Tables\Columns\TextColumn::make('price_to_play')
-                    ->label('Cost (radar units)'),
+                    ->label('Cost (Radar Cash)'),
                 Tables\Columns\TextColumn::make('current_amount')
                     ->money('USD'),  // current_amount IS in USD-equivalent
             ])
@@ -217,9 +217,9 @@ will render with broken styles after a dep bump.
 - **Don't `dd()` or `var_dump()` inside an action handler.** It breaks the
   Livewire round-trip. Use `Notification::make()` for visible feedback or
   `Log::info()` for diagnostics.
-- **Don't put `$` in front of `price_to_play`.** It's radar units. Use a
-  `helperText('Radar units')` instead.
+- **Don't put `$` in front of `price_to_play`.** It's Radar Cash units.
 - **Don't bypass `WalletTransaction::boot()` validation** by inserting via
   `DB::insert`. Always go through the Eloquent model.
 - **Don't re-enable `canCreate()` on `UserResource` without thinking.** Users
   belong to seeders; admins don't create real customers via the panel.
+

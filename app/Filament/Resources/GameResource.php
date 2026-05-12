@@ -44,10 +44,9 @@ class GameResource extends Resource
                 Forms\Components\Section::make('Settings')
                     ->schema([
                         Forms\Components\TextInput::make('price_to_play')
-                            ->label('Price to Play ($)')
+                            ->label('Price to Play')
                             ->required()
                             ->numeric()
-                            ->prefix('$')
                             ->step(0.01),
                         Forms\Components\TextInput::make('minimum_deposit')
                             ->label('Minimum Deposit ($)')
@@ -81,7 +80,7 @@ class GameResource extends Resource
                     ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('price_to_play')
                     ->label('Price to Play')
-                    ->money('usd')
+                    ->formatStateUsing(fn ($state) => $state !== null && $state !== '' ? number_format((float) $state, 0) : '—')
                     ->sortable()
                     ->visibleFrom('md'),
                 Tables\Columns\TextColumn::make('draw_number')
@@ -92,10 +91,10 @@ class GameResource extends Resource
                     ->label('Enabled'),
                 Tables\Columns\TextColumn::make('minimum_winning')
                     ->label('Minimum amount for winning')
-                    ->getStateUsing(fn (Game $record) => $record->target_amount)
+                    ->getStateUsing(fn (Game $record) => $record->minimum_amount_for_winning)
                     ->formatStateUsing(fn ($state) => $state !== null && $state !== '' ? number_format((float) $state, 0) : '—')
                     ->sortable(query: function ($query, string $direction) {
-                        return $query->orderBy('target_amount', $direction);
+                        return $query->orderBy('minimum_amount_for_winning', $direction);
                     })
                     ->visibleFrom('lg'),
                 Tables\Columns\ViewColumn::make('prize_progress')

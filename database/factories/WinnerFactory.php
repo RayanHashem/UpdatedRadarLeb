@@ -15,7 +15,7 @@ class WinnerFactory extends Factory
     public function definition(): array
     {
         return [
-            'game_name' => fake()->randomElement(['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car', 'Super Cash Prize']),
+            'game_name' => fake()->randomElement(['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car', 'Super Car']),
             'user_name' => fake()->name(),
         ];
     }

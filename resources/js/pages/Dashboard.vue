@@ -41,17 +41,9 @@
                                 Change Password
                             </button>
 
-                            <!--
-                              Credits / About link. Inertia-link instead of <button>+router.visit
-                              so the user gets normal browser-back behavior from the credits page.
-                            -->
-                            <Link
-                                as="button"
-                                :href="route('credits')"
-                                class="a-btn a-btn-default"
-                            >
-                                Credits
-                            </Link>
+                            <button type="button" class="a-btn a-btn-default" @click="handleLogout">
+                                Log out
+                            </button>
 
                             <!-- Close the Settings overlay from the main page too (mobile UX). -->
                             <button class="a-btn a-btn-default overlay-back-btn" @click="activeOverlay = null">
@@ -331,14 +323,12 @@
                   Bottom action row — matches Figma "Main Page": three controls
                   on a baseline. Left and right are square cyan tile buttons
                   (store, my-location); the center is a wide pill SCAN button.
-                  No text labels under either side icon; the wallet balance
-                  used to live under the store as "RADAR CASH N" but Figma
-                  doesn't show it here, so we'll surface it elsewhere if/when
-                  the design calls for it.
+                  The side icons carry compact labels directly underneath.
                 -->
                 <div class="button-row">
                     <div class="cash-balance-container button-row__side button-row__side--lead">
                         <img class="cash-balance-img" src="/assets/imgs/radar-cash.png" alt="Store">
+                        <span class="button-row__label">Radar Cash</span>
                         <span class="visually-hidden">Radar cash {{ walletBalance }}</span>
                     </div>
                     <div class="button-row__center">
@@ -363,6 +353,7 @@
                         >
                             <img class="location-button-img" src="/assets/imgs/my-location.png" alt="">
                         </button>
+                        <span class="button-row__label">My Location</span>
                     </div>
                 </div>
             </div>
@@ -403,7 +394,7 @@ import { useTranslate } from '@/composables/useTranslate';
 // own their own translation lookups internally.
 const { t } = useTranslate();
 
-const PRIZE_DISPLAY_ORDER = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car', 'Super Cash Prize'];
+const PRIZE_DISPLAY_ORDER = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car', 'Super Car'];
 
 /** Display config for each prize slot (same order as orderedPrizes). Enables Vue @click instead of DOM listeners. */
 const PRIZE_DISPLAY_CONFIG = [
@@ -420,6 +411,7 @@ const props = defineProps({
     games: { type: Array, default: () => [] },
     selectedGameId: { type: Number, default: null },
     wallet_balance: Number,
+    showHelpOnLoad: { type: Boolean, default: false },
 });
 
 const prizes = ref(props.games);
@@ -432,8 +424,8 @@ const orderedPrizes = computed(() => {
     const firstFour = names.map((name) => prizes.value.find((p) => p.name === name) ?? null).filter(Boolean);
     const superCar = prizes.value.find(
         (p) =>
-            p.name === 'Super Cash Prize' ||
             p.name === 'Super Car' ||
+            p.name === 'Super Cash Prize' ||
             /super\s*(cash\s*prize|car)/i.test(String(p.name))
     );
     const others = prizes.value.filter((p) => !names.includes(p.name));
@@ -553,7 +545,7 @@ function showMinDepositModal(message) {
         message,
         primaryLabel: 'How to play',
         primaryAction: 'openHelp',
-        secondaryLabel: 'OK',
+        secondaryLabel: 'Cancel',
     });
 }
 
@@ -626,10 +618,10 @@ function selectPrize(id) {
 
     const rules = getPrizeRules(prize.name);
     const balance = Number(walletBalance.value) || 0;
-    const minDepositDollars = rules?.minDepositDollars ?? 0;
+    const scanCost = rules?.scanCostRadars ?? 0;
 
-    if (balance < minDepositDollars) {
-        const message = getMinDepositMessage(prize.name) || `You need a ${minDepositDollars}$ minimum deposit to play for this prize.`;
+    if (balance < scanCost) {
+        const message = getMinDepositMessage(prize.name) || `You need to deposit at least ${rules?.minDepositDollars ?? 0}$ for a chance to win this prize.`;
         showMinDepositModal(message);
         return;
     }
@@ -760,15 +752,15 @@ async function startScan() {
     }
 
     /*
-     * Wallet vs scan cost: Game::attemptScan debits `price_to_play` (radar
-     * units). Do not show radar numbers to the user; use the same minimum
-     * deposit copy as prize selection.
+     * Wallet vs scan cost: Game::attemptScan debits `price_to_play`, which is
+     * the Radar Cash cost per scan. Use the minimum-deposit copy when balance
+     * is too low.
      */
     const scanCost = rules ? rules.scanCostRadars : 0;
     if (rules && balance < scanCost) {
         const message =
             getMinDepositMessage(prize.name)
-            || `You need a ${rules.minDepositDollars}$ minimum deposit to play for this prize.`;
+            || `You need to deposit at least ${rules.minDepositDollars}$ for a chance to win this prize.`;
         showMinDepositModal(message);
         return;
     }
@@ -854,7 +846,7 @@ async function startScan() {
             pauseRadarVideo();
             const message =
                 getMinDepositMessage(prize?.name)
-                || (rules ? `You need a ${rules.minDepositDollars}$ minimum deposit to play for this prize.` : 'You need a minimum deposit to play for this prize.');
+                || (rules ? `You need to deposit at least ${rules.minDepositDollars}$ for a chance to win this prize.` : 'You need to deposit before playing for this prize.');
             showMinDepositModal(message);
             return;
         }
@@ -1320,6 +1312,10 @@ onMounted(() => {
             hornInterval = setInterval(playHornSound, 180000);
         }
 
+        if (props.showHelpOnLoad) {
+            activeOverlay.value = 'help';
+        }
+
     }, 2000);
 
     // Preload detected images for prize items (optional, for instant switch when selected)
@@ -1734,30 +1730,15 @@ watch(selectedGameId, updatePrizeSelectionUI);
  * obvious without changing the icon swap behaviour.
  * --------------------------------------------------------------------- */
 .prize-item {
-    border-radius: 16px;
-    padding: 6px 4px;
-    transition: background 200ms ease, box-shadow 200ms ease, transform 100ms ease;
+    border-radius: 0;
+    padding: 0;
+    transition: transform 100ms ease;
 }
 
-.prize-item:hover {
-    background: rgba(98, 195, 255, 0.07);
-}
-
+.prize-item:hover,
 .prize-item--selected {
-    background: linear-gradient(
-        180deg,
-        rgba(98, 195, 255, 0.22) 0%,
-        rgba(98, 195, 255, 0.08) 100%
-    );
-    box-shadow:
-        inset 0 0 0 1px rgba(98, 195, 255, 0.55),
-        0 0 12px rgba(98, 195, 255, 0.25);
-}
-
-.prize-item--selected .prize-label,
-.prize-item--selected .prize-price {
-    color: var(--rl-color-text);
-    text-shadow: 0 0 6px rgba(98, 195, 255, 0.45);
+    background: transparent;
+    box-shadow: none;
 }
 
 /* -----------------------------------------------------------------------

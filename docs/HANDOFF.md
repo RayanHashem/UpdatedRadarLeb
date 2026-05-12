@@ -237,7 +237,7 @@ A 51-test PHPUnit suite, all green:
 
 ## 5. The 10 things you must remember about this codebase
 
-1. **`games.price_to_play` is now radar units, not USD** — values are `1, 4, 8, 24, 32`, not `0.25, 4.00, 16, 144, 256`. Some Filament UI labels still print `$` — that's a bug to fix when you have time.
+1. **`games.price_to_play` is Radar Cash units** — values are `1, 4, 8, 24, 32`. Mobile scans debit 1 Radar Cash.
 2. **`PortBasedSessionIsolation` is actually path-based** — class name is misleading. Don't refactor based on the name.
 3. **`DevAutoAuth` has 3 layers of defense** — env check + host check + not registered. Keep all three.
 4. **`wallet_transactions.amount` MUST equal `scans.cost`** — 1¢ tolerance, validated in `WalletTransaction::boot()`. Don't bypass.
@@ -399,7 +399,7 @@ Things I noticed but didn't fix. None are blockers.
 
 ### High-value, low-effort
 
-- **Filament UI says `$`** for radar-cash-priced fields when it should say "radar units". E.g. the prize tiles show "1.500$" which is the prize value (USD), but Game::price_to_play is shown with `$` too in some admin forms. Audit and clean up the display labels.
+- **Filament UI should not use `$`** for `price_to_play` because it is Radar Cash units.
 - **Translation gaps.** The Winners overlay shows `USER.NAME01` / `WINNER DRAW 1 - BIKE` in English mode — those are i18n keys that haven't been wired to live data. Wire them to actual winner records or fill the lang files with realistic placeholders.
 - **`Dashboard.vue` loads in idle radar state, then re-renders** when props arrive. There's a brief flash of the loading spinner on every navigation back to `/`. Fix by initializing `loading: false` in `setup()` once props are confirmed non-null.
 

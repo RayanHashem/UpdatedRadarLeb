@@ -58,20 +58,17 @@ SQLite dev environment couldn't run them. They were rewritten in commit
 builder — same semantics, runs on both DBs. See `.cursor/rules/migrations.mdc`
 for the patterns.
 
-## Game prices used to be USD, now they're radar units
+## Game scan prices are Radar Cash units
 
-`games.price_to_play` originally stored a USD dollar amount (`0.25`, `4.00`,
-`16.00`, `144.00`, `256.00`). It now stores **radar units** (`1`, `4`, `8`,
-`24`, `32`).
+`games.price_to_play` stores the Radar Cash units debited from the wallet for
+one scan. Current values are `1`, `4`, `8`, `24`, `32`.
 
-The migration `2026_04_26_000001_fix_games_price_to_play_radar_per_scan.php`
-flipped the values. The column type stayed `DECIMAL(12,2)` but it's used as
-an integer count.
+The migration `2026_05_12_000002_restore_radar_unit_scan_costs_and_rename_super_car.php`
+restored the RD:Leb radars-per-scan interpretation after a short-lived
+wallet-dollar interpretation. The column type remains `DECIMAL(12,2)`.
 
-**Some Filament admin UI labels still print a `$` prefix** in front of the
-price column. That's a bug, not the source of truth. Fix as you find them
-(check `app/Filament/Resources/GameResource.php`, the widgets in
-`app/Filament/Widgets/`, and any blade partials).
+Filament should show `price_to_play` without a `$` prefix because it is Radar
+Cash units.
 
 ## Multi-game spending support
 

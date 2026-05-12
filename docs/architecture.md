@@ -15,21 +15,20 @@ draws, scans, winners, top-ups) through a Filament admin panel at `/admin`.
 
 ## The five games
 
-| Game name           | Cost per scan (radar units) |
-|---------------------|-----------------------------|
-| Mobile              | 1                           |
-| Bike & Electronics  | 4                           |
-| SUV                 | 8                           |
-| Muscle Car          | 24                          |
-| Super Cash Prize    | 32                          |
+| Game name           | Cost per scan (Radar Cash units) |
+|---------------------|----------------------------------|
+| Mobile              | 1                                |
+| Bike & Electronics  | 4                                |
+| SUV                 | 8                                |
+| Muscle Car          | 24                               |
+| Super Car           | 32                               |
 
 Source of truth: `database/seeders/GameSeeder.php` and the migration
-`2026_04_26_000001_fix_games_price_to_play_radar_per_scan.php`.
+`2026_05_12_000002_restore_radar_unit_scan_costs_and_rename_super_car.php`.
 
-**Important semantic change you must know:** `games.price_to_play` used to be a
-USD dollar amount and is now a **radar unit count** (an integer-shaped decimal:
-1, 4, 8, 24, 32). Some Filament UI labels still print a `$` prefix — that's a
-known bug, not the source of truth. See `docs/history.md`.
+**Important semantic note:** `games.price_to_play` is the Radar Cash amount
+deducted from the wallet for one scan. It is the radars-per-scan value, not
+the dollar value of those radars. See `docs/history.md`.
 
 ## The core flow: `Game::attemptScan()`
 
@@ -168,3 +167,4 @@ each other when both run on the same host.
 
 Do not add files at the project root. Don't even feel tempted. We just deleted
 249 of those.
+

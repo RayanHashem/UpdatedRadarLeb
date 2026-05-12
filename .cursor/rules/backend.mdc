@@ -71,5 +71,5 @@ alwaysApply: false
 - `wallet_transactions.amount` should equal `scans.cost` for scan-related rows
   within 1¢ tolerance. There's a backfill migration; if you change the relationship,
   update the backfill or replace it with a new migration.
-- `games.price_to_play` is **radar units** (1, 4, 8, 24, 32), not USD. Don't mix
+- `games.price_to_play` is Radar Cash units per scan (1, 4, 8, 24, 32). Don't mix
   semantics.
