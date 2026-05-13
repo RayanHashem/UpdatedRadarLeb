@@ -646,8 +646,8 @@ background-color: rgba(255,255,255,0.3);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
     border-radius: 50%;
 }
 
@@ -789,6 +789,12 @@ background-color: rgba(255,255,255,0.3);
     }
     .bar-center {
         flex: 0 0 auto;
+        margin-inline-start: 8px;
+        margin-inline-end: 12px;
+    }
+    .icon-box-2 {
+        width: 18px;
+        height: 18px;
     }
     .radar-row {
         padding: 0.5rem 0;
@@ -1255,6 +1261,14 @@ section {
     margin-top: 0.5rem;
     margin-bottom: 0.75rem;
 }
+#sign-in.page-register .terms-consent-label {
+    display: inline-block;
+    padding: 6px 8px;
+    border-radius: 10px;
+    background: rgba(6, 33, 46, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
+}
 #sign-in.page-register .register-form-fields .error-message,
 #sign-in.page-register .register-form-fields .error-message-material {
     margin-top: 4px;
@@ -1413,6 +1427,14 @@ section {
     font-size: 1rem;
     font-weight: 500;
     text-shadow: 0 0 2px #000, 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+#sign-in.page-forgot .forgot-password-helper {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 10px;
+    background: rgba(6, 33, 46, 0.56);
+    color: rgba(255, 255, 255, 0.94);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.65);
 }
 
 /* ========== Mobile responsive: Sign in & Sign up ========== */

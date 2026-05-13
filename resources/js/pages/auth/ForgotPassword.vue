@@ -44,7 +44,7 @@ const submit = () => {
                         v-model="form.email"
                     />
                     <InputError :message="form.errors.email" variant="material" />
-                    <p class="small text-white-50 text-center mb-0 px-2" style="opacity: 0.85;">
+                    <p class="small text-center mb-0 px-2 forgot-password-helper">
                         Use the email address you signed up with (sign-in uses your phone number).
                     </p>
 

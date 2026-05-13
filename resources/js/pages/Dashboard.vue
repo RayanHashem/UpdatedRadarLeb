@@ -1196,23 +1196,38 @@ onMounted(() => {
      * single response was slow, which starved icons/videos from loading at all.
      */
     fetchRadarStatus();
+    refreshWalletFromServer();
     let radarPollId = null;
+    let walletPollId = null;
     const startRadarPolling = () => {
         if (radarPollId != null) return;
         radarPollId = setInterval(fetchRadarStatus, 30_000);
+    };
+    const startWalletPolling = () => {
+        if (walletPollId != null) return;
+        walletPollId = setInterval(refreshWalletFromServer, 10_000);
     };
     const stopRadarPolling = () => {
         if (radarPollId == null) return;
         clearInterval(radarPollId);
         radarPollId = null;
     };
+    const stopWalletPolling = () => {
+        if (walletPollId == null) return;
+        clearInterval(walletPollId);
+        walletPollId = null;
+    };
     startRadarPolling();
+    startWalletPolling();
     document.addEventListener('visibilitychange', () => {
         if (document.hidden) {
             stopRadarPolling();
+            stopWalletPolling();
         } else {
             fetchRadarStatus();
+            refreshWalletFromServer();
             startRadarPolling();
+            startWalletPolling();
         }
     });
 
@@ -1530,22 +1545,22 @@ watch(selectedGameId, updatePrizeSelectionUI);
 .bar-balance {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 4px 10px;
+    gap: 8px;
+    padding: 6px 14px;
     border-radius: 999px;
     background: rgba(98, 195, 255, 0.12);
     border: 1px solid rgba(98, 195, 255, 0.35);
     color: var(--rl-color-text);
-    font-size: 12px;
-    font-weight: 600;
+    font-size: 14px;
+    font-weight: 700;
     letter-spacing: 0.04em;
     line-height: 1;
     margin-inline-end: 4px;
     white-space: nowrap;
 }
 .bar-balance__icon {
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     object-fit: contain;
     flex-shrink: 0;
     pointer-events: none;
@@ -1555,12 +1570,12 @@ watch(selectedGameId, updatePrizeSelectionUI);
 }
 @media (max-width: 576px) {
     .bar-balance {
-        padding: 3px 6px;
-        font-size: 10px;
-        gap: 3px;
+        padding: 5px 9px;
+        font-size: 12px;
+        gap: 5px;
         margin-inline-end: 0;
     }
-    .bar-balance__icon { width: 13px; height: 13px; }
+    .bar-balance__icon { width: 16px; height: 16px; }
 }
 @media (max-width: 380px) {
     /* On the narrowest phones we hide menu-item labels too — drop the icon

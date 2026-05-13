@@ -59,7 +59,7 @@ const { t } = useTranslate()
             </div>
             <div class="winner-details">
                 <span class="winner-name">USER.NAME03</span>
-                <span class="winner-prize">WINNER DRAW 1 - CASH</span>
+                <span class="winner-prize">WINNER DRAW 1 - Super Car</span>
             </div>
         </div>
 
