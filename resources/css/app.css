@@ -301,10 +301,10 @@ background-color: rgba(255,255,255,0.3);
 }
 @media (max-width: 767px) {
     #myVideo2.radar-center-asset {
-        width: 124%;
-        max-width: 124%;
+        width: 156%;
+        max-width: 156%;
         height: auto;
-        max-height: 124%;
+        max-height: 156%;
     }
 }
 
