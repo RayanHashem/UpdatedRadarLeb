@@ -77,4 +77,16 @@ function setLocale(code: string) {
     background: rgba(255, 255, 255, 0.16);
     border-color: rgba(255, 255, 255, 0.4);
 }
+
+@media (max-width: 576px) {
+    .locale-switcher {
+        gap: 3px;
+    }
+
+    .locale-switcher__btn {
+        padding: 2px 6px;
+        font-size: 11px;
+        letter-spacing: 0;
+    }
+}
 </style>

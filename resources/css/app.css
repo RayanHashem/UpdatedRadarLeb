@@ -554,7 +554,7 @@ background-color: rgba(255,255,255,0.3);
  * cover a 320px viewport with the logo — labels just don't fit. The
  * aria-label on the button still announces the action to screen readers.
  */
-@media (max-width: 380px) {
+@media (max-width: 576px) {
     .menu-item-label {
         position: absolute;
         width: 1px;
@@ -783,26 +783,32 @@ background-color: rgba(255,255,255,0.3);
 }
 
 @media (max-width: 576px) {
+    .bar {
+        padding: 8px 6px;
+        gap: 4px;
+    }
+    .bar-center {
+        flex: 0 0 auto;
+    }
     .radar-row {
         padding: 0.5rem 0;
     }
     .logo-nav {
-        width: 90px;
+        width: 84px;
     }
     .menu-item {
         width: 20px;
         height: 20px;
     }
     .menu-item-btn {
-        min-width: 44px;
+        min-width: 36px;
         min-height: 44px;
         padding: 2px;
     }
     .bar-right {
-        gap: 4px;
-    }
-    .bar {
-        padding: 8px 10px;
+        flex: 1 1 auto;
+        gap: 3px;
+        overflow: visible;
     }
     .bar-container {
         width: 30px;

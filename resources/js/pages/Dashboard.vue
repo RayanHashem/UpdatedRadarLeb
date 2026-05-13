@@ -167,7 +167,7 @@
                    :muted="true"
                    loop playsinline id="myVideo"
                    preload="none">
-                <source v-if="videoSrcsReady" src="/assets/imgs/vid.webm" type="video/mp4">
+                <source v-if="videoSrcsReady" src="/assets/imgs/vid.webm" type="video/webm">
                 Your browser does not support HTML5 video.
             </video>
 
@@ -224,14 +224,6 @@
                         <button type="button" class="menu-item-btn" aria-label="Settings" @click="openOverlay('settings')">
                             <img src="/assets/imgs/settings-button.png" class="menu-item" alt="" />
                             <span class="menu-item-label">Settings</span>
-                        </button>
-                        <button type="button" class="menu-item-btn" @click="handleLogout" title="Logout" aria-label="Logout">
-                            <svg class="menu-item logout-icon-stroke" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                                <polyline points="16 17 21 12 16 7"></polyline>
-                                <line x1="21" y1="12" x2="9" y2="12"></line>
-                            </svg>
-                            <span class="menu-item-label">Logout</span>
                         </button>
                     </div>
                 </div>
@@ -1563,11 +1555,12 @@ watch(selectedGameId, updatePrizeSelectionUI);
 }
 @media (max-width: 576px) {
     .bar-balance {
-        padding: 3px 8px;
-        font-size: 11px;
-        gap: 4px;
+        padding: 3px 6px;
+        font-size: 10px;
+        gap: 3px;
+        margin-inline-end: 0;
     }
-    .bar-balance__icon { width: 14px; height: 14px; }
+    .bar-balance__icon { width: 13px; height: 13px; }
 }
 @media (max-width: 380px) {
     /* On the narrowest phones we hide menu-item labels too — drop the icon
@@ -1587,7 +1580,7 @@ watch(selectedGameId, updatePrizeSelectionUI);
 @media (max-width: 576px) {
     /* Tighten on phones — the icon row is already at gap: 4px here. */
     .bar-locale {
-        padding-inline-end: 6px;
+        padding-inline-end: 3px;
         margin-inline-end: 0;
     }
 }
