@@ -166,8 +166,8 @@
             <video autoplay
                    :muted="true"
                    loop playsinline id="myVideo"
-                   preload="none">
-                <source v-if="videoSrcsReady" src="/assets/imgs/vid.webm" type="video/webm">
+                   preload="auto">
+                <source src="/assets/imgs/vid.webm" type="video/webm">
                 Your browser does not support HTML5 video.
             </video>
 
@@ -175,11 +175,6 @@
                 <div class="bar">
                     <div class="bar-left">
                         <img src="/assets/imgs/logo.png" class="logo-nav">
-                    </div>
-                    <div class="bar-center">
-                        <div :class="['icon-box-2', radarOnline ? 'green' : 'red']">
-                            <svg></svg>
-                        </div>
                     </div>
                     <div class="bar-right">
                         <!--
@@ -1270,20 +1265,21 @@ onMounted(() => {
         });
     }
 
-    const video = document.getElementById('myVideo');
-
     /*
-     * Attach the <source> tags only after all other assets have loaded so the
-     * heavy radar.webm/vid.webm do not block icons on the dev server. Use
-     * requestIdleCallback where available, else a small timeout on `load`.
+     * Keep the page background video eager so it paints before the fallback
+     * background after auth redirects. The heavier in-radar scan video still
+     * waits until idle so it does not compete with first render.
      */
+    nextTick(() => {
+        const bgVid = document.getElementById('myVideo');
+        bgVid?.load();
+        bgVid?.play().catch((e) => console.warn('Autoplay failed:', e));
+    });
+
     const attachVideoSources = () => {
         videoSrcsReady.value = true;
         nextTick(() => {
-            const bgVid = document.getElementById('myVideo');
-            bgVid?.load();
             radarVideo.value?.load();
-            bgVid?.play().catch((e) => console.warn('Autoplay failed:', e));
         });
     };
     const scheduleVideoLoad = () => {
@@ -1545,22 +1541,23 @@ watch(selectedGameId, updatePrizeSelectionUI);
 .bar-balance {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
+    gap: 9px;
+    padding: 7px 15px;
     border-radius: 999px;
     background: rgba(98, 195, 255, 0.12);
     border: 1px solid rgba(98, 195, 255, 0.35);
     color: var(--rl-color-text);
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 700;
     letter-spacing: 0.04em;
     line-height: 1;
-    margin-inline-end: 4px;
+    margin-inline-start: 8px;
+    margin-inline-end: 12px;
     white-space: nowrap;
 }
 .bar-balance__icon {
-    width: 18px;
-    height: 18px;
+    width: 19px;
+    height: 19px;
     object-fit: contain;
     flex-shrink: 0;
     pointer-events: none;
@@ -1570,12 +1567,13 @@ watch(selectedGameId, updatePrizeSelectionUI);
 }
 @media (max-width: 576px) {
     .bar-balance {
-        padding: 5px 9px;
-        font-size: 12px;
-        gap: 5px;
-        margin-inline-end: 0;
+        padding: 6px 10px;
+        font-size: 13px;
+        gap: 6px;
+        margin-inline-start: 6px;
+        margin-inline-end: 8px;
     }
-    .bar-balance__icon { width: 16px; height: 16px; }
+    .bar-balance__icon { width: 17px; height: 17px; }
 }
 @media (max-width: 380px) {
     /* On the narrowest phones we hide menu-item labels too — drop the icon
