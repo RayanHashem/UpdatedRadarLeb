@@ -235,7 +235,7 @@
                     </div>
 
                     <div class="col-6 radar-col" style="padding:0px;">
-                        <div class="radar">
+                        <div class="radar" :class="{ 'radar--scanning': scanning }">
                             <!--
                               Idle: ellipse.png in the center; on Scan it hides and
                               radar.webm shows. Video stays mounted for cache; v-show
@@ -1648,6 +1648,16 @@ watch(selectedGameId, updatePrizeSelectionUI);
         inset 0 0 0 1px rgba(98, 195, 255, 0.18),
         inset 0 0 60px rgba(98, 195, 255, 0.07),
         0 0 20px rgba(98, 195, 255, 0.18);
+}
+
+.radar.radar--scanning {
+    background: transparent;
+    box-shadow: none;
+}
+
+.radar.radar--scanning::before,
+.radar.radar--scanning::after {
+    display: none;
 }
 
 /* Concentric rings — drawn with repeating-radial-gradient on a ::before
