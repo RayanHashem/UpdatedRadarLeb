@@ -1614,8 +1614,8 @@ watch(selectedGameId, updatePrizeSelectionUI);
     font-weight: 700;
     letter-spacing: 0.04em;
     line-height: 1;
-    margin-inline-start: clamp(8px, 2vw, 18px);
-    margin-inline-end: clamp(14px, 3vw, 28px);
+    margin-inline-start: clamp(18px, 4vw, 40px);
+    margin-inline-end: clamp(34px, 7vw, 76px);
     white-space: nowrap;
 }
 .bar-balance__icon {
@@ -1633,8 +1633,8 @@ watch(selectedGameId, updatePrizeSelectionUI);
         padding: 6px 12px;
         font-size: 14px;
         gap: 7px;
-        margin-inline-start: 6px;
-        margin-inline-end: 10px;
+        margin-inline-start: 12px;
+        margin-inline-end: 26px;
     }
     .bar-balance__icon { width: 18px; height: 18px; }
 }
@@ -1645,8 +1645,8 @@ watch(selectedGameId, updatePrizeSelectionUI);
         padding: 5px 9px;
         font-size: 13px;
         gap: 5px;
-        margin-inline-start: 4px;
-        margin-inline-end: 8px;
+        margin-inline-start: 8px;
+        margin-inline-end: 18px;
     }
     .bar-balance__icon { width: 16px; height: 16px; }
 }

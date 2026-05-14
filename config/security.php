@@ -9,9 +9,10 @@ return [
 
     'scan' => [
         'cooldown_seconds' => (int) env('SCAN_COOLDOWN_SECONDS', 4),
-        'nonce_required' => (bool) env('SCAN_NONCE_REQUIRED', false),
-        // Keep this false until staging/production is served over trusted HTTPS.
-        // Mobile browsers block reliable geolocation on insecure HTTP.
+        // Keep nonce/location requirements false on HTTP staging. If either
+        // gate rejects a request, AttemptScan never runs, so no wallet debit
+        // is recorded. Re-enable after HTTPS/session behavior is verified.
+        'nonce_required' => false,
         'location_required' => false,
         'location_max_age_seconds' => (int) env('SCAN_LOCATION_MAX_AGE_SECONDS', 30),
         'location_max_accuracy_meters' => (int) env('SCAN_LOCATION_MAX_ACCURACY_METERS', 100),

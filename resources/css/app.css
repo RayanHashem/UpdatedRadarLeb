@@ -286,6 +286,10 @@ background-color: rgba(255,255,255,0.3);
     overflow: hidden;
 }
 
+.radar.radar--scanning {
+    overflow: visible;
+}
+
 /* Center radar: idle PNG + in-scan webm; same box constraints, no overflow */
 .radar .radar-center-asset {
     position: relative;
@@ -301,15 +305,14 @@ background-color: rgba(255,255,255,0.3);
     object-fit: contain;
 }
 #myVideo2.radar-center-asset {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    max-width: none;
-    height: 100%;
-    max-height: none;
-    object-fit: cover;
+    position: relative;
+    width: min(76%, 360px);
+    max-width: 76%;
+    height: auto;
+    max-height: 76%;
+    object-fit: contain;
     object-position: center center;
-    transform: scale(1.03);
+    transform: none;
 }
 #radarIdleEllipse {
     display: block;
@@ -318,7 +321,10 @@ background-color: rgba(255,255,255,0.3);
 }
 @media (max-width: 767px) {
     #myVideo2.radar-center-asset {
-        transform: scale(1.03);
+        width: 74%;
+        max-width: 74%;
+        max-height: 74%;
+        transform: none;
     }
 }
 
