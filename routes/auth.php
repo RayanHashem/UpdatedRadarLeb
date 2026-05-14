@@ -55,8 +55,10 @@ Route::middleware('guest')->group(function () {
  */
 Route::middleware('auth')->group(function () {
     Route::get('/games',           [GameController::class, 'index']);
+    Route::get('/scan/nonce',      [GameController::class, 'nonce'])
+        ->middleware('throttle:30,1');
     Route::post('/scan/{game}',    [GameController::class, 'scan'])
-        ->middleware('throttle:60,1');
+        ->middleware('throttle:20,1');
 
     Route::get('/me',              [MeController::class, 'show']);
     Route::post('/me/game',        [UserController::class, 'updateGame'])

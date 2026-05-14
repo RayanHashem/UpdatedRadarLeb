@@ -17,6 +17,8 @@ use Filament\Widgets;
 use Filament\Navigation\MenuItem;
 use Filament\Navigation\NavigationGroup;
 use App\Filament\Pages\Profile;
+use App\Http\Middleware\EnsureAdminTwoFactor;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -93,6 +95,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->middleware([
                 EnsureAdminPortIsolation::class,
+                SecurityHeaders::class,
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
                 StartSession::class,
@@ -106,6 +109,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                EnsureAdminTwoFactor::class,
             ]);
     }
 }

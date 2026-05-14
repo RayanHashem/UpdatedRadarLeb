@@ -473,7 +473,7 @@ const verifyingPassword = ref(false);
 const updatingPassword = ref(false);
 const showSuccessMessage = ref(false);
 const help = ref(false);
-const userLocation = ref({ lat: null, lng: null });
+const userLocation = ref({ lat: null, lng: null, accuracy: null, timestamp: null });
 const locationUrl = ref('https://www.google.com/maps?q=33.8938,35.5018'); // Default fallback location
 /** ID from navigator.geolocation.watchPosition; cleared in onUnmounted. */
 const locationWatchId = ref(null);
@@ -725,6 +725,45 @@ function playScanSoundSequence() {
   a1.play().catch(console.error);
 }
 
+async function getScanVerificationPayload() {
+    const payload = { nonce: null, location: null };
+
+    try {
+        const { data } = await axios.get('/scan/nonce');
+        payload.nonce = data?.nonce || null;
+    } catch (error) {
+        console.warn('Unable to issue scan nonce:', error);
+    }
+
+    if (typeof window === 'undefined' || !navigator.geolocation || !window.isSecureContext) {
+        return payload;
+    }
+
+    try {
+        const position = await new Promise((resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+                enableHighAccuracy: true,
+                timeout: 8000,
+                maximumAge: 0,
+            });
+        });
+
+        payload.location = {
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            timestamp: position.timestamp,
+        };
+        userLocation.value = payload.location;
+        locationUrl.value = `https://www.google.com/maps?q=${payload.location.lat},${payload.location.lng}`;
+        startLocationWatch();
+    } catch (error) {
+        console.warn('Unable to attach scan location:', error);
+    }
+
+    return payload;
+}
+
 async function startScan() {
     if (scanning.value) return;
 
@@ -756,6 +795,8 @@ async function startScan() {
         showMinDepositModal(message);
         return;
     }
+
+    const scanPayload = await getScanVerificationPayload();
 
     playScanSoundSequence();
 
@@ -796,7 +837,7 @@ async function startScan() {
     let found = false;
     let dat;
     try {
-        const { data } = await axios.post('/scan/' + selectedGameId.value);
+        const { data } = await axios.post('/scan/' + selectedGameId.value, scanPayload);
         found = !!data.antenna_detected;
         dat = data;
         if (data && data.wallet != null) {
@@ -1080,7 +1121,9 @@ function startLocationWatch() {
         (position) => {
             userLocation.value = {
                 lat: position.coords.latitude,
-                lng: position.coords.longitude
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: position.timestamp,
             };
             locationUrl.value = `https://www.google.com/maps?q=${userLocation.value.lat},${userLocation.value.lng}`;
         },
@@ -1133,7 +1176,12 @@ function onLocationTap() {
             locationRequestInProgress.value = false;
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
-            userLocation.value = { lat, lng };
+            userLocation.value = {
+                lat,
+                lng,
+                accuracy: position.coords.accuracy,
+                timestamp: position.timestamp,
+            };
             locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
             startLocationWatch();
             playClickSound();
@@ -1699,6 +1747,19 @@ watch(selectedGameId, updatePrizeSelectionUI);
 .radar .radar-center-asset {
     position: relative;
     z-index: 1;
+    display: block;
+}
+
+#myVideo2.radar-center-asset {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+    object-position: center center;
+    transform: scale(1.03);
 }
 
 /* -----------------------------------------------------------------------

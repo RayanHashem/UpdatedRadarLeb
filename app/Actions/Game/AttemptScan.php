@@ -8,7 +8,11 @@ use App\Models\Scan;
 use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Run a single scan for $user on $game and persist all the side effects:
@@ -45,14 +49,31 @@ class AttemptScan
     ) {
     }
 
-    public function __invoke(User $user, Game $game): array
+    public function __invoke(User $user, Game $game, array $context = []): array
     {
         $this->guardGameAvailable($game);
 
         $cost = (float) $game->price_to_play;
         $this->guardSufficientBalance($user, $cost);
+        $this->guardCooldown($user);
 
-        return DB::transaction(function () use ($user, $game, $cost) {
+        $lock = Cache::lock("scan:user:{$user->id}", 10);
+
+        try {
+            return $lock->block(0, fn () => $this->persistScan($user, $game, $cost, $context));
+        } catch (LockTimeoutException) {
+            Log::warning('Concurrent scan blocked', [
+                'user_id' => $user->id,
+                'game_id' => $game->id,
+            ]);
+
+            abort(429, 'Scan already in progress');
+        }
+    }
+
+    private function persistScan(User $user, Game $game, float $cost, array $context): array
+    {
+        return DB::transaction(function () use ($user, $game, $cost, $context) {
             // Re-read inside the txn — another scan request from the same user
             // may have decremented the balance between guard and txn open.
             $user->refresh();
@@ -67,11 +88,18 @@ class AttemptScan
             $isSuccess = $this->rollOutcome($stat);
             $stat->save();
 
+            $location = $context['location'] ?? [];
             $scan = $game->scans()->create([
-                'user_id'     => $user->id,
-                'success'     => $isSuccess,
-                'radar_level' => $stat->current_radar ?? 0,
-                'cost'        => $cost,
+                'user_id'           => $user->id,
+                'success'           => $isSuccess,
+                'radar_level'       => $stat->current_radar ?? 0,
+                'cost'              => $cost,
+                'latitude'          => $location['lat'] ?? null,
+                'longitude'         => $location['lng'] ?? null,
+                'location_accuracy' => $location['accuracy'] ?? null,
+                'location_at'       => isset($location['timestamp']) ? Carbon::createFromTimestampMs((int) $location['timestamp']) : null,
+                'ip_address'        => $context['ip_address'] ?? null,
+                'user_agent'        => $context['user_agent'] ?? null,
             ]);
 
             $user->refresh();
@@ -88,6 +116,8 @@ class AttemptScan
                     'balance_after' => $user->wallet_balance,
                 ]
             );
+
+            $this->auditScan($user, $game, $scan, $context);
 
             return [
                 'antenna_detected' => $isSuccess,
@@ -139,5 +169,34 @@ class AttemptScan
     private function guardSufficientBalance(User $user, float $cost): void
     {
         abort_if((float) $user->wallet_balance < $cost, 402, 'Not enough balance');
+    }
+
+    private function guardCooldown(User $user): void
+    {
+        if (app()->environment('testing')) {
+            return;
+        }
+
+        $seconds = (int) config('security.scan.cooldown_seconds', 0);
+        if ($seconds <= 0) {
+            return;
+        }
+
+        if (! Cache::add("scan:cooldown:user:{$user->id}", true, $seconds)) {
+            Log::warning('Scan cooldown blocked', ['user_id' => $user->id]);
+            abort(429, 'Please wait before scanning again');
+        }
+    }
+
+    private function auditScan(User $user, Game $game, Scan $scan, array $context): void
+    {
+        Log::info('Scan completed', [
+            'scan_id' => $scan->id,
+            'user_id' => $user->id,
+            'game_id' => $game->id,
+            'success' => (bool) $scan->success,
+            'ip_address' => $context['ip_address'] ?? null,
+            'has_location' => isset($context['location']['lat'], $context['location']['lng']),
+        ]);
     }
 }

@@ -8,6 +8,7 @@ use App\Models\SystemSetting;
 use App\Models\User;
 use App\Models\WalletTransaction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Config;
 use Tests\TestCase;
 
 /**
@@ -156,5 +157,37 @@ class ScanFlowTest extends TestCase
         $this->assertSame(5, $scans);
         $this->assertSame(5, $txs, 'one transaction per scan invariant broken');
         $this->assertEqualsWithDelta(5.0, (float) $user->fresh()->wallet_balance, 0.001);
+    }
+
+    public function test_scan_requires_fresh_location_when_enabled(): void
+    {
+        Config::set('security.scan.location_required', true);
+
+        $game = Game::factory()->pricedAt(1)->create();
+        $user = User::factory()->withBalance(10)->create();
+
+        $this->actingAs($user)
+            ->postJson("/scan/{$game->id}")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('location');
+
+        $this->assertSame(0, Scan::count());
+    }
+
+    public function test_scan_requires_one_time_nonce_when_enabled(): void
+    {
+        Config::set('security.scan.nonce_required', true);
+
+        $game = Game::factory()->pricedAt(1)->create();
+        $user = User::factory()->withBalance(10)->create();
+
+        $nonce = $this->actingAs($user)->getJson('/scan/nonce')->json('nonce');
+
+        $payload = [
+            'nonce' => $nonce,
+        ];
+
+        $this->actingAs($user)->postJson("/scan/{$game->id}", $payload)->assertOk();
+        $this->actingAs($user)->postJson("/scan/{$game->id}", $payload)->assertStatus(422);
     }
 }

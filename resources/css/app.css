@@ -285,6 +285,7 @@ background-color: rgba(255,255,255,0.3);
 .radar .radar-center-asset {
     position: relative;
     z-index: 1;
+    display: block;
     flex: 0 1 auto;
     min-width: 0;
     min-height: 0;
@@ -294,10 +295,26 @@ background-color: rgba(255,255,255,0.3);
     height: auto;
     object-fit: contain;
 }
+#myVideo2.radar-center-asset {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    object-fit: cover;
+    object-position: center center;
+    transform: scale(1.03);
+}
 #radarIdleEllipse {
     display: block;
     user-select: none;
     -webkit-user-drag: none;
+}
+@media (max-width: 767px) {
+    #myVideo2.radar-center-asset {
+        transform: scale(1.55);
+    }
 }
 
 #image-selector {

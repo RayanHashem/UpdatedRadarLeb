@@ -79,3 +79,6 @@ yarn-error.log
 # ---- Editor backup files left at root ----
 * 2.*
 * copy.*
+
+# ---- Local security notes ----
+/docs/security-report.md

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AdminTwoFactorController;
 use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\RadarController;
@@ -21,6 +22,13 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'verified'])
     ->get('/', [DashboardController::class, 'index'])
     ->name('dashboard');
+
+Route::middleware(['auth:admin', 'throttle:6,1'])->group(function () {
+    Route::get('/admin/two-factor', [AdminTwoFactorController::class, 'create'])
+        ->name('admin.two-factor.create');
+    Route::post('/admin/two-factor', [AdminTwoFactorController::class, 'store'])
+        ->name('admin.two-factor.store');
+});
 
 Route::middleware('throttle:30,1')
     ->get('/radar/status', [RadarController::class, 'status']);
