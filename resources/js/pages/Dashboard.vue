@@ -175,13 +175,6 @@
                 <div class="bar">
                     <div class="bar-left">
                         <img src="/assets/imgs/logo.png" class="logo-nav">
-                    </div>
-                    <div class="bar-center">
-                        <div :class="['icon-box-2', radarOnline ? 'green' : 'red']">
-                            <svg></svg>
-                        </div>
-                    </div>
-                    <div class="bar-right">
                         <!--
                           RADAR CASH balance chip. We removed the visible "RADAR CASH N"
                           label under the store icon (Figma "Main Page" shows only the
@@ -195,6 +188,8 @@
                             <img src="/assets/imgs/radar-cash.png" class="bar-balance__icon" alt="" />
                             <span class="bar-balance__value">{{ walletBalance }}</span>
                         </div>
+                    </div>
+                    <div class="bar-right">
 
                         <!--
                           Locale switcher (EN/AR) lives leftmost in the right cluster — it's
@@ -796,14 +791,14 @@ async function startScan() {
         return;
     }
 
-    const scanPayload = await getScanVerificationPayload();
-
-    playScanSoundSequence();
-
     scanning.value = true;
     detectionStatus.value = 'searching';
     visibleCount.value = 0;
     antennaIconSrc.value = '/assets/imgs/an.png'; // Reset to default before scan
+
+    const scanPayload = await getScanVerificationPayload();
+
+    playScanSoundSequence();
 
     /*
      * Drive the radar.webm playback explicitly rather than letting the
@@ -842,6 +837,8 @@ async function startScan() {
         dat = data;
         if (data && data.wallet != null) {
             walletBalance.value = Number(data.wallet);
+        } else if (rules) {
+            walletBalance.value = Math.max(0, balance - scanCost);
         }
     } catch (err) {
         const status = err.response?.status;
@@ -891,6 +888,20 @@ async function startScan() {
             showGameModal({
                 title: 'Radar offline',
                 message: 'The radar is temporarily offline. Please try again in a moment.',
+                primaryLabel: '',
+                primaryAction: '',
+            });
+            return;
+        }
+
+        if (status === 422 || status === 429) {
+            scanning.value = false;
+            detectionStatus.value = 'idle';
+            pauseRadarVideo();
+            await refreshWalletFromServer();
+            showGameModal({
+                title: status === 429 ? 'Slow down' : 'Scan verification failed',
+                message: payload.message || 'The scan could not be verified. Please try again.',
                 primaryLabel: '',
                 primaryAction: '',
             });
@@ -1593,22 +1604,23 @@ watch(selectedGameId, updatePrizeSelectionUI);
 .bar-balance {
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 14px;
+    gap: 10px;
+    padding: 8px 18px;
     border-radius: 999px;
     background: rgba(98, 195, 255, 0.12);
     border: 1px solid rgba(98, 195, 255, 0.35);
     color: var(--rl-color-text);
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: 0.04em;
     line-height: 1;
-    margin-inline-end: 4px;
+    margin-inline-start: clamp(8px, 2vw, 18px);
+    margin-inline-end: clamp(14px, 3vw, 28px);
     white-space: nowrap;
 }
 .bar-balance__icon {
-    width: 18px;
-    height: 18px;
+    width: 22px;
+    height: 22px;
     object-fit: contain;
     flex-shrink: 0;
     pointer-events: none;
@@ -1618,18 +1630,25 @@ watch(selectedGameId, updatePrizeSelectionUI);
 }
 @media (max-width: 576px) {
     .bar-balance {
-        padding: 5px 9px;
-        font-size: 12px;
-        gap: 5px;
-        margin-inline-end: 0;
+        padding: 6px 12px;
+        font-size: 14px;
+        gap: 7px;
+        margin-inline-start: 6px;
+        margin-inline-end: 10px;
     }
-    .bar-balance__icon { width: 16px; height: 16px; }
+    .bar-balance__icon { width: 18px; height: 18px; }
 }
 @media (max-width: 380px) {
     /* On the narrowest phones we hide menu-item labels too — drop the icon
        here as well so just the number remains, which is what really matters. */
-    .bar-balance { padding: 2px 7px; gap: 0; }
-    .bar-balance__icon { display: none; }
+    .bar-balance {
+        padding: 5px 9px;
+        font-size: 13px;
+        gap: 5px;
+        margin-inline-start: 4px;
+        margin-inline-end: 8px;
+    }
+    .bar-balance__icon { width: 16px; height: 16px; }
 }
 
 .bar-locale {

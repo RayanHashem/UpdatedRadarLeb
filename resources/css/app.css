@@ -105,8 +105,13 @@ section {
     gap: 12px;
     width: 100%;
 }
-.bar-left   { flex: 0 0 auto; min-width: 0; }
-.bar-center { flex: 1 1 0;   min-width: 0; display: flex; justify-content: center; }
+.bar-left {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: clamp(12px, 2.6vw, 22px);
+}
 .bar-right {
     flex: 0 0 auto;
     min-width: 0;
@@ -313,7 +318,7 @@ background-color: rgba(255,255,255,0.3);
 }
 @media (max-width: 767px) {
     #myVideo2.radar-center-asset {
-        transform: scale(1.55);
+        transform: scale(1.03);
     }
 }
 
@@ -805,9 +810,7 @@ background-color: rgba(255,255,255,0.3);
         gap: 4px;
     }
     .bar-center {
-        flex: 0 0 auto;
-        margin-inline-start: 8px;
-        margin-inline-end: 12px;
+        display: none;
     }
     .icon-box-2 {
         width: 18px;
