@@ -300,13 +300,24 @@ background-color: rgba(255,255,255,0.3);
     -webkit-user-drag: none;
 }
 @media (max-width: 767px) {
+    /*
+     * Absolutely position the in-scan video so it always covers the radar
+     * box edge-to-edge. The previous flow-layout sizing (width/height: 100%
+     * inside a flex parent) drifted on some phones, leaving a sliver of the
+     * page background visible in the top-left corner of the radar circle.
+     * `inset: 0` + `object-fit: cover` + a centered transform-origin keeps
+     * the scaled webm perfectly centered no matter the radar box aspect.
+     */
     #myVideo2.radar-center-asset {
+        position: absolute;
+        inset: 0;
         width: 100%;
         max-width: none;
         height: 100%;
         max-height: none;
         object-fit: cover;
         transform: scale(1.55);
+        transform-origin: 50% 50%;
     }
 }
 
@@ -993,7 +1004,21 @@ section {
      font-family: var(--bs-body-font-family);
 }
 .help-container ol {
-    text-align: right; padding-right: 20px;
+    /*
+     * Use logical text-align/padding so the list flows naturally in both
+     * LTR (English) and RTL (Arabic). The previous `text-align: right`
+     * pushed short items (e.g. "Tap the prize you want.") far from their
+     * number marker in EN and made wrapped second lines hug the wrong
+     * edge. `text-align: start` keeps numbers and text tight together,
+     * and `padding-inline-start` indents on the correct side per dir.
+     */
+    text-align: start;
+    padding-inline-start: 1.5rem;
+    padding-right: 0;
+}
+.help-container ol li {
+    padding-inline-start: 0.25rem;
+    margin-bottom: 0.4rem;
 }
 .help-container p {
     margin-bottom: 1rem;

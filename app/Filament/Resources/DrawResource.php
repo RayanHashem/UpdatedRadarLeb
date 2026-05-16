@@ -4,7 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\DrawResource\Pages;
 use App\Models\Draw;
-use Filament\Forms;
+// Draw is referenced inside a column closure for ->getStateUsing() — make
+// sure the import is present even when the closure is the only usage.
+
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -41,7 +43,27 @@ class DrawResource extends Resource
                 Tables\Columns\TextColumn::make('draw_number')
                     ->label('Draw #')
                     ->sortable(),
+                /*
+                 * Status is derived, not the stored `draws.status` column.
+                 *
+                 *   - If the draw already has a winner, it is "closed"
+                 *     forever — that draw round is done.
+                 *   - Otherwise, status mirrors the parent game's
+                 *     `is_enabled` toggle: enabling the prize "opens"
+                 *     gameplay for the current draw; disabling it
+                 *     "closes" play without yet declaring a winner.
+                 *
+                 * This way the badge reacts in real time to the
+                 * `is_enabled` toggle on the Prizes page.
+                 */
                 Tables\Columns\BadgeColumn::make('status')
+                    ->getStateUsing(function (Draw $record): string {
+                        if ($record->winner_user_id !== null) {
+                            return 'closed';
+                        }
+
+                        return ($record->game?->is_enabled) ? 'open' : 'closed';
+                    })
                     ->colors([
                         'success' => 'open',
                         'danger' => 'closed',
@@ -90,7 +112,24 @@ class DrawResource extends Resource
                     ->options([
                         'open' => 'Open',
                         'closed' => 'Closed',
-                    ]),
+                    ])
+                    /*
+                     * Match the derived status logic in the column above:
+                     * a draw is "open" only when there is no winner yet
+                     * AND the parent game is currently enabled.
+                     */
+                    ->query(function (\Illuminate\Database\Eloquent\Builder $query, array $data) {
+                        $value = $data['value'] ?? null;
+                        if ($value === 'open') {
+                            $query->whereNull('winner_user_id')
+                                ->whereHas('game', fn ($q) => $q->where('is_enabled', true));
+                        } elseif ($value === 'closed') {
+                            $query->where(function ($q) {
+                                $q->whereNotNull('winner_user_id')
+                                    ->orWhereHas('game', fn ($g) => $g->where('is_enabled', false));
+                            });
+                        }
+                    }),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make(),

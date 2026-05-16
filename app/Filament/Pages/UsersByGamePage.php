@@ -2,21 +2,21 @@
 
 namespace App\Filament\Pages;
 
-use App\Filament\Resources\UserResource;
 use App\Models\Game;
-use App\Models\User;
+use App\Models\Scan;
 use Filament\Pages\Page;
+use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Abstract base for the "Users who have spent on game X" admin pages.
+ * Abstract base for the "Users who have played game X" admin pages.
  *
  * The five concrete pages (Mobile / Bike & Electronics / SUV / Muscle Car /
  * Super Car) used to be near-identical 60-line copy-pastes. Each one
- * only varied by:
+ * only varies by:
  *   1. The game name to filter on.
  *   2. The navigation label / icon / sort order / title.
  *
@@ -24,17 +24,21 @@ use Illuminate\Database\Eloquent\Builder;
  * navigation properties. Everything else (column set, query builder, empty
  * state, table actions) is shared here.
  *
- * Filtering is by `wallet_transactions.game_id` — the source of truth for
- * "what has the user actually spent on" — not by `users.game_id` (which is
- * just the user's currently-selected prize). See docs/history.md for the
- * multi-game-spending refactor that introduced this.
+ * Each row represents a single SCAN (one tap of the SCAN button) for the
+ * given prize. The same user appears once per scan they've made on this
+ * prize — duplicates are intentional, so admins can audit the exact
+ * sequence of "who played, when". The "Played at" column is the scan's
+ * own `created_at`. Wallet balance / spent / current game / draw # are
+ * pulled from the user record at view time so the row reflects the user's
+ * present-day state, not a snapshot.
  */
 abstract class UsersByGamePage extends Page implements HasTable
 {
     use InteractsWithTable;
 
     protected static ?string $navigationGroup = 'Users';
-    protected static string $view             = 'filament.pages.users-by-game';
+
+    protected static string $view = 'filament.pages.users-by-game';
 
     /**
      * The exact `games.name` to filter by. Subclasses MUST override.
@@ -51,31 +55,68 @@ abstract class UsersByGamePage extends Page implements HasTable
             ->where('name', $this->gameName())
             ->value('id');
 
-        $query = User::query()
-            ->excludeAdmins()
-            ->withRadarCashSpent()
-            ->withDistinctGameCount();
+        // Sentinel value (0) means "no game found by that name" — the query
+        // will return zero rows rather than the full scans list. Avoids
+        // accidentally rendering everything on a typo in gameName().
+        $effectiveGameId = $gameId ?? 0;
 
-        if ($gameId !== null) {
-            $query->whereHas('walletTransactions', function (Builder $q) use ($gameId) {
-                $q->where('game_id', $gameId)
-                    ->whereIn('type', ['debit', 'play', 'spend']);
-            });
-        } else {
-            // No matching game row — return zero results rather than the full
-            // user list. Avoids accidentally rendering all users on a typo.
-            $query->whereRaw('1 = 0');
-        }
+        $query = Scan::query()
+            ->where('scans.game_id', $effectiveGameId)
+            ->whereHas('user', fn (Builder $q) => $q->excludeAdmins())
+            ->with([
+                'user' => fn ($q) => $q->withSum(
+                    ['walletTransactions as radar_cash_spent' => fn ($qq) => $qq->where('type', 'debit')],
+                    'amount'
+                ),
+                'user.game',
+            ]);
 
         return $table
             ->query($query)
-            ->columns(UserResource::getTableColumns())
+            ->columns([
+                Tables\Columns\TextColumn::make('user.id')
+                    ->label('ID')
+                    ->sortable()
+                    ->visibleFrom('md'),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Name')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('user.phone_number')
+                    ->label('Phone nb')
+                    ->searchable()
+                    ->sortable()
+                    ->visibleFrom('md'),
+                Tables\Columns\TextColumn::make('user.game.name')
+                    ->label('Current Game')
+                    ->formatStateUsing(fn ($state) => $state ?? '—')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('user.wallet_balance')
+                    ->label('Radar cash balance')
+                    ->money('usd')
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('user.radar_cash_spent')
+                    ->label('Radar cash spent')
+                    ->money('usd')
+                    ->default(0)
+                    ->visibleFrom('lg'),
+                Tables\Columns\TextColumn::make('user.game.draw_number')
+                    ->label('Draw #')
+                    ->formatStateUsing(fn ($state) => $state ?? '')
+                    ->sortable()
+                    ->visibleFrom('md'),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Played at')
+                    ->dateTime()
+                    ->sortable(),
+            ])
             ->filters([])
-            ->actions(UserResource::getTableActions())
+            ->actions([])
             ->bulkActions([])
+            ->defaultSort('created_at', 'desc')
             ->emptyState(view('filament.tables.empty-state-with-headers', [
-                'headings' => ['ID', 'Name', 'Phone nb', 'Prize', 'Radar cash balance', 'Radar cash spent', 'Draw #', 'Created at'],
-                'message'  => 'No users yet',
+                'headings' => ['ID', 'Name', 'Phone nb', 'Current Game', 'Radar cash balance', 'Radar cash spent', 'Draw #', 'Played at'],
+                'message' => 'No scans for this prize yet',
             ]));
     }
 }

@@ -2,6 +2,7 @@
 import InputError from '@/components/InputError.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
+import { RADARLEB_TERMS_FULL } from '@/content/radarlebTermsFull';
 
 const form = useForm({
     name: '',
@@ -129,6 +130,39 @@ watch(
     { immediate: true }
 );
 
+/*
+ * Terms & Conditions consent modal.
+ *
+ * Tapping the checkbox while it's unchecked must NOT toggle it on directly —
+ * we first force the user through a modal that scrolls the full Terms text
+ * and offers explicit "I agree" / "I disagree" controls. Only "I agree"
+ * applies the tick; "I disagree" leaves the box unchecked. Tapping a
+ * box that's already checked just unchecks it (normal behaviour).
+ *
+ * We intercept the click via @click.prevent rather than @change so we get
+ * a chance to block the underlying state change before Vue applies it.
+ */
+const showTermsModal = ref(false);
+
+function onTermsCheckboxClick(event: Event) {
+    if (form.confirm_18_and_terms) {
+        // Already agreed — let the click through to uncheck.
+        return;
+    }
+    event.preventDefault();
+    showTermsModal.value = true;
+}
+
+function agreeToTerms() {
+    form.confirm_18_and_terms = true;
+    showTermsModal.value = false;
+}
+
+function disagreeToTerms() {
+    form.confirm_18_and_terms = false;
+    showTermsModal.value = false;
+}
+
 const submit = () => {
     submitAttempted.value = true;
     if (!canSubmit.value) return;
@@ -251,6 +285,7 @@ const submit = () => {
                             id="confirm_18_and_terms"
                             class="mt-1 form-check-input flex-shrink-0"
                             :tabindex="7"
+                            @click="onTermsCheckboxClick"
                         />
                         <label for="confirm_18_and_terms" class="flex-grow-1 form-check-label text-white small mb-0 terms-consent-label">
                             I confirm I'm at least 18 years old and I agree to&nbsp;<span class="terms-consent-tail"
@@ -288,6 +323,43 @@ const submit = () => {
                 </form>
             </div>
         </div>
+
+        <!--
+          Terms & Conditions consent modal — appears when the user taps the
+          "I confirm I'm 18+" checkbox while it's unchecked. The user must
+          read (or scroll past) the terms and explicitly press "I agree" to
+          apply the tick. Pressing "I disagree" leaves the box unchecked.
+        -->
+        <div
+            v-if="showTermsModal"
+            class="terms-modal-backdrop"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="terms-modal-title"
+        >
+            <div class="terms-modal-card">
+                <h2 id="terms-modal-title" class="terms-modal-title">Terms &amp; Conditions</h2>
+                <div class="terms-modal-scroll">
+                    <pre class="terms-modal-text">{{ RADARLEB_TERMS_FULL }}</pre>
+                </div>
+                <div class="terms-modal-actions">
+                    <button
+                        type="button"
+                        class="btn btn-custom btn-custom-2 terms-modal-btn terms-modal-btn--decline"
+                        @click="disagreeToTerms"
+                    >
+                        I disagree
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-custom btn-custom-1 terms-modal-btn terms-modal-btn--accept"
+                        @click="agreeToTerms"
+                    >
+                        I agree
+                    </button>
+                </div>
+            </div>
+        </div>
     </section>
 </template>
 
@@ -295,5 +367,101 @@ const submit = () => {
 /* Keep “the” + link on one line so it doesn’t stack as “the” / “Terms…” */
 .terms-consent-tail {
     white-space: nowrap;
+}
+
+/*
+ * Terms & Conditions consent modal. Sits above the form and locks the
+ * page until the user picks I agree / I disagree. The card matches the
+ * dark glass aesthetic used by the legal page (Legal.vue) so the user
+ * doesn't get visually yanked.
+ */
+.terms-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    z-index: 1050;
+}
+
+.terms-modal-card {
+    width: 100%;
+    max-width: 32rem;
+    max-height: min(90vh, 40rem);
+    display: flex;
+    flex-direction: column;
+    background: rgba(6, 33, 46, 0.95);
+    border: 1px solid rgba(98, 195, 255, 0.22);
+    border-radius: 18px;
+    padding: 1.25rem;
+    color: #ffffff;
+    gap: 0.85rem;
+}
+
+.terms-modal-title {
+    margin: 0;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.02em;
+}
+
+.terms-modal-scroll {
+    flex: 1 1 auto;
+    min-height: 8rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    padding: 0.6rem 0.75rem;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(98, 195, 255, 0.15);
+}
+
+.terms-modal-text {
+    margin: 0;
+    padding: 0;
+    font-family: inherit;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.terms-modal-actions {
+    display: flex;
+    gap: 0.6rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/*
+ * The shared `.btn-custom` rule sets `flex: 1` — inside this small flex row
+ * that would stretch the buttons across the whole modal width and make
+ * them look out of place. Force them back to fit-content sizing.
+ */
+.terms-modal-btn.btn-custom {
+    flex: 0 0 auto;
+    width: auto;
+    min-height: unset;
+    padding: 0.55rem 1.1rem;
+    font-size: 0.95rem;
+}
+
+.terms-modal-btn--decline {
+    background-color: var(--rl-color-cyan, #62c3ff);
+    color: var(--rl-color-text-on-light, #06212e);
+}
+
+.terms-modal-btn--accept {
+    background-color: var(--rl-color-coral, #e4787e);
+    color: #ffffff;
 }
 </style>

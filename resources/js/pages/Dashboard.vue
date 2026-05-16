@@ -363,7 +363,19 @@
     <audio id="scanSound2" src="/assets/imgs/audio/radar2.mp3" preload="auto"></audio>
     <audio id="hornSound" src="/assets/imgs/horn.mp3" preload="auto"></audio>
     <audio id="clickSound" src="/assets/imgs/click.mp3" preload="auto"></audio>
+    <!--
+      Win celebration sound. Drop the source file at
+      `public/assets/imgs/audio/purge.mp3` (matches the path pattern of
+      the other game audio). The element fails silently if missing, so
+      shipping without the file just degrades to a silent congrats popup.
+    -->
+    <audio id="purgeSound" src="/assets/imgs/audio/purge.mp3" preload="auto"></audio>
 
+    <!--
+      Mobile "Add to Home Screen" prompt. Renders only on devices where
+      the install path is available and only once per 30 days per device.
+    -->
+    <AddToHomeScreenPrompt />
 </template>
 <script setup>
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue';
@@ -373,6 +385,7 @@ import GameModal from '@/components/GameModal.vue';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import HelpOverlay from '@/components/dashboard/HelpOverlay.vue';
 import WinnersOverlay from '@/components/dashboard/WinnersOverlay.vue';
+import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt.vue';
 import { getPrizeRules, getMinDepositMessage, getMinDepositMessageBySlot } from '@/lib/prizeRules.js';
 import { useTranslate } from '@/composables/useTranslate';
 
@@ -526,6 +539,37 @@ function showGameModal(config) {
  * (b) the Scan button → "Select a prize first" or minimum-deposit modals
  * in startScan(). Help opens the same top-bar overlay as the menu.
  */
+/*
+ * Win celebration popup + sound. Triggered from startScan() when the user's
+ * radar reaches level 6 on a successful scan. The message is dynamic — it
+ * includes the prize name so the same popup works for Mobile, Bike &
+ * Electronics, SUV, Muscle Car, and Super Car. The "purge" sound is a
+ * separate <audio id="purgeSound"> element in the template; the file at
+ * `public/assets/imgs/audio/purge.mp3` is what feeds it. If the file
+ * isn't deployed yet, the popup still shows but plays nothing.
+ */
+function celebrateWin(prizeName) {
+    const label = (prizeName && String(prizeName).trim()) || 'prize';
+    const audio = document.getElementById('purgeSound');
+    if (audio && audioEnabled.value) {
+        try {
+            audio.currentTime = 0;
+            const p = audio.play();
+            if (p && typeof p.catch === 'function') {
+                p.catch(() => { /* autoplay blocked — celebration is silent */ });
+            }
+        } catch { /* no-op */ }
+    }
+    showGameModal({
+        title: 'You won!',
+        message: `Congratulations on winning the ${label} Prize!`,
+        subtext: 'Our team will reach out shortly with the details.',
+        primaryLabel: '',
+        primaryAction: '',
+        secondaryLabel: 'Awesome',
+    });
+}
+
 function showMinDepositModal(message) {
     showGameModal({
         title: 'Minimum deposit required',
@@ -879,6 +923,17 @@ async function startScan() {
     await sleep(2000);
     detectionStatus.value = 'idle';
     visibleCount.value = 0;
+
+    /*
+     * Win celebration. The 6th successful antenna completes the radar; that's
+     * the moment to celebrate. We gate on `radar_level >= 6` AND `found` so a
+     * passive page reload that already shows level 6 won't re-fire the popup
+     * — only an actual scan that just completed the set does.
+     */
+    const justWon = found && Number(dat?.progress?.radar_level ?? 0) >= 6;
+    if (justWon) {
+        celebrateWin(prize?.name);
+    }
 
     /*
      * Post-scan cleanup (runs ONLY after the full result animation + the 2s

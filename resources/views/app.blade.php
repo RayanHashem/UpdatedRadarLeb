@@ -11,8 +11,20 @@
 <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
 <link rel="manifest" href="{{ asset('site.webmanifest') }}">
 <link rel="mask-icon" href="{{ asset('safari-pinned-tab.svg') }}" color="#5bbad5"> {{-- If you have this file --}}
-<meta name="msapplication-TileColor" content="#da532c"> {{-- If applicable --}}
-<meta name="theme-color" content="#ffffff"> {{-- If applicable --}}
+<meta name="msapplication-TileColor" content="#06212e">
+<meta name="theme-color" content="#06212e">
+
+{{--
+    Add-to-Home-Screen / PWA install hints. iOS Safari does not implement
+    the `beforeinstallprompt` event, so we rely on these meta tags + the
+    in-app `<AddToHomeScreenPrompt />` instructions banner. Without
+    `apple-mobile-web-app-capable` the home-screen launch opens in regular
+    Safari instead of the standalone PWA shell.
+--}}
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="RadarLeb">
 <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 {{-- End Favicon Links --}}
 
