@@ -60,15 +60,28 @@ abstract class UsersByGamePage extends Page implements HasTable
         // accidentally rendering everything on a typo in gameName().
         $effectiveGameId = $gameId ?? 0;
 
+        /*
+         * Each row is a scan for THIS prize. The "Current Game" column
+         * therefore reads `game.name` (the scan's own game relation),
+         * not `user.game.name` — `users.game_id` is the user's currently
+         * selected prize slot and the Dashboard clears it back to null
+         * after every successful scan via POST /me/game, which used to
+         * make this column blank intermittently. Reading from the scan
+         * relation eliminates that race entirely: a scan row always has
+         * a `game_id`, so the column is always populated.
+         *
+         * We also eager-load `game` (the scan's prize) and `user` once,
+         * so the table renders without per-row N+1 selects.
+         */
         $query = Scan::query()
             ->where('scans.game_id', $effectiveGameId)
             ->whereHas('user', fn (Builder $q) => $q->excludeAdmins())
             ->with([
+                'game',
                 'user' => fn ($q) => $q->withSum(
                     ['walletTransactions as radar_cash_spent' => fn ($qq) => $qq->where('type', 'debit')],
                     'amount'
                 ),
-                'user.game',
             ]);
 
         return $table
@@ -87,7 +100,7 @@ abstract class UsersByGamePage extends Page implements HasTable
                     ->searchable()
                     ->sortable()
                     ->visibleFrom('md'),
-                Tables\Columns\TextColumn::make('user.game.name')
+                Tables\Columns\TextColumn::make('game.name')
                     ->label('Current Game')
                     ->formatStateUsing(fn ($state) => $state ?? '—')
                     ->sortable(),
@@ -100,7 +113,7 @@ abstract class UsersByGamePage extends Page implements HasTable
                     ->money('usd')
                     ->default(0)
                     ->visibleFrom('lg'),
-                Tables\Columns\TextColumn::make('user.game.draw_number')
+                Tables\Columns\TextColumn::make('game.draw_number')
                     ->label('Draw #')
                     ->formatStateUsing(fn ($state) => $state ?? '')
                     ->sortable()

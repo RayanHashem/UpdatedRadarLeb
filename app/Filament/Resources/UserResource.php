@@ -73,7 +73,16 @@ class UserResource extends Resource
                 ->searchable()
                 ->sortable()
                 ->visibleFrom('md'),
-            Tables\Columns\TextColumn::make('game.name')
+            /*
+             * Read the derived `current_game_name` subselect (see
+             * User::scopeWithCurrentGameName) instead of `game.name`.
+             * The user's `game_id` is cleared back to null after every
+             * scan via the dashboard's POST /me/game cleanup, which made
+             * this column flicker empty for any user who had played
+             * recently. The subselect falls back to the latest scan so
+             * the column always shows a meaningful prize.
+             */
+            Tables\Columns\TextColumn::make('current_game_name')
                 ->label('Current Game')
                 ->formatStateUsing(fn ($state) => $state ?? '—')
                 ->sortable()
@@ -179,7 +188,8 @@ class UserResource extends Resource
             ->excludeAdmins()
             ->with(['game'])
             ->withRadarCashSpent()
-            ->withDistinctGameCount();
+            ->withDistinctGameCount()
+            ->withCurrentGameName();
     }
 
     public static function getRelations(): array

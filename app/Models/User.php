@@ -86,6 +86,30 @@ class User extends Authenticatable implements FilamentUser
         return $query->withSum(['walletTransactions as radar_cash_spent' => fn ($q) => $q->where('type', 'debit')], 'amount');
     }
 
+    /**
+     * Subquery: name of the user's "current" game.
+     *
+     * Prefers `users.game_id` (the prize the user has actively selected on
+     * the dashboard). When that's null — which it is for most of the time,
+     * since the dashboard clears the selection back to null after every
+     * scan — falls back to the prize from the user's most recent scan.
+     * That keeps the admin "Current Game" column populated consistently
+     * instead of flickering empty between selections.
+     *
+     * Implemented as a scalar correlated subquery so it runs portably on
+     * both SQLite (dev) and Postgres (prod). The inner ORDER BY + LIMIT 1
+     * picks the freshest scan; COALESCE picks the live selection first.
+     */
+    public function scopeWithCurrentGameName($query)
+    {
+        return $query->addSelect([
+            'current_game_name' => \App\Models\Game::query()
+                ->select('games.name')
+                ->whereColumn('games.id', \DB::raw('COALESCE(users.game_id, (SELECT scans.game_id FROM scans WHERE scans.user_id = users.id ORDER BY scans.created_at DESC LIMIT 1))'))
+                ->limit(1),
+        ]);
+    }
+
     /** Subquery for count of distinct games a user has spent on. Avoids N+1 in table description callbacks. */
     public function scopeWithDistinctGameCount($query)
     {

@@ -294,31 +294,23 @@ background-color: rgba(255,255,255,0.3);
     height: auto;
     object-fit: contain;
 }
+#myVideo2.radar-center-asset {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    max-width: none;
+    height: 100%;
+    max-height: none;
+    object-fit: contain;
+    object-position: center;
+    transform: none;
+    background: transparent;
+}
 #radarIdleEllipse {
     display: block;
     user-select: none;
     -webkit-user-drag: none;
-}
-@media (max-width: 767px) {
-    /*
-     * Absolutely position the in-scan video so it always covers the radar
-     * box edge-to-edge. The previous flow-layout sizing (width/height: 100%
-     * inside a flex parent) drifted on some phones, leaving a sliver of the
-     * page background visible in the top-left corner of the radar circle.
-     * `inset: 0` + `object-fit: cover` + a centered transform-origin keeps
-     * the scaled webm perfectly centered no matter the radar box aspect.
-     */
-    #myVideo2.radar-center-asset {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        max-width: none;
-        height: 100%;
-        max-height: none;
-        object-fit: cover;
-        transform: scale(1.55);
-        transform-origin: 50% 50%;
-    }
 }
 
 #image-selector {
@@ -894,10 +886,13 @@ section {
     width: 90%; max-width: 600px; max-height: 90vh;
     display: flex; flex-direction: column; align-items: center;
     color: white; overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px;
     /* Momentum scroll on iOS so long help text / winner list scroll naturally. */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    touch-action: pan-y;
+    box-sizing: border-box;
 }
 
 /*
@@ -999,6 +994,8 @@ section {
 /* Help Section */
 .help-container {
     font-family: 'GE Flow', sans-serif; font-size: 1rem; line-height: 1.6;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 .help-container h1, .help-container h2 {
      font-family: var(--bs-body-font-family);
@@ -1009,19 +1006,22 @@ section {
      * LTR (English) and RTL (Arabic). The previous `text-align: right`
      * pushed short items (e.g. "Tap the prize you want.") far from their
      * number marker in EN and made wrapped second lines hug the wrong
-     * edge. `text-align: start` keeps numbers and text tight together,
-     * and `padding-inline-start` indents on the correct side per dir.
+     * edge. `text-align: start` keeps the copy aligned per dir, while
+     * inside markers prevent Arabic numbers from being clipped on phones.
      */
     text-align: start;
-    padding-inline-start: 1.5rem;
-    padding-right: 0;
+    list-style-position: inside;
+    padding-inline: 0;
+    margin-inline: 0;
 }
 .help-container ol li {
-    padding-inline-start: 0.25rem;
+    padding-inline-start: 0;
     margin-bottom: 0.4rem;
+    overflow-wrap: anywhere;
 }
 .help-container p {
     margin-bottom: 1rem;
+    overflow-wrap: anywhere;
 }
 
 /* Responsive Adjustments */

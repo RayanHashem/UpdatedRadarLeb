@@ -7,8 +7,9 @@ export const RADARLEB_TERMS_FULL = `RadarLeb — Terms & Conditions
 RadarLeb
 Terms & Conditions of Use
 
-Effective Date: 5/7/2026                    Governing Jurisdiction: Republic of Lebanon
-Contact: ali_houdeib@hotmail.com
+Effective Date: 5/7/2026                                                                                            
+Governing Jurisdiction: Republic of Lebanon
+Contact: radarleb10452@gmail.com
 
 1. Acceptance of Terms
 By downloading, installing, accessing, or using the RadarLeb mobile application (the "App", "Service", or "RadarLeb"), you agree to be bound by these Terms and Conditions ("Terms"). If you do not agree, you must immediately uninstall the App and cease all use. These Terms constitute a legally binding agreement between you ("User") and RadarLeb ("Company", "we", "our").
