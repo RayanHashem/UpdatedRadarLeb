@@ -163,9 +163,26 @@
         </section>
 
         <section v-show="!loading" id="game">
+            <!--
+              Page background video. Two mobile-specific notes:
+                * `muted` is a plain HTML attribute (not `:muted="true"`)
+                  so iOS Safari sees it at parse time and honours
+                  `autoplay`. The Vue-bound form sets the *property*
+                  after mount, which iOS sometimes treats as "user just
+                  unmuted, don't autoplay".
+                * `disablePictureInPicture` + `disableRemotePlayback`
+                  stop iOS from offering PiP / AirPlay which would
+                  pause the in-page playback when accidentally tapped.
+              Resume guard for the rare cases iOS still pauses (lock
+              screen, Low Power Mode, incoming call, tab switched away
+              and back) lives in onMounted as `keepBgVideoPlaying`.
+            -->
             <video autoplay
-                   :muted="true"
-                   loop playsinline id="myVideo"
+                   muted
+                   loop playsinline
+                   disablepictureinpicture
+                   disableremoteplayback
+                   id="myVideo"
                    preload="auto">
                 <source src="/assets/imgs/vid.webm" type="video/webm">
                 Your browser does not support HTML5 video.
@@ -1329,6 +1346,41 @@ onMounted(() => {
         const bgVid = document.getElementById('myVideo');
         bgVid?.load();
         bgVid?.play().catch((e) => console.warn('Autoplay failed:', e));
+
+        /*
+         * Mobile resume guard. iOS Safari pauses background videos in a
+         * handful of situations the page has no warning of:
+         *   - the user locks the phone or switches apps and comes back,
+         *   - Low Power Mode silently freezes the playback,
+         *   - an incoming call / notification briefly takes audio focus,
+         *   - the OS reclaims memory and tears the decoder down.
+         *
+         * After any of those, the <video> stays paused on its last
+         * frame and looks like a static image. We attach lightweight
+         * listeners so any unexpected pause / visibility-return kicks
+         * playback back on. We do NOT touch myVideo2 — that one is
+         * intentionally play/paused by startScan() and pauseRadarVideo().
+         */
+        if (bgVid) {
+            const tryResume = () => {
+                if (bgVid.paused && !bgVid.ended) {
+                    const p = bgVid.play();
+                    if (p && typeof p.catch === 'function') {
+                        p.catch(() => { /* autoplay-policy retry — non-fatal */ });
+                    }
+                }
+            };
+            bgVid.addEventListener('pause', tryResume);
+            // Some browsers fire `stalled` / `suspend` instead of `pause`
+            // when memory pressure tears the decoder down.
+            bgVid.addEventListener('stalled', tryResume);
+            bgVid.addEventListener('suspend', tryResume);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) tryResume();
+            });
+            window.addEventListener('pageshow', tryResume);
+            window.addEventListener('focus', tryResume);
+        }
     });
 
     const attachVideoSources = () => {
