@@ -11,6 +11,15 @@
     -->
 
     <div>
+        <!--
+          Desktop gate. When the user opens the game on a laptop or
+          desktop the radar makes no sense (no movement, no location),
+          so we cover the page with the DesktopBlock overlay and exit
+          early from onMounted so none of the video/audio/scan setup
+          runs. Admin (/admin) is a separate app and is unaffected.
+        -->
+        <DesktopBlock v-if="isDesktop" />
+
         <div v-if="activeOverlay" class="overlay" @click.self="activeOverlay = null">
 
              <div class="overlay-content">
@@ -389,10 +398,12 @@
     <audio id="purgeSound" src="/assets/imgs/audio/purge.mp3" preload="auto"></audio>
 
     <!--
-      Mobile "Add to Home Screen" prompt. Renders only on devices where
-      the install path is available and only once per 30 days per device.
+      Mobile "Add to Home Screen" prompt. Renders only on actual mobile
+      devices (gated by the same isDesktop check the page uses) and only
+      once per 30 days per device. Skipping on desktop avoids pestering
+      laptop users who already see the <DesktopBlock /> overlay.
     -->
-    <AddToHomeScreenPrompt />
+    <AddToHomeScreenPrompt v-if="!isDesktop" />
 </template>
 <script setup>
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue';
@@ -403,6 +414,36 @@ import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import HelpOverlay from '@/components/dashboard/HelpOverlay.vue';
 import WinnersOverlay from '@/components/dashboard/WinnersOverlay.vue';
 import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt.vue';
+import DesktopBlock from '@/components/DesktopBlock.vue';
+
+/*
+ * Mobile-only gate for the main game.
+ *
+ * We detect "mobile" as: a known mobile/touch UA OR an iPad reporting as
+ * Mac but exposing more than one touch point (iPadOS 13+). Anything that
+ * doesn't match — laptops, desktops, dev tools without touch emulation —
+ * gets the <DesktopBlock /> overlay instead of the radar. Detection runs
+ * once at <script setup> so the overlay paints on first render with no
+ * flash of the game UI; resizing a desktop window narrow does NOT flip
+ * the gate, since the constraint is physical (movement / location), not
+ * viewport-driven.
+ */
+function detectMobileDevice() {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+        return true;
+    }
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua)) {
+        return true;
+    }
+    // iPadOS 13+ reports as Macintosh but has multi-touch.
+    if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) {
+        return true;
+    }
+    return false;
+}
+
+const isDesktop = ref(!detectMobileDevice());
 import { getPrizeRules, getMinDepositMessage, getMinDepositMessageBySlot } from '@/lib/prizeRules.js';
 import { useTranslate } from '@/composables/useTranslate';
 
@@ -1253,6 +1294,18 @@ async function refreshWalletFromServer() {
 }
 
 onMounted(() => {
+    /*
+     * Mobile-only gate. When the page renders on desktop we cover the UI
+     * with <DesktopBlock /> and skip the entire setup: no game polling,
+     * no audio preload, no background video resume guard, no A2HS, no
+     * Inertia route guards. None of those make sense without a phone in
+     * hand, and skipping them avoids spurious console noise (autoplay
+     * blocked, geolocation prompts, etc.) on a machine that won't play.
+     */
+    if (isDesktop.value) {
+        return;
+    }
+
     if (!prizes.value || prizes.value.length === 0) {
         refreshGamesFromApi();
     }
