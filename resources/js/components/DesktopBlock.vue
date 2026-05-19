@@ -44,11 +44,6 @@ import { Link } from '@inertiajs/vue3';
                     <span>Sign in with your account and start scanning.</span>
                 </div>
             </div>
-
-            <p class="desktop-block__note">
-                Need to manage prizes, draws, or users? The admin panel works
-                on desktop — visit <Link :href="'/admin'" class="desktop-block__link">/admin</Link>.
-            </p>
         </div>
     </div>
 </template>
