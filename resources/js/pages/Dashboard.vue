@@ -321,7 +321,7 @@
                 <div class="antenna-container">
                     <div v-for="n in 6" :key="n">
                         <img
-                            :src="(n === 1 ? currentProgress.radar_level >= 2 : n <= currentProgress.radar_level) ? '/assets/imgs/enable1.png' : '/assets/imgs/enable.png'"
+                            :src="n <= currentProgress.radar_level ? '/assets/imgs/enable1.png' : '/assets/imgs/enable.png'"
                             class="antenna-icon"
                         />
                     </div>

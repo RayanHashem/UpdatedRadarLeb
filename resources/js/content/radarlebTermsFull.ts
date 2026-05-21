@@ -44,7 +44,7 @@ To participate in prize events and claim rewards, you must register a valid acco
 
 You are responsible for maintaining the confidentiality of your login credentials.
 You are responsible for all activity that occurs under your account, whether or not authorized by you.
-You must notify us immediately of any unauthorized access to your account at ali_houdeib@hotmail.com.
+You must notify us immediately of any unauthorized access to your account at radarleb10452@gmail.com.
 You may not create multiple accounts, transfer your account, or allow another person to use your account.
 
 4.2 Verification for Prize Claims
