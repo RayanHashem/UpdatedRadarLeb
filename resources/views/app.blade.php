@@ -23,7 +23,14 @@
 --}}
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+{{--
+    Use `black` (NOT `black-translucent`) so iOS reserves the status-bar
+    strip instead of overlaying it on top of the app. The translucent
+    variant was eating the top row of buttons (settings/help) for users
+    who launched RadarLeb from the home-screen icon, because the radar UI
+    has no safe-area-inset padding.
+--}}
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="RadarLeb">
 <link rel="icon" href="{{ asset('favicon.ico') }}" type="image/x-icon">
 {{-- End Favicon Links --}}

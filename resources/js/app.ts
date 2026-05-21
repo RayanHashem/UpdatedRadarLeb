@@ -6,6 +6,36 @@ import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
+import DesktopBlock from './components/DesktopBlock.vue';
+
+/*
+ * Global mobile-only gate.
+ *
+ * Dashboard.vue already mounts <DesktopBlock /> on the radar page, but
+ * laptop users hitting /login, /register, /forgot-password (and the
+ * reset-password link from email) were still able to interact with those
+ * forms — which only makes sense as a prelude to playing the mobile-only
+ * game. We hoist the same detection up to the Inertia root so the
+ * warning overlay appears on every public page. The admin panel is a
+ * separate Filament/Livewire app served from /admin and is not affected
+ * by this module.
+ *
+ * Detection mirrors the helper in Dashboard.vue: known mobile UAs OR an
+ * iPadOS 13+ device that reports as Macintosh but exposes multi-touch.
+ */
+function isDesktopEnv(): boolean {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+        return false;
+    }
+    const ua = navigator.userAgent || '';
+    if (/iPhone|iPad|iPod|Android|webOS|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(ua)) {
+        return false;
+    }
+    if (/Macintosh/i.test(ua) && (navigator.maxTouchPoints || 0) > 1) {
+        return false;
+    }
+    return true;
+}
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -51,7 +81,21 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue', { eager: false })),
     setup({ el, App, props, plugin }) {
-        const app = createApp({ render: () => h(App, props) });
+        const desktop = isDesktopEnv();
+        const app = createApp({
+            // On desktop we render the Inertia <App> AND the DesktopBlock
+            // overlay on top of it (z-index: 100000 in the component). The
+            // overlay fully covers the page and is interaction-blocking, so
+            // the underlying form doesn't need to be removed from the DOM.
+            // Dashboard.vue still mounts its own copy as defense-in-depth;
+            // the duplicate is invisible (identical fixed overlay) and
+            // harmless.
+            render: () =>
+                h('div', { class: 'app-root' }, [
+                    h(App, props),
+                    desktop ? h(DesktopBlock) : null,
+                ]),
+        });
         
         // Configure Ziggy - use from window (set by @routes) or from Inertia props
         const ziggyConfig = (window as any).Ziggy || props.initialPage?.props?.ziggy;

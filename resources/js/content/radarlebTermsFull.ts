@@ -124,7 +124,24 @@ Users who interact with advertiser links or promotions do so at their own risk.
 
 
 9. Location Data, Privacy & Data Use
-RadarLeb requires continuous access to your device's GPS location data in order to function. By using the App, you expressly consent to the collection, processing, and use of your real-time location data for the purpose of antenna detection, prize scanning, fraud prevention, and prize verification. Your location data will not be sold to third parties for marketing purposes without your separate, explicit consent.
+RadarLeb requires continuous access to your device's GPS location data in order to function. By using the App, you expressly consent to the collection, processing, and use of your real-time location data for the purpose of antenna detection, prize scanning, fraud prevention, and prize verification.
+
+9.1 Limited Use of Location Data
+Your location data is used strictly and exclusively for in-game purposes. Specifically, RadarLeb uses your GPS location only to:
+
+Determine your proximity to virtual antenna coordinates so the App can decide whether a scan is eligible to win a prize.
+Detect and prevent cheating, GPS spoofing, or other forms of location-based fraud within the App.
+Verify the eligibility of a Prize winner at the time of redemption.
+
+RadarLeb will NOT use your location data for any of the following purposes:
+
+Personal profiling, behavioural advertising, or building marketing audiences based on the places you visit.
+Sale, rental, lease, or other commercial disclosure of your raw location data to advertisers, data brokers, analytics resellers, or any other third party.
+Tracking your movement outside of an active gameplay session, beyond what is necessary to operate the antenna-detection mechanic and the fraud-prevention checks described above.
+Any purpose unrelated to the operation of the RadarLeb game and the delivery of Prizes you have won within it.
+
+We do not share your individual location history with Sponsors, advertisers, or any third party for their own purposes. Aggregated, anonymised statistics that cannot reasonably be used to identify you (for example, total number of scans in a region) may be used internally to operate and improve the App. You may revoke the App's access to your device location at any time through your device settings; doing so will disable the scanning feature and your ability to win Prizes that depend on location detection.
+
 Our Privacy Policy, available at https://radarleb.com/privacy, governs how we collect, use, store, and protect your personal data and is incorporated into these Terms by reference. By using the App, you also agree to our Privacy Policy.
 
 10. Account Suspension, Termination & Prize Forfeiture
@@ -165,7 +182,7 @@ Language: In the event of any conflict between the Arabic and English versions o
 16. Contact Information
 For questions, prize claims, account issues, or legal notices, please contact us at:
 RadarLeb Support
-Email: ali_houdeib@hotmail.com
+Email: radarleb10452@gmail.com
 Website: radarleb.com
 Country: Republic of Lebanon
 
