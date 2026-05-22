@@ -628,6 +628,28 @@ function celebrateWin(prizeName) {
     });
 }
 
+/*
+ * Per-antenna progress popup. Fires after every successful detection
+ * EXCEPT the 6th (which gets the full celebrateWin popup instead). Mirrors
+ * the radar_level the server just returned, so it always matches what the
+ * user actually has — no client-side counter to drift out of sync.
+ */
+function showAntennaProgressModal(level, prizeName) {
+    const label = (prizeName && String(prizeName).trim()) || 'prize';
+    const countLine = `Antenna count: ${level}/6`;
+    const message = level === 5
+        ? `${countLine} — Almost there! Just one more!`
+        : countLine;
+    showGameModal({
+        title: 'Antenna Detected!',
+        message,
+        subtext: `Keep playing to acquire all 6 antennas and win this ${label}!`,
+        primaryLabel: '',
+        primaryAction: '',
+        secondaryLabel: 'Continue Playing',
+    });
+}
+
 function showMinDepositModal(message) {
     showGameModal({
         title: 'Minimum deposit required',
@@ -988,9 +1010,12 @@ async function startScan() {
      * passive page reload that already shows level 6 won't re-fire the popup
      * — only an actual scan that just completed the set does.
      */
-    const justWon = found && Number(dat?.progress?.radar_level ?? 0) >= 6;
+    const radarLevel = Number(dat?.progress?.radar_level ?? 0);
+    const justWon = found && radarLevel >= 6;
     if (justWon) {
         celebrateWin(prize?.name);
+    } else if (found && radarLevel > 0 && radarLevel < 6) {
+        showAntennaProgressModal(radarLevel, prize?.name);
     }
 
     /*
@@ -1233,6 +1258,12 @@ function onLocationTap() {
         return;
     }
     locationRequestInProgress.value = true;
+    playClickSound();
+
+    // Open the tab synchronously inside the user gesture so popup blockers
+    // don't swallow it. We'll redirect it to the precise URL once coords
+    // arrive from the (async) permission prompt + geolocation callback.
+    const mapWindow = window.open(locationUrl.value, '_blank');
 
     const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
@@ -1244,8 +1275,13 @@ function onLocationTap() {
             userLocation.value = { lat, lng };
             locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
             startLocationWatch();
-            playClickSound();
-            window.open(locationUrl.value, '_blank');
+            if (mapWindow && !mapWindow.closed) {
+                try {
+                    mapWindow.location.href = locationUrl.value;
+                } catch {
+                    // cross-origin nav errors are fine; the tab already has a map
+                }
+            }
         },
         (error) => {
             locationRequestInProgress.value = false;
@@ -1257,7 +1293,9 @@ function onLocationTap() {
                         ? 'Unable to get your location. Please try again.'
                         : 'Unable to get your location. Please try again.';
             showLocationError('Location unavailable', msg);
-            playClickSound();
+            if (mapWindow && !mapWindow.closed) {
+                mapWindow.close();
+            }
         },
         options
     );
