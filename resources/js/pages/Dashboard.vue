@@ -548,6 +548,7 @@ const locationRequestInProgress = ref(false);
 /** Dedupe touch + click so we only run once per tap (touchend fires first on mobile, then click may fire). */
 let lastLocationTapAt = 0;
 const LOCATION_TAP_DEBOUNCE_MS = 500;
+let bgVideoResumeId = null;
 
 const canScan = computed(() => radarOnline.value && !scanning.value && selectedGameEnabled.value);
 
@@ -1422,8 +1423,13 @@ onMounted(() => {
      */
     nextTick(() => {
         const bgVid = document.getElementById('myVideo');
-        bgVid?.load();
-        bgVid?.play().catch((e) => console.warn('Autoplay failed:', e));
+        if (bgVid) {
+            bgVid.muted = true;
+            bgVid.defaultMuted = true;
+            bgVid.playsInline = true;
+            bgVid.load();
+            bgVid.play().catch((e) => console.warn('Autoplay failed:', e));
+        }
 
         /*
          * Mobile resume guard. iOS Safari pauses background videos in a
@@ -1441,6 +1447,12 @@ onMounted(() => {
          */
         if (bgVid) {
             const tryResume = () => {
+                bgVid.muted = true;
+                bgVid.defaultMuted = true;
+                bgVid.playsInline = true;
+                if (bgVid.readyState === 0) {
+                    bgVid.load();
+                }
                 if (bgVid.paused && !bgVid.ended) {
                     const p = bgVid.play();
                     if (p && typeof p.catch === 'function') {
@@ -1451,6 +1463,8 @@ onMounted(() => {
             bgVid.addEventListener('pause', tryResume);
             // Some browsers fire `stalled` / `suspend` instead of `pause`
             // when memory pressure tears the decoder down.
+            bgVid.addEventListener('loadeddata', tryResume);
+            bgVid.addEventListener('canplay', tryResume);
             bgVid.addEventListener('stalled', tryResume);
             bgVid.addEventListener('suspend', tryResume);
             document.addEventListener('visibilitychange', () => {
@@ -1458,6 +1472,9 @@ onMounted(() => {
             });
             window.addEventListener('pageshow', tryResume);
             window.addEventListener('focus', tryResume);
+            bgVideoResumeId = setInterval(() => {
+                if (!document.hidden) tryResume();
+            }, 1500);
         }
     });
 
@@ -1528,6 +1545,10 @@ onMounted(() => {
 onUnmounted(() => {
     if (hornInterval) {
         clearInterval(hornInterval);
+    }
+    if (bgVideoResumeId) {
+        clearInterval(bgVideoResumeId);
+        bgVideoResumeId = null;
     }
     if (locationWatchId.value != null && navigator.geolocation) {
         navigator.geolocation.clearWatch(locationWatchId.value);
