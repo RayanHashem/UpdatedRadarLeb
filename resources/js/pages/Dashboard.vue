@@ -1225,8 +1225,9 @@ function startLocationWatch() {
 }
 
 /**
- * My Location: handler for both touchstart (mobile, first tap) and click (desktop).
- * getCurrentPosition must run in the same sync turn as this handler so the permission prompt appears.
+ * My Location: request GPS from the tap, then leave the game only after
+ * coordinates are available. Opening a placeholder tab before permission
+ * resolves can strand mobile users on a blank page.
  */
 function onLocationTap() {
     console.log('location button pressed');
@@ -1234,10 +1235,10 @@ function onLocationTap() {
     if (now - lastLocationTapAt < LOCATION_TAP_DEBOUNCE_MS) return;
     lastLocationTapAt = now;
 
-    // Already tracking and have position: open map with current location
+    // Already tracking and have position: navigate straight to the current map.
     if (locationWatchId.value != null && userLocation.value.lat != null && userLocation.value.lng != null) {
         playClickSound();
-        window.open(locationUrl.value, '_blank');
+        window.location.assign(locationUrl.value);
         return;
     }
 
@@ -1260,11 +1261,6 @@ function onLocationTap() {
     locationRequestInProgress.value = true;
     playClickSound();
 
-    // Open the tab synchronously inside the user gesture so popup blockers
-    // don't swallow it. We'll redirect it to the precise URL once coords
-    // arrive from the (async) permission prompt + geolocation callback.
-    const mapWindow = window.open(locationUrl.value, '_blank');
-
     const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
     navigator.geolocation.getCurrentPosition(
@@ -1275,13 +1271,7 @@ function onLocationTap() {
             userLocation.value = { lat, lng };
             locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
             startLocationWatch();
-            if (mapWindow && !mapWindow.closed) {
-                try {
-                    mapWindow.location.href = locationUrl.value;
-                } catch {
-                    // cross-origin nav errors are fine; the tab already has a map
-                }
-            }
+            window.location.assign(locationUrl.value);
         },
         (error) => {
             locationRequestInProgress.value = false;
@@ -1293,9 +1283,6 @@ function onLocationTap() {
                         ? 'Unable to get your location. Please try again.'
                         : 'Unable to get your location. Please try again.';
             showLocationError('Location unavailable', msg);
-            if (mapWindow && !mapWindow.closed) {
-                mapWindow.close();
-            }
         },
         options
     );
