@@ -67,4 +67,4 @@ EXPOSE 8080
 # Migrations + cached config/routes/views run on container start so a fresh
 # deploy auto-applies schema changes. Then handoff to s6 (php-fpm + nginx).
 ENTRYPOINT ["docker-php-entrypoint"]
-CMD ["sh", "-lc", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && /init"]
+CMD ["sh", "-lc", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && exec /init"]
