@@ -27,7 +27,7 @@ RUN npm run build
 
 # Stage 2: install composer dependencies. Separate stage so we don't carry
 # composer's cache and platform tools into the runtime image.
-FROM composer:2 AS vendor
+FROM composer:2-php8.4 AS vendor
 WORKDIR /app
 
 COPY composer.json composer.lock ./
@@ -37,7 +37,7 @@ RUN composer install \
         --no-progress \
         --no-scripts \
         --prefer-dist \
-        --optimize-autoloader
+        --optimize-autoloader --ignore-platform-req=ext-intl
 
 # Stage 3: runtime. PHP-FPM + nginx + s6 in one image.
 FROM serversideup/php:8.4-fpm-nginx
