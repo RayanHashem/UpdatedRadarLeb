@@ -29,7 +29,7 @@ services:
     healthCheckPath: /up
 
     # Auto-deploy on every push to the configured branch.
-    branch: cleanup/abed-radarleb     # CHANGE this to `main` after merging.
+    branch: updatedradarleb
 
     autoDeploy: true
 
