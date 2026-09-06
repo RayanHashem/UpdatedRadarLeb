@@ -1041,11 +1041,23 @@ async function startScan() {
      */
     antennaIconSrc.value = '/assets/imgs/an.png';
 
+    /*
+     * Keep the prize selected between scans (client request). We only clear it
+     * when the wallet can no longer afford another scan of that prize, which
+     * mirrors the balance < scanCost gate in selectPrize(). walletBalance was
+     * refreshed from the scan response above, so this is the post-scan value.
+     */
     if (selectedGameId.value != null) {
-        selectedGameId.value = null;
-        axios.post('/me/game', { game_id: null }).catch((error) => {
-            console.error('Failed to clear prize selection after scan:', error);
-        });
+        const stillSelected = prizes.value.find(p => p.id == selectedGameId.value);
+        const rules = stillSelected ? getPrizeRules(stillSelected.name) : null;
+        const scanCost = rules?.scanCostRadars ?? 0;
+
+        if ((Number(walletBalance.value) || 0) < scanCost) {
+            selectedGameId.value = null;
+            axios.post('/me/game', { game_id: null }).catch((error) => {
+                console.error('Failed to clear prize selection after scan:', error);
+            });
+        }
     }
 }
 async function fetchRadarStatus() {
