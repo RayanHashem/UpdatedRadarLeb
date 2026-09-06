@@ -79,3 +79,4 @@ yarn-error.log
 # ---- Editor backup files left at root ----
 * 2.*
 * copy.*
+.vite/
