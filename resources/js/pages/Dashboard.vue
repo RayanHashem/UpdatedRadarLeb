@@ -526,7 +526,7 @@ const originalColors = [
 ];
 
 const currentPage = ref('settings');
-const audioEnabled = ref(true);
+const audioEnabled = ref((() => { try { return localStorage.getItem("radarleb:audioEnabled") !== "0"; } catch { return true; } })());
 const oldPassword = ref('');
 const newPassword = ref('');
 const confirmPassword = ref('');
@@ -1055,7 +1055,7 @@ async function fetchRadarStatus() {
     } catch {  }
 }
 const toggleMusic = () => {
-    audioEnabled.value = !audioEnabled.value;
+    audioEnabled.value = !audioEnabled.value; try { localStorage.setItem("radarleb:audioEnabled", audioEnabled.value ? "1" : "0"); } catch {}
     const allAudioElements = document.querySelectorAll('audio');
     allAudioElements.forEach(audioEl => {
         if (audioEnabled.value) {
@@ -1239,7 +1239,7 @@ function onLocationTap() {
     // Already tracking and have position: navigate straight to the current map.
     if (locationWatchId.value != null && userLocation.value.lat != null && userLocation.value.lng != null) {
         playClickSound();
-        window.location.assign(locationUrl.value);
+        window.open(locationUrl.value, '_blank', 'noopener');
         return;
     }
 
@@ -1272,7 +1272,7 @@ function onLocationTap() {
             userLocation.value = { lat, lng };
             locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
             startLocationWatch();
-            window.location.assign(locationUrl.value);
+            window.open(locationUrl.value, '_blank', 'noopener');
         },
         (error) => {
             locationRequestInProgress.value = false;
