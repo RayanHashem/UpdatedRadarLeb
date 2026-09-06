@@ -66,5 +66,10 @@ EXPOSE 8080
 
 # Migrations + cached config/routes/views run on container start so a fresh
 # deploy auto-applies schema changes. Then handoff to s6 (php-fpm + nginx).
-ENTRYPOINT ["docker-php-entrypoint"]
-CMD ["sh", "-lc", "php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && exec /init"]
+
+# Start via the image's own entrypoint so s6 comes up as PID 1 with the
+# image's PATH intact. Migrations and optimize are handled by the image's
+# built-in Laravel automations rather than a custom CMD.
+ENV AUTORUN_ENABLED=true
+ENV AUTORUN_LARAVEL_MIGRATION=true
+ENV NGINX_WEBROOT=/var/www/html/public
