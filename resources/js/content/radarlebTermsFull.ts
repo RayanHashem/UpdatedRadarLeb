@@ -9,7 +9,7 @@ Terms & Conditions of Use
 
 Effective Date: 5/7/2026                                                                                            
 Governing Jurisdiction: Republic of Lebanon
-Contact: radarleb10452@gmail.com
+Contact: radarleb.radarleb@gmail.com
 
 1. Acceptance of Terms
 By downloading, installing, accessing, or using the RadarLeb mobile application (the "App", "Service", or "RadarLeb"), you agree to be bound by these Terms and Conditions ("Terms"). If you do not agree, you must immediately uninstall the App and cease all use. These Terms constitute a legally binding agreement between you ("User") and RadarLeb ("Company", "we", "our").
@@ -44,7 +44,7 @@ To participate in prize events and claim rewards, you must register a valid acco
 
 You are responsible for maintaining the confidentiality of your login credentials.
 You are responsible for all activity that occurs under your account, whether or not authorized by you.
-You must notify us immediately of any unauthorized access to your account at radarleb10452@gmail.com.
+You must notify us immediately of any unauthorized access to your account at radarleb.radarleb@gmail.com.
 You may not create multiple accounts, transfer your account, or allow another person to use your account.
 
 4.2 Verification for Prize Claims
@@ -182,7 +182,7 @@ Language: In the event of any conflict between the Arabic and English versions o
 16. Contact Information
 For questions, prize claims, account issues, or legal notices, please contact us at:
 RadarLeb Support
-Email: radarleb10452@gmail.com
+Email: radarleb.radarleb@gmail.com
 Website: radarleb.com
 Country: Republic of Lebanon
 
