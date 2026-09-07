@@ -42,6 +42,12 @@ RUN composer install \
 # Stage 3: runtime. PHP-FPM + nginx + s6 in one image.
 FROM serversideup/php:8.4-fpm-nginx
 
+# Filament formats money columns with Number::currency(), which requires
+# ext-intl. It is not in the base image, so install it here.
+USER root
+RUN install-php-extensions intl
+USER www-data
+
 WORKDIR /var/www/html
 
 # Bring in the application code.
