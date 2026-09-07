@@ -389,6 +389,8 @@
     <audio id="scanSound2" src="/assets/imgs/audio/radar2.mp3" preload="auto"></audio>
     <audio id="hornSound" src="/assets/imgs/horn.mp3" preload="auto"></audio>
     <audio id="clickSound" src="/assets/imgs/click.mp3" preload="auto"></audio>
+    <!-- Popup sound. Played by showGameModal(), so every modal gets it. -->
+    <audio id="popupSound" src="/assets/imgs/audio/popup.mp3" preload="auto"></audio>
     <!--
       Win celebration sound. Drop the source file at
       `public/assets/imgs/audio/purge.mp3` (matches the path pattern of
@@ -588,6 +590,7 @@ function showGameModal(config) {
     gameModalPrimaryAction.value = config.primaryAction ?? '';
     gameModalSecondaryLabel.value = config.secondaryLabel ?? 'Close';
     gameModalShow.value = true;
+    playPopupSound();
 }
 
 /*
@@ -779,8 +782,22 @@ function setGameProgress(gameId, progress) {
     }
 }
 
+const playPopupSound = () => {
+    if (!audioEnabled.value) return;
+    const popupSound = document.getElementById('popupSound');
+    if (popupSound) {
+        popupSound.currentTime = 0;
+        popupSound.play().catch(error => {
+            console.warn("Autoplay for popup sound prevented:", error);
+        });
+    }
+};
+
 const playClickSound = () => {
     if (!audioEnabled.value) return;
+    // A modal is open (or just opened in this tick): the popup sound is
+    // already playing, so skip the click to avoid two sounds at once.
+    if (gameModalShow.value) return;
     const clickSound = document.getElementById('clickSound');
     if (clickSound) {
         clickSound.currentTime = 0;
