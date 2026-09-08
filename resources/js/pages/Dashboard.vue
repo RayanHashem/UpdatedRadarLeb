@@ -1255,17 +1255,44 @@ function startLocationWatch() {
 }
 
 /**
- * My Location: open the map tab synchronously from the tap (browsers block
- * window.open from async callbacks), show a "Getting your location…"
- * placeholder in it, then redirect that tab once GPS coordinates arrive.
+ * Warm up coordinates on load if the user has already granted permission.
+ * Silent: never triggers a prompt. When it succeeds, onLocationTap can open
+ * a new tab synchronously from the tap, which is the fast path.
+ */
+async function prefetchLocationIfPermitted() {
+    if (!navigator.geolocation || !navigator.permissions?.query) return;
+    try {
+        const status = await navigator.permissions.query({ name: 'geolocation' });
+        if (status.state === 'granted') startLocationWatch();
+    } catch {
+        // Permissions API unsupported; fall back to on-tap request.
+    }
+}
+prefetchLocationIfPermitted();
+
+/**
+ * My Location.
+ *
+ * Never open a tab before coordinates exist: doing so backgrounds this tab,
+ * and browsers suspend geolocation in background tabs, which makes the
+ * request fail with POSITION_UNAVAILABLE/TIMEOUT. So:
+ *   - coordinates already known -> open a new tab straight from the tap
+ *   - otherwise -> resolve position first, then navigate in THIS tab
+ *     (same-tab navigation is never popup-blocked), and surface any error
+ *     as a modal before going anywhere.
  */
 function onLocationTap() {
     const now = Date.now();
     if (now - lastLocationTapAt < LOCATION_TAP_DEBOUNCE_MS) return;
     lastLocationTapAt = now;
 
-    // Already tracking and have position: navigate straight to the current map.
-    if (locationWatchId.value != null && userLocation.value.lat != null && userLocation.value.lng != null) {
+    if (locationRequestInProgress.value) {
+        playClickSound();
+        return;
+    }
+
+    // Fast path: we already have a fix, so keep the game open in this tab.
+    if (userLocation.value.lat != null && userLocation.value.lng != null) {
         playClickSound();
         window.open(locationUrl.value, '_blank', 'noopener');
         return;
@@ -1283,56 +1310,46 @@ function onLocationTap() {
         return;
     }
 
-    if (locationRequestInProgress.value) {
-        playClickSound();
-        return;
-    }
     locationRequestInProgress.value = true;
     playClickSound();
 
-    // Open the tab NOW, while we still have the user gesture. Calling
-    // window.open() from the async geolocation callback gets popup-blocked,
-    // which is why the first tap used to do nothing. No 'noopener' here:
-    // we need the handle to redirect it once coordinates arrive.
-    const mapTab = window.open('', '_blank');
-    if (mapTab) {
-        mapTab.document.write(
-            '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">' +
-            '<title>Locating…</title>' +
-            '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
-            'font-family:sans-serif;background:#0f2027;color:#fff">Getting your location…</body>'
-        );
-        mapTab.document.close();
-    }
+    const onSuccess = (position) => {
+        locationRequestInProgress.value = false;
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        userLocation.value = { lat, lng };
+        locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
+        startLocationWatch();
+        // Same-tab navigation: no popup blocker, and nothing was opened before
+        // we knew the request had actually succeeded.
+        window.location.assign(locationUrl.value);
+    };
 
-    const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
+    const onFinalError = (error) => {
+        locationRequestInProgress.value = false;
+        const msg =
+            error.code === 1
+                ? 'Location access is required to use this feature. Please enable it in your browser settings.'
+                : 'Unable to get your location. Please make sure location services are on and try again.';
+        showLocationError('Location unavailable', msg);
+    };
 
+    // High accuracy can time out indoors or on desktop; retry once coarsely
+    // before telling the user it failed.
     navigator.geolocation.getCurrentPosition(
-        (position) => {
-            locationRequestInProgress.value = false;
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            userLocation.value = { lat, lng };
-            locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
-            startLocationWatch();
-
-            if (mapTab && !mapTab.closed) {
-                mapTab.location.replace(locationUrl.value);
-            } else {
-                // Popup was blocked outright: fall back to same-tab navigation.
-                window.location.assign(locationUrl.value);
+        onSuccess,
+        (firstError) => {
+            if (firstError.code === 1) {
+                onFinalError(firstError);
+                return;
             }
+            navigator.geolocation.getCurrentPosition(
+                onSuccess,
+                onFinalError,
+                { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 }
+            );
         },
-        (error) => {
-            locationRequestInProgress.value = false;
-            if (mapTab && !mapTab.closed) mapTab.close();
-            const msg =
-                error.code === 1
-                    ? 'Location access is required to use this feature.'
-                    : 'Unable to get your location. Please try again.';
-            showLocationError('Location unavailable', msg);
-        },
-        options
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
 }
 
