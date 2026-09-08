@@ -785,7 +785,7 @@ function setGameProgress(gameId, progress) {
     }
 }
 
-const playPopupSound = () => {
+function playPopupSound() {
     if (!audioEnabled.value) return;
     const popupSound = document.getElementById('popupSound');
     if (popupSound) {
