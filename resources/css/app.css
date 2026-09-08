@@ -1649,3 +1649,27 @@ section {
  * of this file (which is itself now obsolete — Figma retired the visible
  * "RADAR CASH N" label under the bottom-row store tile).
  */
+
+/*
+ * NProgress (Inertia's progress bar) renders <div id="nprogress"><div class="bar">.
+ * Our top navigation bar also uses .bar, so its layout properties leaked onto
+ * the progress bar and rendered it as a full-height grey block over the header.
+ */
+#nprogress .bar {
+    min-height: 0 !important;
+    height: 3px !important;
+    max-height: 3px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    gap: 0 !important;
+    display: block !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    background: #4fc3f7 !important;
+}
+
+#nprogress .peg {
+    box-shadow: 0 0 10px #4fc3f7, 0 0 5px #4fc3f7 !important;
+}
