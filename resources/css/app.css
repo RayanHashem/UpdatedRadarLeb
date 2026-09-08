@@ -393,7 +393,7 @@ background-color: rgba(255,255,255,0.3);
     margin-top: 1px;
     line-height: 1;
     color: #ffffff !important;
-    font-size: clamp(9px, 0.7em, 12px);
+    font-size: clamp(12px, 0.95em, 16px);
     text-align: center;
     pointer-events: none;
 }
@@ -446,7 +446,7 @@ background-color: rgba(255,255,255,0.3);
 
 .prize-price {
     color: #ffffff;
-    font-size: 0.6em;
+    font-size: 0.82em;
     text-align: center;
     margin-top: 0px;
     line-height: 1;
@@ -1073,7 +1073,7 @@ section {
         margin-top: 2px;
     }
     .prize-selector .prize-price {
-        font-size: clamp(7px, 2vw, 10px);
+        font-size: clamp(11px, 2.9vw, 14px);
         line-height: 1;
         margin-top: 0;
     }
