@@ -380,6 +380,7 @@
         :subtext="gameModalSubtext"
         :primary-label="gameModalPrimaryLabel"
         :primary-route="gameModalPrimaryRoute"
+        :primary-new-tab="gameModalPrimaryNewTab"
         :primary-action="gameModalPrimaryAction"
         :secondary-label="gameModalSecondaryLabel"
         @close="gameModalShow = false"
@@ -499,6 +500,7 @@ const gameModalMessage = ref('');
 const gameModalSubtext = ref('');
 const gameModalPrimaryLabel = ref('');
 const gameModalPrimaryRoute = ref('');
+const gameModalPrimaryNewTab = ref(false);
 const gameModalPrimaryAction = ref('');
 const gameModalSecondaryLabel = ref('Close');
 const loading = ref(true);
@@ -587,6 +589,7 @@ function showGameModal(config) {
     gameModalSubtext.value = config.subtext ?? '';
     gameModalPrimaryLabel.value = config.primaryLabel ?? '';
     gameModalPrimaryRoute.value = config.primaryRoute ?? '';
+    gameModalPrimaryNewTab.value = config.primaryNewTab ?? false;
     gameModalPrimaryAction.value = config.primaryAction ?? '';
     gameModalSecondaryLabel.value = config.secondaryLabel ?? 'Close';
     gameModalShow.value = true;
@@ -1320,9 +1323,19 @@ function onLocationTap() {
         userLocation.value = { lat, lng };
         locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
         startLocationWatch();
-        // Same-tab navigation: no popup blocker, and nothing was opened before
-        // we knew the request had actually succeeded.
-        window.location.assign(locationUrl.value);
+        // The tap gesture is spent by the time the async callback runs, so
+        // window.open() here would be popup-blocked. An anchor click is a
+        // fresh gesture, so route it through the modal's primary <a href>
+        // with target="_blank": the game tab is never navigated away from.
+        // Only the first grant sees this; afterwards prefetchLocationIfPermitted
+        // warms the coords and onLocationTap's fast path opens a tab directly.
+        showGameModal({
+            title: 'Location found',
+            message: 'Open your location in Google Maps.',
+            primaryLabel: 'Open Map',
+            primaryRoute: locationUrl.value,
+            primaryNewTab: true,
+        });
     };
 
     const onFinalError = (error) => {

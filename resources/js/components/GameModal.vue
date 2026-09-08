@@ -15,7 +15,10 @@
                         <a
                             v-if="primaryRoute"
                             :href="primaryRoute"
+                            :target="primaryNewTab ? '_blank' : undefined"
+                            :rel="primaryNewTab ? 'noopener' : undefined"
                             class="a-btn a-btn-music-on game-modal-btn"
+                            @click="$emit('close')"
                         >
                             {{ primaryLabel }}
                         </a>
@@ -49,6 +52,7 @@ const props = defineProps({
     subtext: { type: String, default: '' },
     primaryLabel: { type: String, default: '' },
     primaryRoute: { type: String, default: '' },
+    primaryNewTab: { type: Boolean, default: false },
     primaryAction: { type: String, default: '' },
     secondaryLabel: { type: String, default: 'Close' },
 });
