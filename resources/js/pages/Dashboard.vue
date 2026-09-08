@@ -1255,12 +1255,11 @@ function startLocationWatch() {
 }
 
 /**
- * My Location: request GPS from the tap, then leave the game only after
- * coordinates are available. Opening a placeholder tab before permission
- * resolves can strand mobile users on a blank page.
+ * My Location: open the map tab synchronously from the tap (browsers block
+ * window.open from async callbacks), show a "Getting your location…"
+ * placeholder in it, then redirect that tab once GPS coordinates arrive.
  */
 function onLocationTap() {
-    console.log('location button pressed');
     const now = Date.now();
     if (now - lastLocationTapAt < LOCATION_TAP_DEBOUNCE_MS) return;
     lastLocationTapAt = now;
@@ -1291,6 +1290,21 @@ function onLocationTap() {
     locationRequestInProgress.value = true;
     playClickSound();
 
+    // Open the tab NOW, while we still have the user gesture. Calling
+    // window.open() from the async geolocation callback gets popup-blocked,
+    // which is why the first tap used to do nothing. No 'noopener' here:
+    // we need the handle to redirect it once coordinates arrive.
+    const mapTab = window.open('', '_blank');
+    if (mapTab) {
+        mapTab.document.write(
+            '<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1">' +
+            '<title>Locating…</title>' +
+            '<body style="margin:0;height:100vh;display:flex;align-items:center;justify-content:center;' +
+            'font-family:sans-serif;background:#0f2027;color:#fff">Getting your location…</body>'
+        );
+        mapTab.document.close();
+    }
+
     const options = { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 };
 
     navigator.geolocation.getCurrentPosition(
@@ -1301,17 +1315,21 @@ function onLocationTap() {
             userLocation.value = { lat, lng };
             locationUrl.value = `https://www.google.com/maps?q=${lat},${lng}`;
             startLocationWatch();
-            window.open(locationUrl.value, '_blank', 'noopener');
+
+            if (mapTab && !mapTab.closed) {
+                mapTab.location.replace(locationUrl.value);
+            } else {
+                // Popup was blocked outright: fall back to same-tab navigation.
+                window.location.assign(locationUrl.value);
+            }
         },
         (error) => {
             locationRequestInProgress.value = false;
-            const code = error.code;
+            if (mapTab && !mapTab.closed) mapTab.close();
             const msg =
-                code === 1
+                error.code === 1
                     ? 'Location access is required to use this feature.'
-                    : code === 2 || code === 3
-                        ? 'Unable to get your location. Please try again.'
-                        : 'Unable to get your location. Please try again.';
+                    : 'Unable to get your location. Please try again.';
             showLocationError('Location unavailable', msg);
         },
         options
