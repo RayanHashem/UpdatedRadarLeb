@@ -26,20 +26,16 @@
           Screens not restyled yet still use the centred .overlay box below.
         -->
         <WinnersOverlay v-if="activeOverlay === 'winners'" @close="activeOverlay = null" />
+        <HelpOverlay v-else-if="activeOverlay === 'help'" @close="activeOverlay = null" />
 
         <div v-else-if="activeOverlay" class="overlay" @click.self="activeOverlay = null">
 
              <div class="overlay-content">
                 <!--
-                  Help + Winners overlays — extracted to dedicated components
-                  (resources/js/components/dashboard/{HelpOverlay,WinnersOverlay}.vue)
-                  so this page file isn't carrying their template + their copy.
                   Settings overlay stays inline below because it's intertwined
                   with the page's password-form state.
                 -->
-                <HelpOverlay v-if="activeOverlay === 'help'" @close="activeOverlay = null" />
-
-                <template v-else-if="activeOverlay === 'settings'">
+                <template v-if="activeOverlay === 'settings'">
                     <div class="settings-container">
                         <h1 class="overlay-title">SETTINGS</h1>
                         <div v-if="showSuccessMessage" class="success-message" style="background-color: #5DB0A1; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">

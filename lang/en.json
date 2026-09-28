@@ -22,6 +22,7 @@
     "dashboard.help.locationText": "Use My Location to keep your real-world position active, helping RadarLeb deliver the best antenna-hunting experience around you.",
     "dashboard.help.radarCashTitle": "Radar Cash",
     "dashboard.help.radarCashText": "Radar Cash stores your game balance. Use it to scan, build progress, and play for the prizes you want to win.",
+    "dashboard.help.gotIt": "Got it",
 
     "dashboard.loading": "Loading radar…",
     "dashboard.radar.menu": "Main",
