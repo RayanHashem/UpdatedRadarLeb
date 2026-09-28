@@ -21,9 +21,8 @@
         <DesktopBlock v-if="isDesktop" />
 
         <!--
-          Redesigned in-game pages (2026) are full-screen sheets (.rl-sheet in
+          In-game pages (2026 redesign) are full-screen sheets (.rl-sheet in
           resources/css/redesign.css) with their own Close / Back buttons.
-          Screens not restyled yet still use the centred .overlay box below.
         -->
         <WinnersOverlay v-if="activeOverlay === 'winners'" @close="activeOverlay = null" />
         <HelpOverlay v-else-if="activeOverlay === 'help'" @close="activeOverlay = null" />
@@ -37,109 +36,24 @@
             @close="activeOverlay = null"
         />
 
-        <div v-else-if="activeOverlay" class="overlay" @click.self="activeOverlay = null">
-
-             <div class="overlay-content">
-                <!--
-                  Settings overlay stays inline below because it's intertwined
-                  with the page's password-form state.
-                -->
-                <template v-if="activeOverlay === 'settings'">
-                    <div class="settings-container">
-                        <h1 class="overlay-title">SETTINGS</h1>
-                        <div v-if="showSuccessMessage" class="success-message" style="background-color: #5DB0A1; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
-                            Password changed successfully
-                        </div>
-                        <!-- The Settings menu itself is SettingsOverlay above; this box now only holds Change password. -->
-                        <div v-if="currentPage === 'password'" class="settings-menu">
-                            <!-- Step A: Verify old password -->
-                            <div v-if="!oldPasswordVerified">
-                                <h2 class="overlay-subtitle">Change Your Password</h2>
-                                <input 
-                                    type="password" 
-                                    placeholder="Enter old password" 
-                                    v-model="oldPassword" 
-                                    class="a-input"
-                                    :class="{ 'error': passwordError }"
-                                />
-                                <div v-if="passwordError" class="error-message" style="color: #ef4444; margin-top: 10px; font-size: 0.9em; display: flex; align-items: flex-start; gap: 8px;">
-                                    <span style="font-size: 16px; flex-shrink: 0; margin-top: 2px;">⚠️</span>
-                                    <span>{{ passwordError }}</span>
-                                </div>
-                                <div v-if="wrongAttempts >= 3" class="mt-3">
-                                    <Link
-                                        as="button"
-                                        type="button"
-                                        href="/forgot-password"
-                                        class="a-btn a-btn-default"
-                                        style="width: 100%;"
-                                    >
-                                        Forgot Password?
-                                    </Link>
-                                </div>
-                                <button 
-                                    class="a-btn a-btn-music-on mt-3" 
-                                    @click="verifyOldPassword"
-                                    :disabled="!oldPassword || verifyingPassword"
-                                    style="width: 100%;"
-                                >
-                                    {{ verifyingPassword ? 'Verifying...' : 'Continue' }}
-                                </button>
-                                <button 
-                                    class="a-btn a-btn-default mt-2" 
-                                    @click="resetPasswordFlow"
-                                    style="width: 100%;"
-                                >
-                                    {{ t('common.back') }}
-                                </button>
-                            </div>
-
-                            <!-- Step B: Enter new password -->
-                            <div v-else>
-                                <h2 class="overlay-subtitle">Enter New Password</h2>
-                                <input 
-                                    type="password" 
-                                    placeholder="Enter new password" 
-                                    v-model="newPassword" 
-                                    class="a-input"
-                                    :class="{ 'error': newPasswordError }"
-                                />
-                                <div v-if="newPasswordError" class="error-message" style="color: #ef4444; margin-top: 10px; font-size: 0.9em; display: flex; align-items: flex-start; gap: 8px;">
-                                    <span style="font-size: 16px; flex-shrink: 0; margin-top: 2px;">⚠️</span>
-                                    <span>{{ newPasswordError }}</span>
-                                </div>
-                                <input 
-                                    type="password" 
-                                    placeholder="Confirm new password" 
-                                    v-model="confirmPassword" 
-                                    class="a-input mt-3"
-                                    :class="{ 'error': confirmPasswordError }"
-                                />
-                                <div v-if="confirmPasswordError" class="error-message" style="color: #ef4444; margin-top: 10px; font-size: 0.9em; display: flex; align-items: flex-start; gap: 8px;">
-                                    <span style="font-size: 16px; flex-shrink: 0; margin-top: 2px;">⚠️</span>
-                                    <span>{{ confirmPasswordError }}</span>
-                                </div>
-                                <button 
-                                    class="a-btn a-btn-music-on mt-3" 
-                                    @click="updatePassword"
-                                    :disabled="!newPassword || !confirmPassword || updatingPassword"
-                                    style="width: 100%;"
-                                >
-                                    {{ updatingPassword ? 'Updating...' : 'Done' }}
-                                </button>
-                                <button 
-                                    class="a-btn a-btn-default mt-2" 
-                                    @click="resetPasswordFlow"
-                                    style="width: 100%;"
-                                >
-                                    {{ t('common.back') }}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </template>
-            </div>
-        </div>
+        <!-- Same flow and handlers as before: verify old password → set new one; Back returns to Settings. -->
+        <ChangePasswordSheet
+            v-else-if="activeOverlay === 'settings' && currentPage === 'password'"
+            v-model:old-password="oldPassword"
+            v-model:new-password="newPassword"
+            v-model:confirm-password="confirmPassword"
+            :verified="oldPasswordVerified"
+            :wrong-attempts="wrongAttempts"
+            :verifying="verifyingPassword"
+            :updating="updatingPassword"
+            :success="showSuccessMessage"
+            :password-error="passwordError"
+            :new-password-error="newPasswordError"
+            :confirm-password-error="confirmPasswordError"
+            @verify="verifyOldPassword"
+            @update="updatePassword"
+            @back="resetPasswordFlow"
+        />
 
 
         <LoadingScreen v-if="loading" />
@@ -359,12 +273,13 @@
 <script setup>
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from 'vue';
 import axios from 'axios';
-import { router, Link, usePage } from '@inertiajs/vue3';
+import { router, usePage } from '@inertiajs/vue3';
 import GameModal from '@/components/GameModal.vue';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import HelpOverlay from '@/components/dashboard/HelpOverlay.vue';
 import WinnersOverlay from '@/components/dashboard/WinnersOverlay.vue';
 import SettingsOverlay from '@/components/dashboard/SettingsOverlay.vue';
+import ChangePasswordSheet from '@/components/dashboard/ChangePasswordSheet.vue';
 import LoadingScreen from '@/components/dashboard/LoadingScreen.vue';
 import RadarIcon from '@/components/dashboard/RadarIcon.vue';
 import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt.vue';
@@ -1136,7 +1051,7 @@ const resetPasswordFlow = () => {
 
 const verifyOldPassword = async () => {
     if (!oldPassword.value) {
-        passwordError.value = 'Please enter your old password';
+        passwordError.value = t('dashboard.password.error.enterOld');
         return;
     }
 
@@ -1155,20 +1070,20 @@ const verifyOldPassword = async () => {
         } else {
             wrongAttempts.value++;
             if (wrongAttempts.value >= 3) {
-                passwordError.value = 'Too many incorrect attempts. Please use "Forgot Password?" to reset.';
+                passwordError.value = t('dashboard.password.error.tooManyAttempts');
             } else {
-                passwordError.value = `Incorrect password. ${3 - wrongAttempts.value} attempts remaining.`;
+                passwordError.value = t('dashboard.password.error.attemptsLeft', { count: 3 - wrongAttempts.value });
             }
         }
     } catch (error) {
         if (error.response?.data?.message) {
             passwordError.value = error.response.data.message;
         } else {
-            passwordError.value = 'An error occurred. Please try again.';
+            passwordError.value = t('dashboard.password.error.generic');
         }
         wrongAttempts.value++;
         if (wrongAttempts.value >= 3) {
-            passwordError.value = 'Too many incorrect attempts. Please use "Forgot Password?" to reset.';
+            passwordError.value = t('dashboard.password.error.tooManyAttempts');
         }
     } finally {
         verifyingPassword.value = false;
@@ -1182,22 +1097,22 @@ const updatePassword = async () => {
 
     // Validation
     if (!newPassword.value) {
-        newPasswordError.value = 'Please enter a new password';
+        newPasswordError.value = t('dashboard.password.error.enterNew');
         return;
     }
 
     if (newPassword.value.length < 8) {
-        newPasswordError.value = 'Password must be at least 8 characters';
+        newPasswordError.value = t('dashboard.password.error.minLength');
         return;
     }
 
     if (!confirmPassword.value) {
-        confirmPasswordError.value = 'Please confirm your new password';
+        confirmPasswordError.value = t('dashboard.password.error.confirmNew');
         return;
     }
 
     if (newPassword.value !== confirmPassword.value) {
-        confirmPasswordError.value = 'Passwords do not match';
+        confirmPasswordError.value = t('dashboard.password.error.mismatch');
         return;
     }
 
@@ -1233,7 +1148,7 @@ const updatePassword = async () => {
         } else if (error.response?.data?.message) {
             passwordError.value = error.response.data.message;
         } else {
-            passwordError.value = 'An error occurred. Please try again.';
+            passwordError.value = t('dashboard.password.error.generic');
         }
     } finally {
         updatingPassword.value = false;
