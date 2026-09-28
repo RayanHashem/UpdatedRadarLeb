@@ -48,45 +48,52 @@ function setLocale(code: string) {
 </template>
 
 <style scoped>
+/* 2026 redesign segmented EN/AR control (Radar screen header). */
 .locale-switcher {
     display: inline-flex;
-    gap: 4px;
     align-items: center;
+    overflow: hidden;
+    border: 1px solid var(--rl-color-night-line);
+    border-radius: 8px;
     user-select: none;
 }
 
 .locale-switcher__btn {
     appearance: none;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 34px;
+    height: 30px;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
     background: transparent;
-    color: inherit;
-    padding: 2px 8px;
-    border-radius: 4px;
+    color: var(--rl-color-bone-muted);
+    font-family: var(--rl-font-mono);
     font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
     cursor: pointer;
-    transition: background 120ms ease, border-color 120ms ease;
-}
-
-.locale-switcher__btn:hover {
-    background: rgba(255, 255, 255, 0.08);
 }
 
 .locale-switcher__btn.is-active {
-    background: rgba(255, 255, 255, 0.16);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: var(--rl-color-bone);
+    color: var(--rl-color-night);
 }
 
-@media (max-width: 576px) {
-    .locale-switcher {
-        gap: 3px;
-    }
+/* Press feedback: snaps in, releases slowly so a quick tap still shows. */
+.locale-switcher__btn {
+    transition: background-color 220ms ease-out, transform 220ms ease-out;
+}
 
-    .locale-switcher__btn {
-        padding: 2px 6px;
-        font-size: 11px;
-        letter-spacing: 0;
-    }
+.locale-switcher__btn:active {
+    background: var(--rl-color-press-wash);
+    transform: scale(0.9);
+    transition-duration: 60ms;
+}
+
+.locale-switcher__btn.is-active:active {
+    background: var(--rl-color-bone-muted);
+}
+
+.locale-switcher__btn:focus-visible {
+    outline: 2px solid var(--rl-color-bone);
+    outline-offset: -2px;
 }
 </style>

@@ -93,11 +93,24 @@
     --rl-color-ring-outer:   #16201D;       /* decorative radar rings     */
     --rl-color-ring-mid:     #18221F;
     --rl-color-ring-inner:   #1B2522;
+    --rl-color-dish-line:    #1F2A27;       /* radar dish rings / axes    */
+    --rl-color-dish-label:   #6F7C76;       /* radar dish "N"             */
+    --rl-color-slot-line:    #2F3B37;       /* empty antenna slot border  */
+    --rl-color-slot-icon:    #3A4742;       /* empty antenna slot icon    */
     --rl-color-bone:         #EDE8DC;       /* primary text               */
     --rl-color-bone-soft:    #D5D0C4;       /* body copy inside cards     */
     --rl-color-bone-muted:   #A3AEA8;       /* labels, secondary text     */
+    --rl-color-bone-subtle:  #93A09A;       /* in-game section labels     */
     --rl-color-bone-faint:   #5F6B66;       /* placeholders               */
     --rl-color-signal:       #D62828;       /* primary CTA                */
+    --rl-color-signal-deep:  #6B1717;       /* scan in progress           */
+    --rl-color-signal-wash:  rgba(214, 40, 40, 0.14); /* selected prize tile */
+    --rl-color-found:        #1FA85A;       /* detected antenna / online  */
+    --rl-color-found-bright: #3CCB7A;       /* detected antenna icon      */
+    --rl-color-found-wash:   rgba(31, 168, 90, 0.14);
+    --rl-color-found-glow:   rgba(31, 168, 90, 0.55);  /* live-dot pulse */
+    --rl-color-signal-glow:  rgba(214, 40, 40, 0.55);  /* "pick a prize" nudge */
+    --rl-color-press-wash:   rgba(237, 232, 220, 0.12); /* pressed icon / tile */
     --rl-color-alert:        #F0605A;       /* field errors               */
 
     --rl-font-headline:      'Big Shoulders Display', 'Arial Narrow', sans-serif;

@@ -155,183 +155,155 @@
 
         <section v-show="!loading" id="game">
             <!--
-              Page background video. Two mobile-specific notes:
-                * `muted` is a plain HTML attribute (not `:muted="true"`)
-                  so iOS Safari sees it at parse time and honours
-                  `autoplay`. The Vue-bound form sets the *property*
-                  after mount, which iOS sometimes treats as "user just
-                  unmuted, don't autoplay".
-                * `disablePictureInPicture` + `disableRemotePlayback`
-                  stop iOS from offering PiP / AirPlay which would
-                  pause the in-page playback when accidentally tapped.
-              Resume guard for the rare cases iOS still pauses (lock
-              screen, Low Power Mode, incoming call, tab switched away
-              and back) lives in onMounted as `keepBgVideoPlaying`.
+              2026 redesign "Radar" screen. Every control keeps its original handler
+              (openOverlay, onPrizeSlotClick, startScan, onLocationTap, LocaleSwitcher)
+              and every number comes from the same state as before (walletBalance,
+              selectedGameId, currentProgress.radar_level, visibleCount, radarOnline).
+              One addition: the Radar Cash tile now opens How to play.
+
+              No <section> elements inside: app.css forces every section to
+              100svh / overflow:hidden.
             -->
-            <video autoplay
-                   muted
-                   loop playsinline
-                   disablepictureinpicture
-                   disableremoteplayback
-                   id="myVideo"
-                   preload="auto">
-                <source src="/assets/imgs/vid.webm" type="video/webm">
-                Your browser does not support HTML5 video.
-            </video>
-
-            <div class="game-content-wrapper">
-                <div class="bar">
-                    <div class="bar-left">
-                        <img src="/assets/imgs/logo.png" class="logo-nav">
+            <!-- The no-op touchstart listener lets iOS Safari show the :active press states below. -->
+            <div class="radar-screen" @touchstart.passive="() => {}">
+                <header class="radar-screen__bar">
+                    <div class="radar-screen__brand">
+                        <img src="/assets/imgs/radarleb-icon.png" class="radar-screen__brand-icon" width="30" height="30" alt="" />
+                        <span class="radar-screen__brand-name">Radar Leb</span>
                     </div>
-                    <div class="bar-right">
-                        <!--
-                          RADAR CASH balance chip. We removed the visible "RADAR CASH N"
-                          label under the store icon (Figma "Main Page" shows only the
-                          tile, no label) — but the user still needs to see their balance
-                          at a glance. Surface it here as a small pill next to the locale
-                          switcher. Same source-of-truth (`walletBalance` ref) as before;
-                          updates automatically when a scan completes or the wallet is
-                          topped up.
-                        -->
-                        <div class="bar-balance" :title="`Radar cash: ${walletBalance}`" aria-label="Radar cash balance">
-                            <img src="/assets/imgs/radar-cash.png" class="bar-balance__icon" alt="" />
-                            <span class="bar-balance__value">{{ walletBalance }}</span>
-                        </div>
-
-                        <!--
-                          Locale switcher (EN/AR) lives leftmost in the right cluster — it's
-                          meta-action (changes the whole UI language) so it sits visually
-                          separated from the navigation icons by the .bar-right gap.
-                        -->
-                        <div class="bar-locale">
-                            <LocaleSwitcher />
-                        </div>
-
-                        <!--
-                          Top-bar menu icons were previously bare <img @click>, which on mobile
-                          sometimes registered as a drag (finger jitter) instead of a tap, felt
-                          unresponsive, and was not reachable by assistive tech. They are now
-                          proper <button> elements with aria-labels and ≥44x44 tap targets via
-                          the .menu-item-btn CSS rule — the image is a child with pointer-events
-                          disabled so the tap always lands on the button.
-                        -->
-                        <button type="button" class="menu-item-btn" aria-label="Winners" @click="openOverlay('winners')">
-                            <img src="/assets/imgs/winners-button.png" class="menu-item" alt="" />
-                            <span class="menu-item-label">Winners</span>
+                    <nav class="radar-screen__nav" aria-label="Main">
+                        <LocaleSwitcher class="radar-screen__locale" />
+                        <button type="button" class="radar-screen__icon-btn" aria-label="Winners" @click="openOverlay('winners')">
+                            <RadarIcon name="trophy" />
                         </button>
-                        <button type="button" class="menu-item-btn" aria-label="Help" @click="openOverlay('help')">
-                            <img src="/assets/imgs/help-button.png" class="menu-item" alt="" />
-                            <span class="menu-item-label">Help</span>
+                        <button type="button" class="radar-screen__icon-btn" aria-label="Help" @click="openOverlay('help')">
+                            <RadarIcon name="help" />
                         </button>
-                        <button type="button" class="menu-item-btn" aria-label="Settings" @click="openOverlay('settings')">
-                            <img src="/assets/imgs/settings-button.png" class="menu-item" alt="" />
-                            <span class="menu-item-label">Settings</span>
+                        <button type="button" class="radar-screen__icon-btn" aria-label="Settings" @click="openOverlay('settings')">
+                            <RadarIcon name="settings" />
                         </button>
-                    </div>
-                </div>
+                    </nav>
+                </header>
 
-                <div class="radar-row">
-                    <div class="col-3 antenna-detection-col">
-                        <div class="icon-box">
-                              <img :src="antennaIconSrc" class="an" style="width: clamp(50px, 15vw, 100px); margin-bottom: 0px; max-width: 100%;"/>
-                              <div class="antenna-label">ANTENNA DETECTION</div>
-                        </div>
-                        <div class="bar-container">
-                            <div class="fill-bar" :style="{ height: (visibleCount / originalColors.length) * 100 + '%' }"></div>
-                        </div>
+                <div class="radar-status" role="group" aria-label="Status">
+                    <div class="radar-card">
+                        <span class="radar-label">Target prize</span>
+                        <span class="radar-card__value">{{ selectedPrizeTile ? selectedPrizeTile.name : 'None' }}</span>
+                        <span class="radar-card__meta">{{ selectedPrizeTile ? selectedPrizeTile.price : 'Pick a prize below' }}</span>
                     </div>
-
-                    <div class="col-6 radar-col" style="padding:0px;">
-                        <div class="radar" :class="{ 'radar--scanning': scanning }">
-                            <!--
-                              Idle: ellipse.png in the center; on Scan it hides and
-                              radar.webm shows. Video stays mounted for cache; v-show
-                              + explicit play/pause from startScan() (no autoplay race).
-                            -->
-                            <img
-                                v-show="!scanning"
-                                id="radarIdleEllipse"
-                                src="/assets/imgs/ellipse.png"
-                                alt=""
-                                class="radar-center-asset"
-                                width="800"
-                                height="800"
-                                decoding="async"
-                            />
-                            <video v-show="scanning" muted loop playsinline id="myVideo2" ref="radarVideo" class="radar-center-asset" preload="auto">
-                                <source v-if="videoSrcsReady" src="/assets/imgs/radar.webm" type="video/webm" />
-                                Your browser does not support HTML5 video.
-                            </video>
-                        </div>
-                    </div>
-
-                    <div class="col-3 prize-selection-col" style="padding:0 !important;">
-                        <div id="image-selector" class="prize-selector">
-                            <div
-                                v-for="(config, index) in PRIZE_DISPLAY_CONFIG"
-                                :key="index"
-                                class="prize-item"
-                                :class="{
-                                    'prize-item--selected':
-                                        orderedPrizes[index] && selectedGameId === orderedPrizes[index].id,
-                                }"
-                                role="button"
-                                tabindex="0"
-                                @click="onPrizeSlotClick(index)"
-                                @keydown.enter.prevent="onPrizeSlotClick(index)"
-                                @keydown.space.prevent="onPrizeSlotClick(index)"
-                            >
-                                <img
-                                    class="selectable"
-                                    :src="(orderedPrizes[index] && selectedGameId === orderedPrizes[index].id) ? config.detectedImg : config.img"
-                                    :alt="config.label"
-                                />
-                                <div class="prize-label">{{ config.label }}</div>
-                                <div class="prize-price">{{ config.price }}</div>
-                            </div>
+                    <div class="radar-card radar-card--radar">
+                        <span class="radar-label">Radar</span>
+                        <span class="radar-card__status">
+                            <span class="radar-card__dot" :class="radarOnline ? 'radar-card__dot--live' : 'radar-card__dot--offline'"></span>
+                            {{ scanning ? 'Scanning…' : radarOnline ? 'Online' : 'Offline' }}
+                        </span>
+                        <!--
+                          Idle: two bars lit and pulsing. During a scan they fill with the same
+                          8-step counter (visibleCount, 16 s) that used to fill the side bar.
+                        -->
+                        <div
+                            class="radar-card__bars"
+                            role="img"
+                            :aria-label="visibleCount > 0 ? `Scan progress ${visibleCount} of ${originalColors.length}` : 'Radar signal'"
+                        >
+                            <span
+                                v-for="n in originalColors.length"
+                                :key="n"
+                                class="radar-card__bar"
+                                :class="{ 'radar-card__bar--on': visibleCount > 0 ? n <= visibleCount : n <= 2 }"
+                                :style="{ height: 4 + (n - 1) * 1.7 + 'px', animationDelay: (n - 1) * 0.12 + 's' }"
+                            ></span>
                         </div>
                     </div>
                 </div>
 
-
-
-
-
-
-
-                <div class="antenna-container">
-                    <div v-for="n in 6" :key="n">
-                        <img
-                            :src="n <= currentProgress.radar_level ? '/assets/imgs/enable1.png' : '/assets/imgs/enable.png'"
-                            class="antenna-icon"
-                        />
+                <div class="radar-dish-wrap">
+                    <div class="radar-dish" :class="{ 'radar-dish--scanning': scanning }" aria-hidden="true">
+                        <div class="radar-dish__ticks"></div>
+                        <div class="radar-dish__ring radar-dish__ring--1"></div>
+                        <div class="radar-dish__ring radar-dish__ring--2"></div>
+                        <div class="radar-dish__ring radar-dish__ring--3"></div>
+                        <div class="radar-dish__axis radar-dish__axis--v"></div>
+                        <div class="radar-dish__axis radar-dish__axis--h"></div>
+                        <div class="radar-dish__sweep radar-dish__sweep--idle"></div>
+                        <div class="radar-dish__sweep radar-dish__sweep--scan"></div>
+                        <!-- One blip per detected antenna (positions are decorative). -->
+                        <template v-for="(blip, i) in RADAR_BLIPS.slice(0, Math.min(6, Number(currentProgress.radar_level) || 0))" :key="i">
+                            <span class="radar-dish__ping" :style="{ left: blip[0] + '%', top: blip[1] + '%' }"></span>
+                            <span class="radar-dish__blip" :style="{ left: blip[0] + '%', top: blip[1] + '%' }"></span>
+                        </template>
+                        <div class="radar-dish__center"></div>
+                        <span class="radar-dish__north">N</span>
                     </div>
                 </div>
 
-
-
-
-
-
-                <!--
-                  Bottom action row — matches Figma "Main Page": three controls
-                  on a baseline. Left and right are square cyan tile buttons
-                  (store, my-location); the center is a wide pill SCAN button.
-                  The side icons carry compact labels directly underneath.
-                -->
-                <div class="button-row">
-                    <div class="cash-balance-container button-row__side button-row__side--lead">
-                        <img class="cash-balance-img" src="/assets/imgs/radar-cash.png" alt="Store">
-                        <span class="button-row__label">Radar Cash</span>
-                        <span class="visually-hidden">Radar cash {{ walletBalance }}</span>
+                <div class="antenna-panel" role="group" aria-label="Antenna detection">
+                    <div class="antenna-panel__head">
+                        <span class="radar-label">Antenna detection</span>
+                        <span class="antenna-panel__count">{{ currentProgress.radar_level }} / 6</span>
                     </div>
-                    <div class="button-row__center">
-                        <button id="scan" class="btn btn-custom" :disabled="!canScan" :style="buttonStyle" @click="startScan">
-                            {{ buttonText }}
+                    <div class="antenna-panel__slots">
+                        <div
+                            v-for="n in 6"
+                            :key="n"
+                            class="antenna-slot"
+                            :class="{ 'antenna-slot--found': n <= currentProgress.radar_level }"
+                        >
+                            <RadarIcon name="antenna" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="prize-picker" :class="{ 'prize-picker--prompt': !selectedPrizeTile }" role="group" aria-label="Choose your prize">
+                    <div class="radar-label prize-picker__title">Choose your prize</div>
+                    <div class="prize-picker__grid">
+                        <div
+                            v-for="(config, index) in PRIZE_DISPLAY_CONFIG"
+                            :key="index"
+                            class="prize-tile"
+                            :style="{ '--tile-index': index }"
+                            :class="{
+                                'prize-tile--selected':
+                                    orderedPrizes[index] && selectedGameId === orderedPrizes[index].id,
+                            }"
+                            role="button"
+                            tabindex="0"
+                            :aria-label="`${PRIZE_TILES[index].name}, ${PRIZE_TILES[index].price}`"
+                            :aria-pressed="!!(orderedPrizes[index] && selectedGameId === orderedPrizes[index].id)"
+                            @click="onPrizeSlotClick(index)"
+                            @keydown.enter.prevent="onPrizeSlotClick(index)"
+                            @keydown.space.prevent="onPrizeSlotClick(index)"
+                        >
+                            <RadarIcon :name="PRIZE_TILES[index].icon" :size="24" :stroke="1.6" />
+                            <span class="prize-tile__name">{{ PRIZE_TILES[index].short }}</span>
+                            <span class="prize-tile__price">{{ PRIZE_TILES[index].priceShort }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="radar-actions">
+                    <div class="radar-actions__side">
+                        <!-- Opens How to play (it explains topping up), like the Minimum deposit popup's button. -->
+                        <button
+                            type="button"
+                            class="radar-actions__tile"
+                            :aria-label="`Radar cash ${walletBalance}. How to play`"
+                            @click="openOverlay('help')"
+                        >
+                            <RadarIcon name="wallet" />
+                            <span class="radar-actions__balance">{{ walletBalance }}</span>
                         </button>
+                        <span class="radar-actions__label">Radar cash</span>
                     </div>
-                    <div class="location-container button-row__side button-row__side--end">
+                    <button
+                        id="scan"
+                        class="radar-scan"
+                        :class="{ 'radar-scan--busy': scanning, 'radar-scan--long': buttonText.length > 9 }"
+                        :disabled="!canScan" :style="buttonStyle" @click="startScan"
+                    >
+                        {{ buttonText }}
+                    </button>
+                    <div class="radar-actions__side">
                         <!--
                           Previously had @touchstart.prevent AND @click.prevent. On iOS the
                           touchstart handler could fire before the synthetic click arrived
@@ -342,13 +314,13 @@
                         -->
                         <button
                             type="button"
-                            class="location-button"
+                            class="radar-actions__tile"
                             aria-label="Share my location"
                             @click.prevent="onLocationTap"
                         >
-                            <img class="location-button-img" src="/assets/imgs/my-location.png" alt="">
+                            <RadarIcon name="pin" :size="24" />
                         </button>
-                        <span class="button-row__label">My Location</span>
+                        <span class="radar-actions__label">My location</span>
                     </div>
                 </div>
             </div>
@@ -399,6 +371,7 @@ import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import HelpOverlay from '@/components/dashboard/HelpOverlay.vue';
 import WinnersOverlay from '@/components/dashboard/WinnersOverlay.vue';
 import LoadingScreen from '@/components/dashboard/LoadingScreen.vue';
+import RadarIcon from '@/components/dashboard/RadarIcon.vue';
 import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt.vue';
 import DesktopBlock from '@/components/DesktopBlock.vue';
 
@@ -448,6 +421,18 @@ const PRIZE_DISPLAY_CONFIG = [
     { img: '/assets/imgs/muscle-car1.png', detectedImg: '/assets/imgs/muscle-car-detected1.png', label: 'MUSCLE CAR', price: '150.000$' },
     { img: '/assets/imgs/super-car1.png', detectedImg: '/assets/imgs/super-car-detected1.png', label: 'SUPER CAR', price: '200.000$' },
 ];
+
+/** 2026 redesign copy + icon for each prize slot (same order as PRIZE_DISPLAY_CONFIG / orderedPrizes). Display only. */
+const PRIZE_TILES = [
+    { icon: 'mobile', name: 'Mobile', short: 'Mobile', price: '$1,500', priceShort: '$1.5K' },
+    { icon: 'bike', name: 'Bike / Electronics', short: 'Bike · Elec.', price: '$15,000', priceShort: '$15K' },
+    { icon: 'suv', name: 'SUV', short: 'SUV', price: '$50,000', priceShort: '$50K' },
+    { icon: 'muscle', name: 'Muscle Car', short: 'Muscle car', price: '$150,000', priceShort: '$150K' },
+    { icon: 'supercar', name: 'Super Car', short: 'Super car', price: '$200,000', priceShort: '$200K' },
+];
+
+/** Radar dish blip positions (% of the dish), one per detected antenna. Decorative. */
+const RADAR_BLIPS = [[65.3, 30.7], [29.3, 39.3], [71.3, 66], [39.3, 71.3], [53.3, 20], [20.7, 59.3]];
 
 const activeOverlay = ref(null);
 
@@ -549,11 +534,11 @@ const buttonText = computed(() => {
 
 const buttonStyle = computed(() => {
     if (scanning.value) {
-        return { backgroundColor: '#E25669', color: '#fff' }; // Red color
+        return { backgroundColor: 'var(--rl-color-signal-deep)', color: '#fff' };
     } else if (detectionStatus.value === 'not-found') {
-        return { backgroundColor: '#E25669', color: '#fff' };
+        return { backgroundColor: 'var(--rl-color-signal-deep)', color: '#fff' };
     } else {
-        return { backgroundColor: '#66afdb', color: '#fff' }; // Example default blue
+        return { backgroundColor: 'var(--rl-color-signal)', color: '#fff' };
     }
 });
 
@@ -755,6 +740,12 @@ function selectPrize(id) {
         console.error('Failed to persist prize selection:', error);
     });
 }
+/** Redesign copy for the selected prize's slot, for the "Target prize" card (null when nothing is selected). */
+const selectedPrizeTile = computed(() => {
+    const slot = orderedPrizes.value.findIndex(p => p && p.id === selectedGameId.value);
+    return slot === -1 ? null : PRIZE_TILES[slot];
+});
+
 const currentProgress = computed(() => {
     const g = prizes.value.find(p => p.id == selectedGameId.value)
 
@@ -1914,4 +1905,640 @@ watch(selectedGameId, updatePrizeSelectionUI);
         inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
+</style>
+
+<style scoped>
+/*
+ * 2026 redesign "Radar" screen. Sizes are from the 390x844 design frame.
+ * The dish shrinks on short / narrow screens so everything fits without
+ * scrolling where it can (.radar-screen scrolls when it can't).
+ */
+#game {
+    background: var(--rl-color-night);
+}
+
+.radar-screen {
+    /* Height of everything except the dish; used to size the dish. */
+    --radar-chrome: 552px;
+    --dish: clamp(
+        180px,
+        min(
+            calc(100svh - var(--radar-chrome) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)),
+            calc(100vw - 90px)
+        ),
+        300px
+    );
+
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 480px;
+    height: 100%;
+    margin: 0 auto;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    color: var(--rl-color-bone);
+    font-family: var(--rl-font-sans);
+}
+
+/* ---- Header ---------------------------------------------------------- */
+.radar-screen__bar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    box-sizing: border-box;
+    height: 60px;
+    padding: 0 12px 0 16px;
+    border-bottom: 1px solid var(--rl-color-night-edge);
+}
+
+.radar-screen__brand {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.radar-screen__brand-icon {
+    display: block;
+    width: 30px;
+    height: 30px;
+}
+
+.radar-screen__brand-name {
+    font-family: var(--rl-font-headline);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.radar-screen__nav {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+}
+
+.radar-screen__locale {
+    margin-right: 6px;
+}
+
+.radar-screen__icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--rl-color-bone);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* ---- Shared label ---------------------------------------------------- */
+.radar-label {
+    font-family: var(--rl-font-mono);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--rl-color-bone-subtle);
+}
+
+/* ---- Status cards ---------------------------------------------------- */
+.radar-status {
+    display: grid;
+    flex-shrink: 0;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    margin: 12px 16px 0;
+}
+
+.radar-card {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid var(--rl-color-night-edge);
+    border-radius: 12px;
+    background: var(--rl-color-night-raised);
+}
+
+.radar-card--radar {
+    gap: 6px;
+}
+
+.radar-card__value {
+    overflow: hidden;
+    font-family: var(--rl-font-headline);
+    font-weight: 800;
+    font-size: 22px;
+    line-height: 1.05;
+    text-transform: uppercase;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+.radar-card__meta {
+    font-family: var(--rl-font-mono);
+    font-size: 13px;
+}
+
+.radar-card__status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--rl-font-mono);
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+.radar-card__dot {
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--rl-color-found);
+}
+
+.radar-card__dot--live {
+    animation: radar-live 2s ease-out infinite;
+}
+
+.radar-card__dot--offline {
+    background: var(--rl-color-alert);
+}
+
+.radar-card__bars {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 16px;
+}
+
+.radar-card__bar {
+    width: 6px;
+    border-radius: 1px;
+    background: var(--rl-color-night-line);
+}
+
+/* Lit bars pulse, staggered by the inline animation-delay. */
+.radar-card__bar--on {
+    background: var(--rl-color-found);
+    animation: radar-signal 1.1s ease-in-out infinite alternate;
+}
+
+/* ---- Radar dish ------------------------------------------------------ */
+.radar-dish-wrap {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    margin-top: 14px;
+}
+
+.radar-dish {
+    position: relative;
+    width: var(--dish);
+    height: var(--dish);
+    border-radius: 50%;
+    background: var(--rl-color-night-sunken);
+    box-shadow: 0 0 0 1px var(--rl-color-dialog-edge) inset;
+}
+
+/* Tick marks around the rim: bone at 38% alpha, masked to a thin band. */
+.radar-dish__ticks {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: repeating-conic-gradient(rgba(237, 232, 220, 0.38) 0deg 0.7deg, transparent 0.7deg 10deg);
+    -webkit-mask: radial-gradient(circle closest-side, transparent 92.7%, #000 93.3%, #000 99.3%, transparent 100%);
+    mask: radial-gradient(circle closest-side, transparent 92.7%, #000 93.3%, #000 99.3%, transparent 100%);
+}
+
+.radar-dish__ring {
+    position: absolute;
+    border: 1px solid var(--rl-color-dish-line);
+    border-radius: 50%;
+}
+
+.radar-dish__ring--1 { inset: 12.67%; }
+.radar-dish__ring--2 { inset: 25.33%; }
+.radar-dish__ring--3 { inset: 38%; }
+
+.radar-dish__axis {
+    position: absolute;
+    background: var(--rl-color-dish-line);
+}
+
+.radar-dish__axis--v { top: 3.33%; bottom: 3.33%; left: 50%; width: 1px; }
+.radar-dish__axis--h { top: 50%; left: 3.33%; right: 3.33%; height: 1px; }
+
+.radar-dish__sweep {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg,
+        rgba(214, 40, 40, 0) 0deg 290deg,
+        rgba(214, 40, 40, 0.1) 320deg,
+        rgba(214, 40, 40, 0.42) 359deg,
+        rgba(255, 110, 90, 0.95) 359.4deg,
+        rgba(214, 40, 40, 0) 360deg
+    );
+    transition: opacity 0.3s ease;
+}
+
+/* Idle: a faint sweep turning slowly so the radar never looks frozen. */
+.radar-dish__sweep--idle {
+    opacity: 0.35;
+    animation: radar-sweep 10s linear infinite;
+}
+
+/* Scanning: full-strength sweep, one turn every 2.4 s (the design's .rl-sweep--run). */
+.radar-dish__sweep--scan {
+    opacity: 0;
+}
+
+.radar-dish--scanning .radar-dish__sweep--idle {
+    opacity: 0;
+}
+
+.radar-dish--scanning .radar-dish__sweep--scan {
+    opacity: 1;
+    animation: radar-sweep 2.4s linear infinite;
+}
+
+.radar-dish__ping {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    margin: -13px 0 0 -13px;
+    box-sizing: border-box;
+    border: 1.5px solid var(--rl-color-found);
+    border-radius: 50%;
+    animation: radar-ping 2s ease-out infinite;
+}
+
+.radar-dish__blip {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    margin: -5px 0 0 -5px;
+    border-radius: 50%;
+    background: var(--rl-color-found);
+}
+
+.radar-dish__center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 12px;
+    height: 12px;
+    margin: -6px 0 0 -6px;
+    border-radius: 50%;
+    background: var(--rl-color-bone);
+    box-shadow: 0 0 0 4px rgba(237, 232, 220, 0.12);
+}
+
+.radar-dish__north {
+    position: absolute;
+    top: 6%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: var(--rl-font-mono);
+    font-size: 10px;
+    color: var(--rl-color-dish-label);
+}
+
+/* ---- Antenna detection ----------------------------------------------- */
+.antenna-panel {
+    flex-shrink: 0;
+    margin: 16px 16px 0;
+    padding: 10px 12px 12px;
+    border: 1px solid var(--rl-color-night-edge);
+    border-radius: 14px;
+    background: var(--rl-color-night);
+}
+
+.antenna-panel__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.antenna-panel__count {
+    font-family: var(--rl-font-mono);
+    font-size: 13px;
+}
+
+.antenna-panel__slots {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+}
+
+.antenna-slot {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    height: 46px;
+    border: 1px dashed var(--rl-color-slot-line);
+    border-radius: 10px;
+    color: var(--rl-color-slot-icon);
+}
+
+.antenna-slot--found {
+    border: 1px solid var(--rl-color-found);
+    background: var(--rl-color-found-wash);
+    color: var(--rl-color-found-bright);
+}
+
+/* ---- Prize picker ---------------------------------------------------- */
+.prize-picker {
+    flex-shrink: 0;
+    margin: 14px 16px 0;
+}
+
+.prize-picker__title {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.prize-picker__grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 7px;
+}
+
+.prize-tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-sizing: border-box;
+    height: 96px;
+    padding: 6px 2px;
+    border: 1px solid var(--rl-color-dialog-edge);
+    border-radius: 12px;
+    background: var(--rl-color-night-raised);
+    color: var(--rl-color-bone-muted);
+    text-align: center;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+/* Nothing picked yet: the tiles pulse in a gentle wave so people know to pick one. */
+.prize-picker--prompt .prize-tile {
+    animation: prize-nudge 2.4s ease-in-out infinite;
+    animation-delay: calc(var(--tile-index) * 0.15s);
+}
+
+.prize-picker--prompt .prize-picker__title {
+    animation: prize-title 2.4s ease-in-out infinite;
+}
+
+.prize-tile--selected {
+    border: 1.5px solid var(--rl-color-signal);
+    background: var(--rl-color-signal-wash);
+    color: var(--rl-color-bone);
+}
+
+.prize-tile__name {
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1.1;
+}
+
+.prize-tile__price {
+    font-family: var(--rl-font-mono);
+    font-size: 11px;
+}
+
+/* ---- Bottom actions -------------------------------------------------- */
+/* margin-top:auto pins the row to the bottom; padding keeps a gap on short screens. */
+.radar-actions {
+    display: grid;
+    flex-shrink: 0;
+    grid-template-columns: 72px minmax(0, 1fr) 72px;
+    gap: 12px;
+    align-items: start;
+    margin: auto 16px 22px;
+    padding-top: 14px;
+}
+
+.radar-actions__side {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.radar-actions__tile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    box-sizing: border-box;
+    width: 72px;
+    height: 64px;
+    padding: 0;
+    border: 1px solid var(--rl-color-night-line);
+    border-radius: 14px;
+    background: var(--rl-color-night-raised);
+    color: var(--rl-color-bone);
+}
+
+button.radar-actions__tile {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+}
+
+.radar-actions__balance {
+    font-family: var(--rl-font-mono);
+    font-size: 14px;
+}
+
+.radar-actions__label {
+    font-family: var(--rl-font-mono);
+    font-size: 10px;
+    line-height: 1.3;
+    letter-spacing: 0.1em;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--rl-color-bone-subtle);
+}
+
+/* Background colour comes from buttonStyle (idle / scanning / not-found). */
+.radar-scan {
+    height: 64px;
+    padding: 0 8px;
+    border: 0;
+    border-radius: var(--rl-radius-button);
+    color: #ffffff;
+    font-family: var(--rl-font-headline);
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: background-color 0.3s ease, transform 220ms ease-out, filter 220ms ease-out;
+}
+
+.radar-scan:active:not(:disabled) {
+    transform: scale(0.96);
+    filter: brightness(1.15);
+    transition-duration: 0.3s, 60ms, 60ms;
+}
+
+.radar-scan:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* Disabled while scanning is expected; keep it at full strength like the design. */
+.radar-scan--busy:disabled {
+    opacity: 1;
+}
+
+/* "Antenna not detected", "Coming soon", ... */
+.radar-scan--long {
+    font-size: 18px;
+    letter-spacing: 0.06em;
+}
+
+/*
+ * Press feedback for every tappable control. The press snaps in (60 ms) and
+ * releases slowly (220 ms), so even a quick tap shows.
+ */
+.radar-screen__icon-btn,
+.prize-tile,
+button.radar-actions__tile {
+    transition: transform 220ms ease-out, background-color 220ms ease-out, border-color 220ms ease-out;
+}
+
+.radar-screen__icon-btn:active {
+    background: var(--rl-color-press-wash);
+    transform: scale(0.9);
+    transition-duration: 60ms;
+}
+
+.prize-tile:active,
+button.radar-actions__tile:active {
+    background: var(--rl-color-press-wash);
+    border-color: var(--rl-color-bone-muted);
+    transform: scale(0.94);
+    transition-duration: 60ms;
+}
+
+.radar-screen__icon-btn:focus-visible,
+.radar-actions__tile:focus-visible,
+.radar-scan:focus-visible,
+.prize-tile:focus-visible {
+    outline: 2px solid var(--rl-color-bone);
+    outline-offset: 2px;
+}
+
+/* ---- Short screens (most phones with browser chrome) ------------------ */
+@media (max-height: 740px) {
+    .radar-screen { --radar-chrome: 475px; }
+    .radar-screen__bar { height: 52px; }
+    .radar-status { margin-top: 8px; }
+    .radar-card { padding: 8px 10px; }
+    .radar-dish-wrap { margin-top: 10px; }
+    .antenna-panel { margin-top: 10px; padding: 8px 10px 10px; }
+    .antenna-slot { height: 38px; }
+    .prize-picker { margin-top: 10px; }
+    .prize-tile { height: 80px; }
+    .radar-actions { margin-bottom: 14px; padding-top: 10px; }
+    .radar-actions__tile,
+    .radar-scan { height: 56px; }
+}
+
+/* ---- Narrow phones ---------------------------------------------------- */
+@media (max-width: 370px) {
+    .radar-screen__bar { padding: 0 8px 0 12px; }
+    .radar-screen__icon-btn { width: 38px; }
+}
+
+@media (max-width: 340px) {
+    .radar-screen__brand-name { display: none; }
+}
+
+@keyframes radar-sweep {
+    from { transform: rotate(38deg); }
+    to { transform: rotate(398deg); }
+}
+
+@keyframes radar-live {
+    0% { box-shadow: 0 0 0 0 var(--rl-color-found-glow); }
+    100% { box-shadow: 0 0 0 6px transparent; }
+}
+
+@keyframes prize-nudge {
+    0%, 100% { border-color: var(--rl-color-dialog-edge); box-shadow: none; }
+    50% { border-color: var(--rl-color-signal-glow); box-shadow: 0 0 0 3px var(--rl-color-signal-wash); color: var(--rl-color-bone); }
+}
+
+@keyframes prize-title {
+    0%, 100% { color: var(--rl-color-bone-subtle); }
+    50% { color: var(--rl-color-bone); }
+}
+
+/*
+ * Reduced motion: drop the ambient loops (idle sweep, pulses, pings, nudge).
+ * Scan feedback (fast sweep, bars filling) stays, and the prize row keeps a
+ * static red hint instead of the wave.
+ */
+@media (prefers-reduced-motion: reduce) {
+    .radar-dish__sweep--idle,
+    .radar-card__bar--on,
+    .radar-card__dot--live,
+    .prize-picker--prompt .prize-tile,
+    .prize-picker--prompt .prize-picker__title {
+        animation: none;
+    }
+
+    .radar-dish__sweep--idle {
+        transform: rotate(38deg);
+    }
+
+    .radar-dish__ping {
+        animation: none;
+        opacity: 0.5;
+    }
+
+    .prize-picker--prompt .prize-tile {
+        border-color: var(--rl-color-signal-glow);
+    }
+}
+
+@keyframes radar-ping {
+    0% { transform: scale(0.4); opacity: 1; }
+    100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes radar-signal {
+    0% { opacity: 0.25; }
+    100% { opacity: 1; }
+}
 </style>
