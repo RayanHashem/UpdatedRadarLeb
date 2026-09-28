@@ -6,6 +6,8 @@
  * import at the top so :root vars are available to every rule below.
  */
 @import './tokens.css';
+/* Shared building blocks for the 2026 redesign screens (rl-* classes). */
+@import './redesign.css';
 /*
  * NOTE: the 'GE Flow' @font-face rule used to live here pointing at
  * `../fonts/GEFlow/GE-Flow-Regular.otf`, but that file was never

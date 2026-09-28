@@ -176,152 +176,195 @@ const submit = () => {
 </script>
 
 <template>
-    <section id="sign-in" class="w-100 page-register">
-        <div class="d-flex align-items-center flex-column h-100 p-3-5">
-            <div class="d-flex gap-2 flex-column w-100 align-items-center">
-                <img src="/assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
+    <main class="rl-screen">
+        <!-- Decorative radar rings behind the header. -->
+        <span class="rl-ring signup__ring signup__ring--outer" aria-hidden="true"></span>
+        <span class="rl-ring signup__ring signup__ring--inner" aria-hidden="true"></span>
+
+        <div class="rl-screen__column">
+            <!-- The design's EN/AR toggle (right of this bar) only lives in-game. -->
+            <div class="signup__topbar">
+                <Link :href="route('login')" class="signup__back" aria-label="Back to sign in">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                        <path d="M15 5l-7 7 7 7" />
+                    </svg>
+                </Link>
             </div>
-            <div class="form-container d-flex flex-column">
-                <form @submit.prevent="submit" class="register-form-fields">
+
+            <div class="signup__header">
+                <img src="/assets/imgs/radarleb-logo.png" class="signup__logo" width="104" height="104" alt="Radar Leb" />
+                <h1 class="rl-title signup__title">Create your account</h1>
+            </div>
+
+            <form @submit.prevent="submit" class="rl-form signup__form">
+                <div class="rl-field">
+                    <label for="name" class="rl-label">Full name</label>
                     <input
                         v-model="form.name"
-                        class="form-control custom-input"
-                        placeholder="Full Name"
+                        class="rl-input"
                         id="name"
                         required
                         autofocus
                         :tabindex="1"
                         autocomplete="name"
                         type="text"
+                        :aria-invalid="form.errors.name ? 'true' : undefined"
+                        aria-describedby="name-error"
                     />
-                    <InputError :message="form.errors.name" variant="material" />
+                    <InputError id="name-error" :message="form.errors.name" variant="inline" />
+                </div>
 
+                <div class="rl-field">
+                    <label for="email" class="rl-label">Email</label>
                     <input
                         v-model="form.email"
-                        class="form-control custom-input"
-                        placeholder="Email"
+                        class="rl-input"
                         id="email"
                         required
                         :tabindex="2"
                         autocomplete="email"
                         type="email"
+                        :aria-invalid="form.errors.email ? 'true' : undefined"
+                        aria-describedby="email-error"
                     />
-                    <InputError :message="form.errors.email" variant="material" />
+                    <InputError id="email-error" :message="form.errors.email" variant="inline" />
+                </div>
 
-                    <input
-                        v-model="form.phone_number"
-                        class="form-control custom-input"
-                        placeholder="Phone Number"
-                        id="phone_number"
-                        required
-                        :tabindex="3"
-                        autocomplete="tel"
-                        type="tel"
-                    />
-                    <InputError :message="form.errors.phone_number" variant="material" />
+                <div class="signup__pair">
+                    <div class="rl-field">
+                        <label for="phone_number" class="rl-label">Phone number</label>
+                        <!--
+                          Digits-only placeholder: the backend only accepts
+                          digits (RegisteredUserController), so the design's
+                          "+961" hint would lead to a validation error.
+                        -->
+                        <input
+                            v-model="form.phone_number"
+                            class="rl-input"
+                            placeholder="70123456"
+                            id="phone_number"
+                            required
+                            :tabindex="3"
+                            autocomplete="tel"
+                            type="tel"
+                            :aria-invalid="form.errors.phone_number ? 'true' : undefined"
+                            aria-describedby="phone_number-error"
+                        />
+                        <InputError id="phone_number-error" :message="form.errors.phone_number" variant="inline" />
+                    </div>
 
                     <!-- Date of Birth (DD/MM/YYYY) -->
-                    <input
-                        :value="dobDisplay"
-                        class="form-control custom-input"
-                        placeholder="DD/MM/YYYY"
-                        id="date_of_birth"
-                        :tabindex="4"
-                        autocomplete="bday"
-                        type="text"
-                        inputmode="numeric"
-                        maxlength="10"
-                        @input="formatDobInput"
-                    />
-                    <InputError
-                        v-if="showDobError && dobErrorMessage"
-                        :message="dobErrorMessage"
-                        variant="material"
-                    />
+                    <div class="rl-field">
+                        <label for="date_of_birth" class="rl-label">Date of birth</label>
+                        <input
+                            :value="dobDisplay"
+                            class="rl-input rl-input--mono"
+                            placeholder="DD/MM/YYYY"
+                            id="date_of_birth"
+                            :tabindex="4"
+                            autocomplete="bday"
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="10"
+                            :aria-invalid="showDobError && dobErrorMessage ? 'true' : undefined"
+                            aria-describedby="date_of_birth-error"
+                            @input="formatDobInput"
+                        />
+                        <InputError
+                            v-if="showDobError && dobErrorMessage"
+                            id="date_of_birth-error"
+                            :message="dobErrorMessage"
+                            variant="inline"
+                        />
+                    </div>
+                </div>
 
+                <div class="rl-field">
+                    <label for="password" class="rl-label">Password</label>
                     <input
                         v-model="form.password"
-                        class="form-control custom-input"
-                        placeholder="Password"
+                        class="rl-input"
                         id="password"
                         required
                         :tabindex="5"
                         autocomplete="new-password"
                         type="password"
-                        :class="{ 'is-invalid': form.password && !passwordAllValid }"
+                        :aria-invalid="(form.password && !passwordAllValid) || form.errors.password ? 'true' : undefined"
+                        aria-describedby="password-error"
                     />
                     <InputError
+                        id="password-error"
                         :message="passwordSubmitError || form.errors.password"
-                        variant="material"
+                        variant="inline"
                     />
+                </div>
 
+                <div class="rl-field">
+                    <label for="password_confirmation" class="rl-label">Confirm password</label>
                     <input
                         v-model="form.password_confirmation"
-                        class="form-control custom-input"
-                        placeholder="Confirm Password"
+                        class="rl-input"
                         id="password_confirmation"
                         required
                         :tabindex="6"
                         autocomplete="new-password"
                         type="password"
-                        :class="{ 'is-invalid': form.password_confirmation && !passwordConfirmationValid }"
+                        :aria-invalid="
+                            (form.password_confirmation && !passwordConfirmationValid) ||
+                            (!passwordConfirmationValid && form.errors.password_confirmation)
+                                ? 'true'
+                                : undefined
+                        "
+                        aria-describedby="password_confirmation-error"
                     />
                     <InputError
                         v-if="form.password_confirmation && !passwordConfirmationValid"
+                        id="password_confirmation-error"
                         message="Passwords do not match."
-                        variant="material"
+                        variant="inline"
                     />
                     <InputError
                         v-else-if="!passwordConfirmationValid && form.errors.password_confirmation"
+                        id="password_confirmation-error"
                         :message="form.errors.password_confirmation"
-                        variant="material"
+                        variant="inline"
                     />
+                </div>
 
-                    <!-- 18+ and Terms checkbox -->
-                    <div class="d-flex align-items-start gap-2 terms-checkbox-wrap">
-                        <input
-                            v-model="form.confirm_18_and_terms"
-                            type="checkbox"
-                            id="confirm_18_and_terms"
-                            class="mt-1 form-check-input flex-shrink-0"
-                            :tabindex="7"
-                            @click="onTermsCheckboxClick"
-                        />
-                        <label for="confirm_18_and_terms" class="flex-grow-1 form-check-label text-white small mb-0 terms-consent-label">
-                            I confirm I'm at least 18 years old and I agree to&nbsp;<span class="terms-consent-tail"
-                                >the <Link
-                                    :href="route('terms')"
-                                    class="text-decoration-underline text-white terms-privacy-unified-link"
-                                    @click.stop
-                                    >Terms &amp; Privacy Policy</Link
-                                >.</span
-                            >
-                        </label>
-                    </div>
-                    <InputError :message="form.errors.confirm_18_and_terms" variant="material" />
+                <!-- 18+ and Terms checkbox -->
+                <div class="signup__terms">
+                    <input
+                        v-model="form.confirm_18_and_terms"
+                        type="checkbox"
+                        id="confirm_18_and_terms"
+                        class="signup__terms-check"
+                        :tabindex="7"
+                        @click="onTermsCheckboxClick"
+                    />
+                    <label for="confirm_18_and_terms" class="signup__terms-label">
+                        I confirm I'm at least 18 years old and I agree to&nbsp;<span class="terms-consent-tail"
+                            >the <Link
+                                :href="route('terms')"
+                                class="rl-link rl-link--strong"
+                                @click.stop
+                                >Terms &amp; Privacy Policy</Link
+                            >.</span
+                        >
+                    </label>
+                </div>
+                <InputError :message="form.errors.confirm_18_and_terms" variant="inline" />
 
-                    <div class="d-flex justify-content-center align-items-center gap-2 mt-2 w-100 auth-button-row">
-                        <button
-                            class="btn btn-custom-1 btn-custom"
-                            style="font-weight: normal; background-color: var(--rl-color-coral);"
-                            type="submit"
-                            :disabled="!canSubmit"
-                            :tabindex="8"
-                        >
-                            Sign up
-                        </button>
-                        <Link
-                            as="button"
-                            :href="route('login')"
-                            class="btn btn-custom-2 btn-custom"
-                            :tabindex="9"
-                            style="background-color: var(--rl-color-cyan);"
-                        >
-                            Sign in
-                        </Link>
-                    </div>
-                </form>
-            </div>
+                <button class="rl-button signup__submit" type="submit" :disabled="!canSubmit" :tabindex="8">
+                    Sign up
+                </button>
+            </form>
+
+            <p class="rl-footer">
+                <span class="rl-footer__hint">Already have an account?</span>
+                <Link as="button" :href="route('login')" class="rl-link rl-link--strong" :tabindex="9">
+                    Sign in
+                </Link>
+            </p>
         </div>
 
         <!--
@@ -338,21 +381,21 @@ const submit = () => {
             aria-labelledby="terms-modal-title"
         >
             <div class="terms-modal-card">
-                <h2 id="terms-modal-title" class="terms-modal-title">Terms &amp; Conditions</h2>
+                <h2 id="terms-modal-title" class="rl-title terms-modal-title">Terms &amp; Conditions</h2>
                 <div class="terms-modal-scroll">
                     <pre class="terms-modal-text">{{ RADARLEB_TERMS_FULL }}</pre>
                 </div>
                 <div class="terms-modal-actions">
                     <button
                         type="button"
-                        class="btn btn-custom btn-custom-2 terms-modal-btn terms-modal-btn--decline"
+                        class="rl-button rl-button--secondary terms-modal-btn"
                         @click="disagreeToTerms"
                     >
                         I disagree
                     </button>
                     <button
                         type="button"
-                        class="btn btn-custom btn-custom-1 terms-modal-btn terms-modal-btn--accept"
+                        class="rl-button terms-modal-btn"
                         @click="agreeToTerms"
                     >
                         I agree
@@ -360,55 +403,146 @@ const submit = () => {
                 </div>
             </div>
         </div>
-    </section>
+    </main>
 </template>
 
 <style scoped>
+/*
+ * Shared field / button / footer styles live in resources/css/redesign.css;
+ * only this screen's layout is here.
+ */
+
+/* Ring centre sits 110px from the top of the design frame. */
+.signup__ring {
+    top: calc(110px + env(safe-area-inset-top, 0px));
+}
+
+.signup__ring--outer { width: 360px; height: 360px; border-color: var(--rl-color-ring-outer); }
+.signup__ring--inner { width: 240px; height: 240px; border-color: var(--rl-color-ring-inner); }
+
+.signup__topbar {
+    display: flex;
+    align-items: center;
+}
+
+.signup__back {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 44px;
+    height: 44px;
+    color: var(--rl-color-bone);
+}
+
+.signup__back:hover {
+    color: #ffffff;
+}
+
+.signup__back:focus-visible {
+    outline: 2px solid var(--rl-color-bone);
+    outline-offset: 2px;
+}
+
+.signup__header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.signup__logo {
+    display: block;
+    flex-shrink: 0;
+    width: 104px;
+    height: 104px;
+}
+
+.signup__title {
+    font-size: 36px;
+    line-height: 0.95;
+}
+
+.signup__form {
+    margin-top: 24px;
+}
+
+.signup__pair {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.signup__terms {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid var(--rl-color-night-edge);
+    border-radius: var(--rl-radius-field);
+    background: var(--rl-color-night-sunken);
+}
+
+.signup__terms-check {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin: 1px 0 0;
+    accent-color: var(--rl-color-signal);
+    cursor: pointer;
+}
+
+.signup__terms-label {
+    flex-grow: 1;
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--rl-color-bone-soft);
+    cursor: pointer;
+}
+
 /* Keep “the” + link on one line so it doesn’t stack as “the” / “Terms…” */
 .terms-consent-tail {
     white-space: nowrap;
 }
 
+.signup__submit {
+    margin-top: 4px;
+}
+
 /*
  * Terms & Conditions consent modal. Sits above the form and locks the
- * page until the user picks I agree / I disagree. The card matches the
- * dark glass aesthetic used by the legal page (Legal.vue) so the user
- * doesn't get visually yanked.
+ * page until the user picks I agree / I disagree. The design has no terms
+ * dialog, so this borrows the popup card from the "Antenna detected" screen.
  */
 .terms-modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    background: var(--rl-color-dialog-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    padding: 24px;
     z-index: 1050;
 }
 
 .terms-modal-card {
     width: 100%;
     max-width: 32rem;
-    max-height: min(90vh, 40rem);
+    max-height: min(90svh, 40rem);
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    background: rgba(6, 33, 46, 0.95);
-    border: 1px solid rgba(98, 195, 255, 0.22);
-    border-radius: 18px;
-    padding: 1.25rem;
-    color: #ffffff;
-    gap: 0.85rem;
+    gap: 14px;
+    padding: 28px 22px 22px;
+    border: 1px solid var(--rl-color-dialog-edge);
+    border-radius: 22px;
+    background: var(--rl-color-night-raised);
+    color: var(--rl-color-bone);
+    font-family: var(--rl-font-sans);
 }
 
 .terms-modal-title {
-    margin: 0;
     text-align: center;
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: #ffffff;
-    letter-spacing: 0.02em;
+    font-size: 32px;
 }
 
 .terms-modal-scroll {
@@ -417,51 +551,33 @@ const submit = () => {
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    padding: 0.6rem 0.75rem;
-    border-radius: 12px;
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(98, 195, 255, 0.15);
+    padding: 12px 14px;
+    border: 1px solid var(--rl-color-night-edge);
+    border-radius: var(--rl-radius-field);
+    background: var(--rl-color-night-sunken);
 }
 
 .terms-modal-text {
     margin: 0;
     padding: 0;
     font-family: inherit;
-    font-size: 0.7rem;
+    font-size: 13px;
     line-height: 1.5;
     white-space: pre-wrap;
     word-break: break-word;
     overflow-wrap: anywhere;
-    color: rgba(255, 255, 255, 0.88);
+    color: var(--rl-color-bone-soft);
 }
 
 .terms-modal-actions {
-    display: flex;
-    gap: 0.6rem;
-    justify-content: center;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 
-/*
- * The shared `.btn-custom` rule sets `flex: 1` — inside this small flex row
- * that would stretch the buttons across the whole modal width and make
- * them look out of place. Force them back to fit-content sizing.
- */
-.terms-modal-btn.btn-custom {
-    flex: 0 0 auto;
-    width: auto;
-    min-height: unset;
-    padding: 0.55rem 1.1rem;
-    font-size: 0.95rem;
-}
-
-.terms-modal-btn--decline {
-    background-color: var(--rl-color-cyan, #62c3ff);
-    color: var(--rl-color-text-on-light, #06212e);
-}
-
-.terms-modal-btn--accept {
-    background-color: var(--rl-color-coral, #e4787e);
-    color: #ffffff;
+/* Side by side, both buttons use the secondary (52px) size. */
+.terms-modal-btn {
+    height: 52px;
+    font-size: 20px;
 }
 </style>

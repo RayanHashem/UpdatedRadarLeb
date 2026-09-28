@@ -1,0 +1,189 @@
+/*
+ * Shared building blocks for the 2026 redesign screens (Sign in, Sign up,
+ * Change password, ...). Colours and fonts come from the "2026 redesign"
+ * block in tokens.css; page-specific layout stays in each page's scoped
+ * <style>.
+ *
+ * Everything is prefixed `rl-` so it can't collide with Bootstrap or the
+ * legacy rules in app.css.
+ */
+
+/* -----------------------------------------------------------------------
+ * Screen shell
+ *
+ * app.css pins body/html to overflow:hidden, so each screen owns its own
+ * scrolling: short phones (iPhone SE) scroll inside .rl-screen.
+ * --------------------------------------------------------------------- */
+.rl-screen {
+    position: relative;
+    height: 100svh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: var(--rl-color-night);
+    color: var(--rl-color-bone);
+    font-family: var(--rl-font-sans);
+}
+
+/* The designs are a 390px frame with 16/24/28px padding. */
+.rl-screen__column {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 24px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Decorative radar ring. Each screen sets its size, centre (top) and colour. */
+.rl-ring {
+    position: absolute;
+    left: 50%;
+    border: 1px solid var(--rl-color-ring-outer);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+}
+
+.rl-title {
+    margin: 0;
+    font-family: var(--rl-font-headline);
+    font-weight: 800;
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--rl-color-bone);
+}
+
+/* -----------------------------------------------------------------------
+ * Forms
+ * --------------------------------------------------------------------- */
+.rl-form {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.rl-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.rl-label {
+    font-family: var(--rl-font-mono);
+    font-weight: 500;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--rl-color-bone-muted);
+}
+
+.rl-input {
+    width: 100%;
+    height: 50px;
+    box-sizing: border-box;
+    padding: 0 14px;
+    border: 1px solid var(--rl-color-night-line);
+    border-radius: var(--rl-radius-field);
+    background: var(--rl-color-night-raised);
+    color: var(--rl-color-bone);
+    font-family: var(--rl-font-sans);
+    font-size: 16px;
+}
+
+/* Dates and codes use the mono face in the designs. */
+.rl-input--mono {
+    font-family: var(--rl-font-mono);
+}
+
+.rl-input::placeholder {
+    color: var(--rl-color-bone-faint);
+}
+
+.rl-input:focus {
+    outline: none;
+    border-color: var(--rl-color-bone);
+}
+
+.rl-input[aria-invalid='true'] {
+    border: 1.5px solid var(--rl-color-alert);
+}
+
+/* -----------------------------------------------------------------------
+ * Buttons and links
+ * --------------------------------------------------------------------- */
+.rl-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 56px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: var(--rl-radius-button);
+    background: var(--rl-color-signal);
+    color: #ffffff;
+    font-family: var(--rl-font-headline);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+}
+
+.rl-button:disabled {
+    opacity: 0.5;
+    cursor: default;
+}
+
+/* Outlined secondary action ("Back", "Back to radar"). */
+.rl-button--secondary {
+    height: 52px;
+    border: 1px solid var(--rl-color-night-line);
+    background: transparent;
+    color: var(--rl-color-bone);
+    font-size: 20px;
+}
+
+.rl-link {
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--rl-color-bone);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.rl-link:hover {
+    color: #ffffff;
+}
+
+.rl-link--strong {
+    font-weight: 600;
+}
+
+.rl-button:focus-visible,
+.rl-link:focus-visible {
+    outline: 2px solid var(--rl-color-bone);
+    outline-offset: 2px;
+}
+
+/* -----------------------------------------------------------------------
+ * Footer line ("New here? Create an account")
+ *
+ * margin-top:auto pins it to the bottom of .rl-screen__column; the padding
+ * keeps a gap above it on short screens.
+ * --------------------------------------------------------------------- */
+.rl-footer {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin: auto 0 0;
+    padding-top: 24px;
+    font-size: 15px;
+}
+
+.rl-footer__hint {
+    color: var(--rl-color-bone-muted);
+}

@@ -86,10 +86,15 @@
     --rl-color-night:        #0B1110;       /* page bg                    */
     --rl-color-night-raised: #121A18;       /* inputs, cards              */
     --rl-color-night-line:   #2A3531;       /* input / toggle borders     */
+    --rl-color-night-sunken: #0F1715;       /* inset panels (terms box)   */
+    --rl-color-night-edge:   #1E2826;       /* subtle card borders        */
+    --rl-color-dialog-edge:  #26312D;       /* dialog card border         */
+    --rl-color-dialog-backdrop: rgba(5, 8, 7, 0.88);
     --rl-color-ring-outer:   #16201D;       /* decorative radar rings     */
     --rl-color-ring-mid:     #18221F;
     --rl-color-ring-inner:   #1B2522;
     --rl-color-bone:         #EDE8DC;       /* primary text               */
+    --rl-color-bone-soft:    #D5D0C4;       /* body copy inside cards     */
     --rl-color-bone-muted:   #A3AEA8;       /* labels, secondary text     */
     --rl-color-bone-faint:   #5F6B66;       /* placeholders               */
     --rl-color-signal:       #D62828;       /* primary CTA                */
