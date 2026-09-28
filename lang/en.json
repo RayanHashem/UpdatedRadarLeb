@@ -99,6 +99,8 @@
     "dashboard.winners.error": "Couldn't load the winners. Check your connection and try again.",
     "dashboard.winners.retry": "Try again",
     "dashboard.winners.back": "Back to radar",
+    "dashboard.settings.changePassword": "Change password",
+    "dashboard.settings.music": "Music",
 
     "locale.switch": "Language"
 }

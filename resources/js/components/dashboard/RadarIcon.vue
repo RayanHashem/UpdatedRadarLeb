@@ -5,7 +5,8 @@
  * accessible name (aria-label) on the surrounding control.
  */
 withDefaults(defineProps<{
-    name: 'trophy' | 'help' | 'settings' | 'wallet' | 'pin' | 'antenna' | 'mobile' | 'bike' | 'suv' | 'muscle' | 'supercar';
+    name: 'trophy' | 'help' | 'settings' | 'wallet' | 'pin' | 'antenna' | 'mobile' | 'bike' | 'suv' | 'muscle' | 'supercar'
+        | 'music' | 'lock' | 'logout' | 'chevron' | 'close';
     size?: number;
     stroke?: number;
 }>(), {
@@ -85,6 +86,26 @@ withDefaults(defineProps<{
             <circle cx="6.5" cy="15.5" r="2" />
             <circle cx="17.5" cy="15.5" r="2" />
             <path d="M8.5 15.5h7" />
+        </template>
+        <template v-else-if="name === 'music'">
+            <path d="M9 18V5l11-2v13" />
+            <circle cx="6.5" cy="18" r="2.5" />
+            <circle cx="17.5" cy="16" r="2.5" />
+        </template>
+        <template v-else-if="name === 'lock'">
+            <rect x="4.5" y="10.5" width="15" height="10" rx="2" />
+            <path d="M8 10.5V7.5a4 4 0 0 1 8 0v3" />
+        </template>
+        <template v-else-if="name === 'logout'">
+            <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
+            <path d="M10 16l-4-4 4-4" />
+            <path d="M6 12h10" />
+        </template>
+        <template v-else-if="name === 'chevron'">
+            <path d="M9 5l7 7-7 7" />
+        </template>
+        <template v-else-if="name === 'close'">
+            <path d="M6 6l12 12M18 6L6 18" />
         </template>
         <template v-else-if="name === 'supercar'">
             <path d="M2 15.5l1.2-2.2L11 10.5h4.5l6.5 3.3v1.7" />

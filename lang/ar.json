@@ -92,6 +92,8 @@
     "dashboard.winners.error": "تعذّر تحميل قائمة الفائزين. تحقّق من اتصالك وحاول مجدداً.",
     "dashboard.winners.retry": "حاول مجدداً",
     "dashboard.winners.back": "العودة إلى الرادار",
+    "dashboard.settings.changePassword": "تغيير كلمة المرور",
+    "dashboard.settings.music": "الموسيقى",
     "locale.switch": "اللغة",
     "dashboard.help.locationTitle": "موقعي",
     "dashboard.help.locationText": "استخدم زر موقعي لتفعيل موقعك الحقيقي ومساعدة RadarLeb على تقديم أفضل تجربة لاكتشاف الهوائيات القريبة منك.",

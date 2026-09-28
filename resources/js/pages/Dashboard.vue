@@ -27,6 +27,15 @@
         -->
         <WinnersOverlay v-if="activeOverlay === 'winners'" @close="activeOverlay = null" />
         <HelpOverlay v-else-if="activeOverlay === 'help'" @close="activeOverlay = null" />
+        <!-- Same handlers the old Settings buttons used (Music / Change password / Log out / Back). -->
+        <SettingsOverlay
+            v-else-if="activeOverlay === 'settings' && currentPage === 'settings'"
+            :music-on="audioEnabled"
+            @toggle-music="toggleMusic"
+            @change-password="currentPage = 'password'"
+            @logout="handleLogout"
+            @close="activeOverlay = null"
+        />
 
         <div v-else-if="activeOverlay" class="overlay" @click.self="activeOverlay = null">
 
@@ -41,27 +50,8 @@
                         <div v-if="showSuccessMessage" class="success-message" style="background-color: #5DB0A1; color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center;">
                             Password changed successfully
                         </div>
-                        <div v-if="currentPage === 'settings'" class="settings-menu">
-                            <!-- Button class updated to reflect musicOn state -->
-                            <button :class="audioEnabled ? 'a-btn a-btn-music-on' : 'a-btn a-btn-music-off'" @click="toggleMusic">
-                                Music
-                            </button>
-
-                            <button class="a-btn a-btn-default" @click="currentPage = 'password'">
-                                Change Password
-                            </button>
-
-                            <button type="button" class="a-btn a-btn-default" @click="handleLogout">
-                                Log out
-                            </button>
-
-                            <!-- Close the Settings overlay from the main page too (mobile UX). -->
-                            <button class="a-btn a-btn-default overlay-back-btn" @click="activeOverlay = null">
-                                Back
-                            </button>
-                        </div>
-
-                        <div v-else-if="currentPage === 'password'" class="settings-menu">
+                        <!-- The Settings menu itself is SettingsOverlay above; this box now only holds Change password. -->
+                        <div v-if="currentPage === 'password'" class="settings-menu">
                             <!-- Step A: Verify old password -->
                             <div v-if="!oldPasswordVerified">
                                 <h2 class="overlay-subtitle">Change Your Password</h2>
@@ -374,6 +364,7 @@ import GameModal from '@/components/GameModal.vue';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import HelpOverlay from '@/components/dashboard/HelpOverlay.vue';
 import WinnersOverlay from '@/components/dashboard/WinnersOverlay.vue';
+import SettingsOverlay from '@/components/dashboard/SettingsOverlay.vue';
 import LoadingScreen from '@/components/dashboard/LoadingScreen.vue';
 import RadarIcon from '@/components/dashboard/RadarIcon.vue';
 import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt.vue';
