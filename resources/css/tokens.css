@@ -78,6 +78,29 @@
     --rl-shadow-glow-cyan:  0 0 24px rgba(98, 195, 255, 0.35);
     --rl-shadow-glow-coral: 0 0 24px rgba(228, 120, 126, 0.35);
     --rl-shadow-card:       0 8px 24px rgba(0, 0, 0, 0.35);
+
+    /* ---- 2026 redesign ----------------------------------------------
+     * Dark "night radar" palette from the client's 2026 redesign. Screens
+     * move onto these one at a time; the navy/cyan/coral tokens above stay
+     * until nothing references them. */
+    --rl-color-night:        #0B1110;       /* page bg                    */
+    --rl-color-night-raised: #121A18;       /* inputs, cards              */
+    --rl-color-night-line:   #2A3531;       /* input / toggle borders     */
+    --rl-color-ring-outer:   #16201D;       /* decorative radar rings     */
+    --rl-color-ring-mid:     #18221F;
+    --rl-color-ring-inner:   #1B2522;
+    --rl-color-bone:         #EDE8DC;       /* primary text               */
+    --rl-color-bone-muted:   #A3AEA8;       /* labels, secondary text     */
+    --rl-color-bone-faint:   #5F6B66;       /* placeholders               */
+    --rl-color-signal:       #D62828;       /* primary CTA                */
+    --rl-color-alert:        #F0605A;       /* field errors               */
+
+    --rl-font-headline:      'Big Shoulders Display', 'Arial Narrow', sans-serif;
+    --rl-font-sans:          'IBM Plex Sans', system-ui, sans-serif;
+    --rl-font-mono:          'IBM Plex Mono', ui-monospace, monospace;
+
+    --rl-radius-field:       12px;
+    --rl-radius-button:      14px;
 }
 
 /* -----------------------------------------------------------------------

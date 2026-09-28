@@ -1,7 +1,8 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   message?: string | string[] | null
-  variant?: 'default' | 'material'
+  // 'inline' is the 2026 redesign field error (red icon + text, no container).
+  variant?: 'default' | 'material' | 'inline'
 }>(), {
   variant: 'default'
 })
@@ -13,13 +14,18 @@ function text(msg?: string | string[] | null) {
 </script>
 
 <template>
-  <div v-if="text(message)" :class="['error-message', props.variant === 'material' ? 'error-message-material' : '']">
-    <span v-if="props.variant !== 'material'" class="warning-emoji">⚠️</span>
+  <div v-if="text(message)" :class="['error-message', props.variant === 'material' ? 'error-message-material' : '', props.variant === 'inline' ? 'error-message-inline' : '']">
+    <span v-if="props.variant === 'default'" class="warning-emoji">⚠️</span>
     <svg v-if="props.variant === 'material'" class="error-icon-material" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M12 8V12M12 16H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
     </svg>
-    <p :class="['error-text', props.variant === 'material' ? 'error-text-material' : '']">
+    <svg v-if="props.variant === 'inline'" class="error-icon-inline" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M12 7.5v5.5"/>
+      <path d="M12 16.5h.01"/>
+    </svg>
+    <p :class="['error-text', props.variant === 'material' ? 'error-text-material' : '', props.variant === 'inline' ? 'error-text-inline' : '']">
       {{ text(message) }}
     </p>
   </div>
@@ -79,5 +85,24 @@ function text(msg?: string | string[] | null) {
   margin: 0;
   text-align: left;
   white-space: normal;
+}
+
+/* Inline variant - 2026 redesign field error */
+.error-message-inline {
+  margin: 2px 0 0;
+  color: var(--rl-color-alert);
+}
+
+.error-icon-inline {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.error-text-inline {
+  font-size: 14px;
+  line-height: 1.45;
+  color: inherit;
 }
 </style>

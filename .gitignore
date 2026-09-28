@@ -80,3 +80,6 @@ yarn-error.log
 * 2.*
 * copy.*
 .vite/
+
+# ---- Client design files (confidential, keep out of the public repo) ----
+/docs/design/
