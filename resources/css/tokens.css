@@ -113,9 +113,10 @@
     --rl-color-press-wash:   rgba(237, 232, 220, 0.12); /* pressed icon / tile */
     --rl-color-alert:        #F0605A;       /* field errors               */
 
-    --rl-font-headline:      'Big Shoulders Display', 'Arial Narrow', sans-serif;
-    --rl-font-sans:          'IBM Plex Sans', system-ui, sans-serif;
-    --rl-font-mono:          'IBM Plex Mono', ui-monospace, monospace;
+    /* Arabic glyphs fall through to IBM Plex Sans Arabic (loaded in app.blade.php). */
+    --rl-font-headline:      'Big Shoulders Display', 'IBM Plex Sans Arabic', 'Arial Narrow', sans-serif;
+    --rl-font-sans:          'IBM Plex Sans', 'IBM Plex Sans Arabic', system-ui, sans-serif;
+    --rl-font-mono:          'IBM Plex Mono', 'IBM Plex Sans Arabic', ui-monospace, monospace;
 
     --rl-radius-field:       12px;
     --rl-radius-button:      14px;

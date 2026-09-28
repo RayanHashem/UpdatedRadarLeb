@@ -165,37 +165,37 @@
               100svh / overflow:hidden.
             -->
             <!-- The no-op touchstart listener lets iOS Safari show the :active press states below. -->
-            <div class="radar-screen" @touchstart.passive="() => {}">
+            <div class="radar-screen" :dir="dir" :lang="locale" @touchstart.passive="() => {}">
                 <header class="radar-screen__bar">
                     <div class="radar-screen__brand">
                         <img src="/assets/imgs/radarleb-icon.png" class="radar-screen__brand-icon" width="30" height="30" alt="" />
                         <span class="radar-screen__brand-name">Radar Leb</span>
                     </div>
-                    <nav class="radar-screen__nav" aria-label="Main">
+                    <nav class="radar-screen__nav" :aria-label="t('dashboard.radar.menu')">
                         <LocaleSwitcher class="radar-screen__locale" />
-                        <button type="button" class="radar-screen__icon-btn" aria-label="Winners" @click="openOverlay('winners')">
+                        <button type="button" class="radar-screen__icon-btn" :aria-label="t('dashboard.radar.winners')" @click="openOverlay('winners')">
                             <RadarIcon name="trophy" />
                         </button>
-                        <button type="button" class="radar-screen__icon-btn" aria-label="Help" @click="openOverlay('help')">
+                        <button type="button" class="radar-screen__icon-btn" :aria-label="t('dashboard.radar.help')" @click="openOverlay('help')">
                             <RadarIcon name="help" />
                         </button>
-                        <button type="button" class="radar-screen__icon-btn" aria-label="Settings" @click="openOverlay('settings')">
+                        <button type="button" class="radar-screen__icon-btn" :aria-label="t('dashboard.radar.settings')" @click="openOverlay('settings')">
                             <RadarIcon name="settings" />
                         </button>
                     </nav>
                 </header>
 
-                <div class="radar-status" role="group" aria-label="Status">
+                <div class="radar-status" role="group" :aria-label="t('dashboard.radar.status')">
                     <div class="radar-card">
-                        <span class="radar-label">Target prize</span>
-                        <span class="radar-card__value">{{ selectedPrizeTile ? selectedPrizeTile.name : 'None' }}</span>
-                        <span class="radar-card__meta">{{ selectedPrizeTile ? selectedPrizeTile.price : 'Pick a prize below' }}</span>
+                        <span class="radar-label">{{ t('dashboard.radar.targetPrize') }}</span>
+                        <span class="radar-card__value">{{ selectedPrizeTile ? t(`dashboard.radar.prize.${selectedPrizeTile.key}`) : t('dashboard.radar.none') }}</span>
+                        <span class="radar-card__meta">{{ selectedPrizeTile ? selectedPrizeTile.price : t('dashboard.radar.pickPrize') }}</span>
                     </div>
                     <div class="radar-card radar-card--radar">
-                        <span class="radar-label">Radar</span>
+                        <span class="radar-label">{{ t('dashboard.radar.radar') }}</span>
                         <span class="radar-card__status">
                             <span class="radar-card__dot" :class="radarOnline ? 'radar-card__dot--live' : 'radar-card__dot--offline'"></span>
-                            {{ scanning ? 'Scanning…' : radarOnline ? 'Online' : 'Offline' }}
+                            {{ scanning ? t('dashboard.radar.scanning') : radarOnline ? t('dashboard.radar.online') : t('dashboard.radar.offline') }}
                         </span>
                         <!--
                           Idle: two bars lit and pulsing. During a scan they fill with the same
@@ -204,7 +204,7 @@
                         <div
                             class="radar-card__bars"
                             role="img"
-                            :aria-label="visibleCount > 0 ? `Scan progress ${visibleCount} of ${originalColors.length}` : 'Radar signal'"
+                            :aria-label="visibleCount > 0 ? t('dashboard.radar.scanProgress', { done: visibleCount, total: originalColors.length }) : t('dashboard.radar.signal')"
                         >
                             <span
                                 v-for="n in originalColors.length"
@@ -233,14 +233,14 @@
                             <span class="radar-dish__blip" :style="{ left: blip[0] + '%', top: blip[1] + '%' }"></span>
                         </template>
                         <div class="radar-dish__center"></div>
-                        <span class="radar-dish__north">N</span>
+                        <span class="radar-dish__north">{{ t('dashboard.radar.north') }}</span>
                     </div>
                 </div>
 
-                <div class="antenna-panel" role="group" aria-label="Antenna detection">
+                <div class="antenna-panel" role="group" :aria-label="t('dashboard.radar.antennaDetection')">
                     <div class="antenna-panel__head">
-                        <span class="radar-label">Antenna detection</span>
-                        <span class="antenna-panel__count">{{ currentProgress.radar_level }} / 6</span>
+                        <span class="radar-label">{{ t('dashboard.radar.antennaDetection') }}</span>
+                        <span class="antenna-panel__count" dir="ltr">{{ currentProgress.radar_level }} / 6</span>
                     </div>
                     <div class="antenna-panel__slots">
                         <div
@@ -254,8 +254,8 @@
                     </div>
                 </div>
 
-                <div class="prize-picker" :class="{ 'prize-picker--prompt': !selectedPrizeTile }" role="group" aria-label="Choose your prize">
-                    <div class="radar-label prize-picker__title">Choose your prize</div>
+                <div class="prize-picker" :class="{ 'prize-picker--prompt': !selectedPrizeTile }" role="group" :aria-label="t('dashboard.radar.choosePrize')">
+                    <div class="radar-label prize-picker__title">{{ t('dashboard.radar.choosePrize') }}</div>
                     <div class="prize-picker__grid">
                         <div
                             v-for="(config, index) in PRIZE_DISPLAY_CONFIG"
@@ -268,15 +268,15 @@
                             }"
                             role="button"
                             tabindex="0"
-                            :aria-label="`${PRIZE_TILES[index].name}, ${PRIZE_TILES[index].price}`"
+                            :aria-label="`${t(`dashboard.radar.prize.${PRIZE_TILES[index].key}`)}, ${PRIZE_TILES[index].price}`"
                             :aria-pressed="!!(orderedPrizes[index] && selectedGameId === orderedPrizes[index].id)"
                             @click="onPrizeSlotClick(index)"
                             @keydown.enter.prevent="onPrizeSlotClick(index)"
                             @keydown.space.prevent="onPrizeSlotClick(index)"
                         >
                             <RadarIcon :name="PRIZE_TILES[index].icon" :size="24" :stroke="1.6" />
-                            <span class="prize-tile__name">{{ PRIZE_TILES[index].short }}</span>
-                            <span class="prize-tile__price">{{ PRIZE_TILES[index].priceShort }}</span>
+                            <span class="prize-tile__name">{{ t(`dashboard.radar.prize.${PRIZE_TILES[index].key}.short`) }}</span>
+                            <span class="prize-tile__price" dir="ltr">{{ PRIZE_TILES[index].priceShort }}</span>
                         </div>
                     </div>
                 </div>
@@ -287,18 +287,18 @@
                         <button
                             type="button"
                             class="radar-actions__tile"
-                            :aria-label="`Radar cash ${walletBalance}. How to play`"
+                            :aria-label="t('dashboard.radar.radarCashAria', { balance: walletBalance })"
                             @click="openOverlay('help')"
                         >
                             <RadarIcon name="wallet" />
                             <span class="radar-actions__balance">{{ walletBalance }}</span>
                         </button>
-                        <span class="radar-actions__label">Radar cash</span>
+                        <span class="radar-actions__label">{{ t('dashboard.radar.radarCash') }}</span>
                     </div>
                     <button
                         id="scan"
                         class="radar-scan"
-                        :class="{ 'radar-scan--busy': scanning, 'radar-scan--long': buttonText.length > 9 }"
+                        :class="{ 'radar-scan--busy': scanning, 'radar-scan--long': buttonText.length > (locale === 'ar' ? 11 : 9) }"
                         :disabled="!canScan" :style="buttonStyle" @click="startScan"
                     >
                         {{ buttonText }}
@@ -315,12 +315,12 @@
                         <button
                             type="button"
                             class="radar-actions__tile"
-                            aria-label="Share my location"
+                            :aria-label="t('dashboard.radar.shareLocation')"
                             @click.prevent="onLocationTap"
                         >
                             <RadarIcon name="pin" :size="24" />
                         </button>
-                        <span class="radar-actions__label">My location</span>
+                        <span class="radar-actions__label">{{ t('dashboard.radar.myLocation') }}</span>
                     </div>
                 </div>
             </div>
@@ -404,12 +404,13 @@ function detectMobileDevice() {
 
 const isDesktop = ref(!detectMobileDevice());
 import { getPrizeRules, getMinDepositMessage, getMinDepositMessageBySlot } from '@/lib/prizeRules.js';
-import { useTranslate } from '@/composables/useTranslate';
+import { useDirection, useTranslate } from '@/composables/useTranslate';
 
 // i18n bindings — `t` is still used for the (still-inline) settings overlay
 // and a few one-off strings on the page. The Help and Winners overlays now
 // own their own translation lookups internally.
-const { t } = useTranslate();
+const { t, locale } = useTranslate();
+const dir = useDirection();
 
 const PRIZE_DISPLAY_ORDER = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car', 'Super Car'];
 
@@ -422,13 +423,16 @@ const PRIZE_DISPLAY_CONFIG = [
     { img: '/assets/imgs/super-car1.png', detectedImg: '/assets/imgs/super-car-detected1.png', label: 'SUPER CAR', price: '200.000$' },
 ];
 
-/** 2026 redesign copy + icon for each prize slot (same order as PRIZE_DISPLAY_CONFIG / orderedPrizes). Display only. */
+/**
+ * 2026 redesign icon + price for each prize slot (same order as PRIZE_DISPLAY_CONFIG / orderedPrizes).
+ * Names come from lang/*.json: dashboard.radar.prize.<key> (full) and .<key>.short (tile). Display only.
+ */
 const PRIZE_TILES = [
-    { icon: 'mobile', name: 'Mobile', short: 'Mobile', price: '$1,500', priceShort: '$1.5K' },
-    { icon: 'bike', name: 'Bike / Electronics', short: 'Bike · Elec.', price: '$15,000', priceShort: '$15K' },
-    { icon: 'suv', name: 'SUV', short: 'SUV', price: '$50,000', priceShort: '$50K' },
-    { icon: 'muscle', name: 'Muscle Car', short: 'Muscle car', price: '$150,000', priceShort: '$150K' },
-    { icon: 'supercar', name: 'Super Car', short: 'Super car', price: '$200,000', priceShort: '$200K' },
+    { key: 'mobile', icon: 'mobile', price: '$1,500', priceShort: '$1.5K' },
+    { key: 'bike', icon: 'bike', price: '$15,000', priceShort: '$15K' },
+    { key: 'suv', icon: 'suv', price: '$50,000', priceShort: '$50K' },
+    { key: 'muscle', icon: 'muscle', price: '$150,000', priceShort: '$150K' },
+    { key: 'supercar', icon: 'supercar', price: '$200,000', priceShort: '$200K' },
 ];
 
 /** Radar dish blip positions (% of the dish), one per detected antenna. Decorative. */
@@ -525,11 +529,11 @@ let bgVideoResumeId = null;
 const canScan = computed(() => radarOnline.value && !scanning.value && selectedGameEnabled.value);
 
 const buttonText = computed(() => {
-    if (!selectedGameEnabled.value) return 'Coming soon';
-    if (scanning.value) return 'Scanning…';
-    if (detectionStatus.value === 'found') return 'Antenna detected';
-    if (detectionStatus.value === 'not-found') return 'Antenna not detected';
-    return 'Scan';
+    if (!selectedGameEnabled.value) return t('dashboard.radar.comingSoon');
+    if (scanning.value) return t('dashboard.radar.scanning');
+    if (detectionStatus.value === 'found') return t('dashboard.radar.antennaDetected');
+    if (detectionStatus.value === 'not-found') return t('dashboard.radar.antennaNotDetected');
+    return t('dashboard.radar.scan');
 });
 
 const buttonStyle = computed(() => {
@@ -2458,6 +2462,43 @@ button.radar-actions__tile:active {
     outline-offset: 2px;
 }
 
+/*
+ * ---- Arabic --------------------------------------------------------------
+ * The design faces have no Arabic glyphs; Arabic falls through to IBM Plex
+ * Sans Arabic (see --rl-font-*). Letter-spacing pulls Arabic letters apart,
+ * and 10-11px Arabic is hard to read, so tracking goes and sizes step up.
+ */
+.radar-screen:lang(ar) .radar-label,
+.radar-screen:lang(ar) .radar-card__status,
+.radar-screen:lang(ar) .radar-card__value,
+.radar-screen:lang(ar) .radar-actions__label,
+.radar-screen:lang(ar) .radar-scan {
+    letter-spacing: 0;
+}
+
+/* Mono's fixed-width space opens big gaps between Arabic words: use the sans stack. */
+.radar-screen:lang(ar) .radar-label,
+.radar-screen:lang(ar) .radar-card__status,
+.radar-screen:lang(ar) .radar-card__meta,
+.radar-screen:lang(ar) .radar-actions__label {
+    font-family: var(--rl-font-sans);
+}
+
+.radar-screen:lang(ar) .radar-label { font-size: 12px; }
+.radar-screen:lang(ar) .radar-card__status { font-size: 14px; }
+.radar-screen:lang(ar) .radar-card__value { line-height: 1.25; }
+/* Every tile reserves two lines for its name, so all five prices sit on one line. */
+.radar-screen:lang(ar) .prize-tile__name {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.5em;
+    font-size: 11.5px;
+    line-height: 1.25;
+}
+.radar-screen:lang(ar) .radar-actions__label { font-size: 11px; }
+.radar-screen:lang(ar) .radar-dish__north { font-size: 12px; }
+
 /* ---- Short screens (most phones with browser chrome) ------------------ */
 @media (max-height: 740px) {
     .radar-screen { --radar-chrome: 475px; }
@@ -2469,6 +2510,7 @@ button.radar-actions__tile:active {
     .antenna-slot { height: 38px; }
     .prize-picker { margin-top: 10px; }
     .prize-tile { height: 80px; }
+    .radar-screen:lang(ar) .prize-tile { gap: 3px; padding: 4px 2px; }
     .radar-actions { margin-bottom: 14px; padding-top: 10px; }
     .radar-actions__tile,
     .radar-scan { height: 56px; }
@@ -2482,6 +2524,8 @@ button.radar-actions__tile:active {
 
 @media (max-width: 340px) {
     .radar-screen__brand-name { display: none; }
+    .radar-scan { font-size: 20px; }
+    .radar-scan--long { font-size: 14px; }
 }
 
 @keyframes radar-sweep {

@@ -56,6 +56,13 @@ export function useTranslate() {
     return { t, locale, locales }
 }
 
+const RTL_LOCALES = new Set(['ar', 'he', 'fa', 'ur'])
+
+/** True for right-to-left locales. Also used by app.ts to set <html dir>. */
+export function isRtlLocale(code: string): boolean {
+    return RTL_LOCALES.has(code)
+}
+
 /**
  * Return value: 'rtl' if the active locale is right-to-left, else 'ltr'.
  *
@@ -65,7 +72,6 @@ export function useTranslate() {
  *   <div :dir="dir">…</div>
  */
 export function useDirection(): ComputedRef<'rtl' | 'ltr'> {
-    const RTL_LOCALES = new Set(['ar', 'he', 'fa', 'ur'])
     const { locale } = useTranslate()
-    return computed(() => (RTL_LOCALES.has(locale.value) ? 'rtl' : 'ltr'))
+    return computed(() => (isRtlLocale(locale.value) ? 'rtl' : 'ltr'))
 }

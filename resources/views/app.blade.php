@@ -46,10 +46,12 @@
             Big Shoulders Display / IBM Plex Sans / IBM Plex Mono are the
             2026 redesign faces (see --rl-font-* in resources/css/tokens.css).
             Bungee stays until every screen has moved to the new design.
+            IBM Plex Sans Arabic is the Arabic fallback in every --rl-font-* stack;
+            its unicode-range subsets only download when Arabic text renders.
         --}}
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Bungee&family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
 
         {{--
             Removed global <link rel="preload"> for loading-bg.png and sign-in-bg.jpg.

@@ -1,11 +1,12 @@
 import '../css/app.css';
 import 'bootstrap/dist/js/bootstrap.bundle.js';
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { DefineComponent } from 'vue';
 import { createApp, h } from 'vue';
 import { ZiggyVue } from 'ziggy-js';
 import { initializeTheme } from './composables/useAppearance';
+import { isRtlLocale } from './composables/useTranslate';
 import DesktopBlock from './components/DesktopBlock.vue';
 
 /*
@@ -38,6 +39,23 @@ function isDesktopEnv(): boolean {
 }
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+/*
+ * <html lang> / <html dir> follow the EN/AR switch. The Blade layout only
+ * sets `lang` on a full page load, and switching language is an Inertia
+ * visit, so the document attributes are synced here on every navigation.
+ *
+ * Only pages whose text is translated follow the switch; the rest (Sign in,
+ * Sign up, ...) are English-only and stay lang="en" dir="ltr" even when the
+ * saved language is Arabic. Add a page here once its text is translated.
+ */
+const LOCALIZED_PAGES = new Set(['Dashboard']);
+
+function syncDocumentLocale(page: { component: string; props: Record<string, unknown> }) {
+    const locale = LOCALIZED_PAGES.has(page.component) ? String(page.props.locale ?? 'en') : 'en';
+    document.documentElement.lang = locale;
+    document.documentElement.dir = isRtlLocale(locale) ? 'rtl' : 'ltr';
+}
 
 // -----------------------------------------------------------
 // Service Worker Registration
@@ -81,6 +99,12 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolvePageComponent(`./pages/${name}.vue`, import.meta.glob<DefineComponent>('./pages/**/*.vue', { eager: false })),
     setup({ el, App, props, plugin }) {
+        // `navigate` is skipped when a visit replaces the same URL (the EN/AR
+        // switch redirects back to the page), so also sync on every `success`.
+        syncDocumentLocale(props.initialPage);
+        router.on('navigate', (event) => syncDocumentLocale(event.detail.page));
+        router.on('success', (event) => syncDocumentLocale(event.detail.page));
+
         const desktop = isDesktopEnv();
         const app = createApp({
             // On desktop we render the Inertia <App> AND the DesktopBlock
