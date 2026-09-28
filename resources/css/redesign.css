@@ -128,7 +128,23 @@
     font-size: 22px;
     letter-spacing: 0.12em;
     text-transform: uppercase;
+    text-decoration: none;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    /* Press snaps in (see :active), releases slowly so a quick tap still shows. */
+    transition: transform 220ms ease-out, filter 220ms ease-out, background-color 220ms ease-out;
+}
+
+/* Popups can render the primary action as a link (e.g. "Open Map"): keep link colours out. */
+.rl-button:hover {
+    color: #ffffff;
+}
+
+.rl-button:active:not(:disabled) {
+    transform: scale(0.97);
+    filter: brightness(1.12);
+    transition-duration: 60ms;
 }
 
 .rl-button:disabled {
@@ -143,6 +159,15 @@
     background: transparent;
     color: var(--rl-color-bone);
     font-size: 20px;
+}
+
+.rl-button--secondary:hover {
+    color: var(--rl-color-bone);
+}
+
+.rl-button--secondary:active:not(:disabled) {
+    background: var(--rl-color-press-wash);
+    filter: none;
 }
 
 .rl-link {

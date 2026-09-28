@@ -337,6 +337,8 @@
         :primary-new-tab="gameModalPrimaryNewTab"
         :primary-action="gameModalPrimaryAction"
         :secondary-label="gameModalSecondaryLabel"
+        :variant="gameModalVariant"
+        :progress="gameModalProgress"
         @close="gameModalShow = false"
         @primary="onModalPrimary"
     />
@@ -403,7 +405,7 @@ function detectMobileDevice() {
 }
 
 const isDesktop = ref(!detectMobileDevice());
-import { getPrizeRules, getMinDepositMessage, getMinDepositMessageBySlot } from '@/lib/prizeRules.js';
+import { getPrizeRules, PRIZE_SLOT_RULES } from '@/lib/prizeRules.js';
 import { useDirection, useTranslate } from '@/composables/useTranslate';
 
 // i18n bindings — `t` is still used for the (still-inline) settings overlay
@@ -475,6 +477,8 @@ const gameModalPrimaryRoute = ref('');
 const gameModalPrimaryNewTab = ref(false);
 const gameModalPrimaryAction = ref('');
 const gameModalSecondaryLabel = ref('Close');
+const gameModalVariant = ref('');
+const gameModalProgress = ref(0);
 const loading = ref(true);
 
 const radarOnline = ref(true);
@@ -563,7 +567,9 @@ function showGameModal(config) {
     gameModalPrimaryRoute.value = config.primaryRoute ?? '';
     gameModalPrimaryNewTab.value = config.primaryNewTab ?? false;
     gameModalPrimaryAction.value = config.primaryAction ?? '';
-    gameModalSecondaryLabel.value = config.secondaryLabel ?? 'Close';
+    gameModalSecondaryLabel.value = config.secondaryLabel ?? t('dashboard.popup.close');
+    gameModalVariant.value = config.variant ?? '';
+    gameModalProgress.value = config.progress ?? 0;
     gameModalShow.value = true;
     playPopupSound();
 }
@@ -614,29 +620,54 @@ function celebrateWin(prizeName) {
  * user actually has — no client-side counter to drift out of sync.
  */
 function showAntennaProgressModal(level, prizeName) {
-    const label = (prizeName && String(prizeName).trim()) || 'prize';
-    const countLine = `Antenna count: ${level}/6`;
+    const label = prizeDisplayName(prizeName);
+    const countLine = t('dashboard.popup.antenna.count', { count: level });
     const message = level === 5
-        ? `${countLine} — Almost there! Just one more!`
+        ? `${countLine} — ${t('dashboard.popup.antenna.almost')}`
         : countLine;
     showGameModal({
-        title: 'Antenna Detected!',
+        title: t('dashboard.popup.antenna.title'),
         message,
-        subtext: `Keep playing to acquire all 6 antennas and win this ${label}!`,
+        subtext: label
+            ? t('dashboard.popup.antenna.keepPlaying', { prize: label })
+            : t('dashboard.popup.antenna.keepPlayingNoPrize'),
         primaryLabel: '',
         primaryAction: '',
-        secondaryLabel: 'Continue Playing',
+        secondaryLabel: t('dashboard.popup.antenna.continue'),
+        variant: 'antenna',
+        progress: level,
     });
 }
 
 function showMinDepositModal(message) {
     showGameModal({
-        title: 'Minimum deposit required',
+        title: t('dashboard.popup.minDeposit.title'),
         message,
-        primaryLabel: 'How to play',
+        primaryLabel: t('dashboard.popup.howToPlay'),
         primaryAction: 'openHelp',
-        secondaryLabel: 'Cancel',
+        secondaryLabel: t('dashboard.popup.cancel'),
     });
+}
+
+/** Popup prize name in the current language ("Mobile" / "هاتف محمول"); falls back to the DB name. */
+function prizeDisplayName(name) {
+    const slot = orderedPrizes.value.findIndex(p => p && p.name === name);
+    return slot === -1 ? (name ? String(name).trim() : '') : t(`dashboard.radar.prize.${PRIZE_TILES[slot].key}`);
+}
+
+/** Minimum-deposit copy in the current language; amounts come from prizeRules.js as before. */
+function minDepositMessage(prizeName) {
+    const rules = getPrizeRules(prizeName);
+    return rules
+        ? t('dashboard.popup.minDeposit.message', { amount: rules.minDepositDollars })
+        : t('dashboard.popup.minDeposit.generic');
+}
+
+function minDepositMessageBySlot(index) {
+    const slot = PRIZE_SLOT_RULES[index];
+    return slot
+        ? t('dashboard.popup.minDeposit.message', { amount: slot.minDepositDollars })
+        : t('dashboard.popup.minDeposit.generic');
 }
 
 function onModalPrimary(action) {
@@ -669,7 +700,7 @@ function onPrizeSlotClick(index) {
     const prize = orderedPrizes.value[index];
     if (!prize) {
         setTimeout(playClickSound, 0);
-        showMinDepositModal(getMinDepositMessageBySlot(index));
+        showMinDepositModal(minDepositMessageBySlot(index));
         return;
     }
     selectPrize(prize.id);
@@ -697,11 +728,11 @@ function selectPrize(id) {
      */
     if (!prize.is_enabled) {
         showGameModal({
-            title: 'Coming soon',
-            message: 'Coming soon! Check out our other prizes for now!',
+            title: t('dashboard.popup.comingSoon.title'),
+            message: t('dashboard.popup.comingSoon.message'),
             primaryLabel: '',
             primaryAction: '',
-            secondaryLabel: 'Close',
+            secondaryLabel: t('dashboard.popup.close'),
         });
         return;
     }
@@ -711,7 +742,7 @@ function selectPrize(id) {
     const scanCost = rules?.scanCostRadars ?? 0;
 
     if (balance < scanCost) {
-        const message = getMinDepositMessage(prize.name) || `You need to deposit at least ${rules?.minDepositDollars ?? 0}$ for a chance to win this prize.`;
+        const message = minDepositMessage(prize.name);
         showMinDepositModal(message);
         return;
     }
@@ -733,11 +764,11 @@ function selectPrize(id) {
             const idx = prizes.value.findIndex(p => p.id === id);
             if (idx !== -1) prizes.value[idx].is_enabled = false;
             showGameModal({
-                title: 'Coming soon',
-                message: 'Coming soon! Check out our other prizes for now!',
+                title: t('dashboard.popup.comingSoon.title'),
+                message: t('dashboard.popup.comingSoon.message'),
                 primaryLabel: '',
                 primaryAction: '',
-                secondaryLabel: 'Close',
+                secondaryLabel: t('dashboard.popup.close'),
             });
             return;
         }
@@ -852,11 +883,11 @@ async function startScan() {
 
     if (selectedGameId.value == null) {
         showGameModal({
-            title: 'Select a prize first',
-            message: 'You need to select a prize first and add Radar Cash before you can scan.',
-            primaryLabel: 'How to play',
+            title: t('dashboard.popup.selectPrize.title'),
+            message: t('dashboard.popup.selectPrize.message'),
+            primaryLabel: t('dashboard.popup.howToPlay'),
             primaryAction: 'openHelp',
-            secondaryLabel: 'OK',
+            secondaryLabel: t('dashboard.popup.ok'),
         });
         return;
     }
@@ -868,9 +899,7 @@ async function startScan() {
      */
     const scanCost = rules ? rules.scanCostRadars : 0;
     if (rules && balance < scanCost) {
-        const message =
-            getMinDepositMessage(prize.name)
-            || `You need to deposit at least ${rules.minDepositDollars}$ for a chance to win this prize.`;
+        const message = minDepositMessage(prize.name);
         showMinDepositModal(message);
         return;
     }
@@ -942,8 +971,8 @@ async function startScan() {
             detectionStatus.value = 'idle';
             pauseRadarVideo();
             showGameModal({
-                title: 'Coming soon',
-                message: 'Coming soon! Check out our other prizes for now!',
+                title: t('dashboard.popup.comingSoon.title'),
+                message: t('dashboard.popup.comingSoon.message'),
                 primaryLabel: '',
                 primaryAction: '',
             });
@@ -954,9 +983,7 @@ async function startScan() {
             scanning.value = false;
             detectionStatus.value = 'idle';
             pauseRadarVideo();
-            const message =
-                getMinDepositMessage(prize?.name)
-                || (rules ? `You need to deposit at least ${rules.minDepositDollars}$ for a chance to win this prize.` : 'You need to deposit before playing for this prize.');
+            const message = minDepositMessage(prize?.name);
             showMinDepositModal(message);
             return;
         }
@@ -966,8 +993,8 @@ async function startScan() {
             detectionStatus.value = 'idle';
             pauseRadarVideo();
             showGameModal({
-                title: 'Radar offline',
-                message: 'The radar is temporarily offline. Please try again in a moment.',
+                title: t('dashboard.popup.radarOffline.title'),
+                message: t('dashboard.popup.radarOffline.message'),
                 primaryLabel: '',
                 primaryAction: '',
             });
@@ -1280,13 +1307,13 @@ function onLocationTap() {
     }
 
     if (!navigator.geolocation) {
-        showLocationError('Location unavailable', 'Geolocation is not supported by your browser.');
+        showLocationError(t('dashboard.popup.location.unavailable'), t('dashboard.popup.location.unsupported'));
         playClickSound();
         return;
     }
 
     if (typeof window !== 'undefined' && !window.isSecureContext) {
-        showLocationError('Location unavailable', 'Location access requires HTTPS. Please open this page via https://');
+        showLocationError(t('dashboard.popup.location.unavailable'), t('dashboard.popup.location.https'));
         playClickSound();
         return;
     }
@@ -1308,9 +1335,9 @@ function onLocationTap() {
         // Only the first grant sees this; afterwards prefetchLocationIfPermitted
         // warms the coords and onLocationTap's fast path opens a tab directly.
         showGameModal({
-            title: 'Location found',
-            message: 'Open your location in Google Maps.',
-            primaryLabel: 'Open Map',
+            title: t('dashboard.popup.location.found'),
+            message: t('dashboard.popup.location.openMaps'),
+            primaryLabel: t('dashboard.popup.location.openMap'),
             primaryRoute: locationUrl.value,
             primaryNewTab: true,
         });
@@ -1320,9 +1347,9 @@ function onLocationTap() {
         locationRequestInProgress.value = false;
         const msg =
             error.code === 1
-                ? 'Location access is required to use this feature. Please enable it in your browser settings.'
-                : 'Unable to get your location. Please make sure location services are on and try again.';
-        showLocationError('Location unavailable', msg);
+                ? t('dashboard.popup.location.denied')
+                : t('dashboard.popup.location.failed');
+        showLocationError(t('dashboard.popup.location.unavailable'), msg);
     };
 
     // High accuracy can time out indoors or on desktop; retry once coarsely

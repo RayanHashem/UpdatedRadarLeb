@@ -5,9 +5,32 @@
             class="game-modal-overlay"
             @click.self="$emit('close')"
         >
-            <div class="game-modal-blur"></div>
-            <div class="game-modal-content">
-                <h2 class="game-modal-title">{{ title }}</h2>
+            <!--
+              2026 redesign popup card (the "Antenna detected" screen). The
+              'antenna' variant adds the icon + 6-segment progress; every other
+              popup (min deposit, location, ...) uses the same card without them.
+            -->
+            <div
+                class="game-modal-content"
+                :class="{ 'game-modal-content--antenna': variant === 'antenna' }"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="game-modal-title"
+                :dir="dir"
+                :lang="locale"
+            >
+                <div v-if="variant === 'antenna'" class="game-modal-icon" aria-hidden="true">
+                    <RadarIcon name="antenna" :size="34" :stroke="1.6" />
+                </div>
+                <h2 id="game-modal-title" class="rl-title game-modal-title">{{ title }}</h2>
+                <div v-if="variant === 'antenna'" class="game-modal-progress" aria-hidden="true">
+                    <span
+                        v-for="n in 6"
+                        :key="n"
+                        class="game-modal-progress__seg"
+                        :class="{ 'game-modal-progress__seg--on': n <= progress }"
+                    ></span>
+                </div>
                 <p class="game-modal-message">{{ message }}</p>
                 <p v-if="subtext" class="game-modal-subtext">{{ subtext }}</p>
                 <div class="game-modal-actions">
@@ -17,7 +40,7 @@
                             :href="primaryRoute"
                             :target="primaryNewTab ? '_blank' : undefined"
                             :rel="primaryNewTab ? 'noopener' : undefined"
-                            class="a-btn a-btn-music-on game-modal-btn"
+                            class="rl-button game-modal-btn"
                             @click="$emit('close')"
                         >
                             {{ primaryLabel }}
@@ -25,15 +48,17 @@
                         <button
                             v-else
                             type="button"
-                            class="a-btn a-btn-music-on game-modal-btn"
+                            class="rl-button game-modal-btn"
                             @click="onPrimaryClick"
                         >
                             {{ primaryLabel }}
                         </button>
                     </template>
+                    <!-- With no primary action, the close button is the popup's main (red) button. -->
                     <button
                         type="button"
-                        class="a-btn a-btn-default game-modal-btn"
+                        class="rl-button game-modal-btn"
+                        :class="{ 'rl-button--secondary': !!primaryLabel }"
                         @click="$emit('close')"
                     >
                         {{ secondaryLabel }}
@@ -45,6 +70,9 @@
 </template>
 
 <script setup>
+import RadarIcon from '@/components/dashboard/RadarIcon.vue';
+import { useDirection, useTranslate } from '@/composables/useTranslate';
+
 const props = defineProps({
     show: { type: Boolean, default: false },
     title: { type: String, default: '' },
@@ -55,9 +83,16 @@ const props = defineProps({
     primaryNewTab: { type: Boolean, default: false },
     primaryAction: { type: String, default: '' },
     secondaryLabel: { type: String, default: 'Close' },
+    // Display only: 'antenna' shows the antenna icon and `progress` of 6 segments.
+    variant: { type: String, default: '' },
+    progress: { type: Number, default: 0 },
 });
 
 const emit = defineEmits(['close', 'primary']);
+
+// Teleported to <body>, so it can't inherit the Radar screen's dir/lang.
+const { locale } = useTranslate();
+const dir = useDirection();
 
 function onPrimaryClick() {
     emit('primary', props.primaryAction);
@@ -73,86 +108,141 @@ function onPrimaryClick() {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
-    box-sizing: border-box;
-}
-@media (max-width: 360px) {
-    .game-modal-overlay { padding: 0.5rem; }
-    .game-modal-content { padding: 1rem 1.25rem; max-width: 100%; }
-    .game-modal-title { font-size: 1.1rem; }
-    .game-modal-message, .game-modal-subtext { font-size: 0.9rem; }
-    .game-modal-actions { flex-direction: column; gap: 0.5rem; }
-    .game-modal-btn { width: 100%; text-align: center; }
-}
-
-.game-modal-blur {
-    position: absolute;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(4px);
+    padding: 24px;
+    background: var(--rl-color-dialog-backdrop);
+    animation: game-modal-fade 160ms ease-out;
 }
 
 .game-modal-content {
-    position: relative;
-    background: #04333f;
-    color: #fff;
-    border-radius: 16px;
-    padding: 1.5rem 2rem;
-    max-width: 400px;
-    min-width: 0;
-    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
     box-sizing: border-box;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(93, 176, 161, 0.4);
+    width: 100%;
+    max-width: 400px;
+    max-height: calc(100svh - 48px);
+    overflow-y: auto;
+    padding: 28px 22px 22px;
+    border: 1px solid var(--rl-color-dialog-edge);
+    border-radius: 22px;
+    background: var(--rl-color-night-raised);
+    color: var(--rl-color-bone);
+    font-family: var(--rl-font-sans);
+    text-align: center;
+    animation: game-modal-pop 220ms cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.game-modal-icon {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 72px;
+    height: 72px;
+    border: 1.5px solid var(--rl-color-found);
+    border-radius: 50%;
+    background: var(--rl-color-found-wash);
+    color: var(--rl-color-found-bright);
+    animation: game-modal-ping 1.6s ease-out 1;
 }
 
 .game-modal-title {
-    margin: 0 0 0.75rem;
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #5DB0A1;
+    font-size: 30px;
+}
+
+.game-modal-content--antenna .game-modal-title {
+    font-size: 38px;
+}
+
+.game-modal-progress {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
+}
+
+.game-modal-progress__seg {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--rl-color-dialog-edge);
+}
+
+.game-modal-progress__seg--on {
+    background: var(--rl-color-found);
 }
 
 .game-modal-message {
-    margin: 0 0 0.5rem;
-    font-size: 0.95rem;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.95);
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--rl-color-dialog-text);
+}
+
+/* In the antenna popup the message is the "3 of 6 antennas found" count line. */
+.game-modal-content--antenna .game-modal-message {
+    font-family: var(--rl-font-mono);
+    font-size: 14px;
+    color: var(--rl-color-bone);
 }
 
 .game-modal-subtext {
-    margin: 0 0 1.25rem;
-    font-size: 0.9rem;
-    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--rl-color-dialog-text);
 }
 
 .game-modal-actions {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 1.25rem;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+    margin-top: 6px;
 }
 
 .game-modal-btn {
-    text-decoration: none;
-    display: inline-block;
-    cursor: pointer;
-    border-radius: 12px;
-    padding: 0.6rem 1.25rem;
-    font-weight: 600;
-    transition: opacity 0.2s ease;
+    width: 100%;
+    height: 54px;
+    font-size: 21px;
+    letter-spacing: 0.1em;
 }
-.game-modal-btn:hover {
-    opacity: 0.9;
+
+.game-modal-btn.rl-button--secondary {
+    height: 52px;
+    font-size: 20px;
 }
-.a-btn-music-on.game-modal-btn {
-    background: #5DB0A1;
-    color: #04333f;
-    border: none;
+
+/* Arabic: no tracking (it breaks letter joins) and no mono face for the count line. */
+.game-modal-content:lang(ar) .game-modal-btn {
+    letter-spacing: 0;
 }
-.a-btn-default.game-modal-btn {
-    background: rgba(255, 255, 255, 0.15);
-    color: #fff;
-    border: 1px solid rgba(255, 255, 255, 0.25);
+
+.game-modal-content:lang(ar) .game-modal-message {
+    font-family: var(--rl-font-sans);
+}
+
+@keyframes game-modal-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes game-modal-pop {
+    from { opacity: 0; transform: scale(0.94); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes game-modal-ping {
+    0% { box-shadow: 0 0 0 0 var(--rl-color-found-glow); }
+    100% { box-shadow: 0 0 0 18px transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .game-modal-overlay,
+    .game-modal-content,
+    .game-modal-icon {
+        animation: none;
+    }
 }
 </style>

@@ -90,6 +90,7 @@
     --rl-color-night-edge:   #1E2826;       /* subtle card borders        */
     --rl-color-dialog-edge:  #26312D;       /* dialog card border         */
     --rl-color-dialog-backdrop: rgba(5, 8, 7, 0.88);
+    --rl-color-dialog-text:  #B7C0BB;       /* body copy in popups        */
     --rl-color-ring-outer:   #16201D;       /* decorative radar rings     */
     --rl-color-ring-mid:     #18221F;
     --rl-color-ring-inner:   #1B2522;
