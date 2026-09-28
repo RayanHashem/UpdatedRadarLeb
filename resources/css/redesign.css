@@ -212,3 +212,107 @@
 .rl-footer__hint {
     color: var(--rl-color-bone-muted);
 }
+
+/* -----------------------------------------------------------------------
+ * Full-screen sheet (Winners, How to play, Settings)
+ *
+ * In-game pages that cover the Radar screen. .rl-sheet is the fixed,
+ * scrollable page; .rl-sheet__column is the design's 390px frame
+ * (12/16/24px padding) centred on wider screens.
+ * --------------------------------------------------------------------- */
+.rl-sheet {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: var(--rl-color-night);
+    color: var(--rl-color-bone);
+    font-family: var(--rl-font-sans);
+    animation: rl-sheet-in 200ms ease-out;
+}
+
+.rl-sheet__column {
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+.rl-sheet__bar {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+}
+
+.rl-sheet__brand {
+    font-family: var(--rl-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--rl-color-bone-subtle);
+}
+
+.rl-sheet__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid var(--rl-color-night-line);
+    border-radius: 12px;
+    background: var(--rl-color-night-raised);
+    color: var(--rl-color-bone);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: transform 220ms ease-out, background-color 220ms ease-out;
+}
+
+.rl-sheet__close:active {
+    background: var(--rl-color-press-wash);
+    transform: scale(0.9);
+    transition-duration: 60ms;
+}
+
+.rl-sheet__close:focus-visible {
+    outline: 2px solid var(--rl-color-bone);
+    outline-offset: 2px;
+}
+
+.rl-sheet__title {
+    margin: 12px 0 20px;
+    font-size: 48px;
+}
+
+/* Bottom "Back" button: margin-top:auto pins it to the bottom of short pages. */
+.rl-sheet__back {
+    flex-shrink: 0;
+    margin-top: auto;
+}
+
+/* Keeps a gap above the Back button when the content is long. */
+.rl-sheet__spacer {
+    flex-shrink: 0;
+    height: 24px;
+}
+
+.rl-sheet:lang(ar) .rl-sheet__title {
+    line-height: 1.2;
+}
+
+@keyframes rl-sheet-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .rl-sheet { animation: none; }
+}

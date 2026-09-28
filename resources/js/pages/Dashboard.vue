@@ -20,7 +20,14 @@
         -->
         <DesktopBlock v-if="isDesktop" />
 
-        <div v-if="activeOverlay" class="overlay" @click.self="activeOverlay = null">
+        <!--
+          Redesigned in-game pages (2026) are full-screen sheets (.rl-sheet in
+          resources/css/redesign.css) with their own Close / Back buttons.
+          Screens not restyled yet still use the centred .overlay box below.
+        -->
+        <WinnersOverlay v-if="activeOverlay === 'winners'" @close="activeOverlay = null" />
+
+        <div v-else-if="activeOverlay" class="overlay" @click.self="activeOverlay = null">
 
              <div class="overlay-content">
                 <!--
@@ -31,8 +38,6 @@
                   with the page's password-form state.
                 -->
                 <HelpOverlay v-if="activeOverlay === 'help'" @close="activeOverlay = null" />
-
-                <WinnersOverlay v-else-if="activeOverlay === 'winners'" @close="activeOverlay = null" />
 
                 <template v-else-if="activeOverlay === 'settings'">
                     <div class="settings-container">

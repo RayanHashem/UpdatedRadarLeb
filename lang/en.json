@@ -93,6 +93,11 @@
     "dashboard.popup.location.openMaps": "Open your location in Google Maps.",
     "dashboard.popup.location.openMap": "Open Map",
     "dashboard.winners.title": "WINNERS",
+    "dashboard.winners.loading": "Loading winners…",
+    "dashboard.winners.empty": "No winners yet",
+    "dashboard.winners.error": "Couldn't load the winners. Check your connection and try again.",
+    "dashboard.winners.retry": "Try again",
+    "dashboard.winners.back": "Back to radar",
 
     "locale.switch": "Language"
 }
