@@ -6,13 +6,17 @@
             @click.self="$emit('close')"
         >
             <!--
-              2026 redesign popup card (the "Antenna detected" screen). The
-              'antenna' variant adds the icon + 6-segment progress; every other
-              popup (min deposit, location, ...) uses the same card without them.
+              2026 redesign popup card. Variants: 'antenna' (the "Antenna detected"
+              screen: icon + 6-segment progress) and 'win' (the "You won" screen:
+              logo, kicker line, red border). Every other popup (min deposit,
+              location, ...) uses the plain card.
             -->
             <div
                 class="game-modal-content"
-                :class="{ 'game-modal-content--antenna': variant === 'antenna' }"
+                :class="{
+                    'game-modal-content--antenna': variant === 'antenna',
+                    'game-modal-content--win': variant === 'win',
+                }"
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="game-modal-title"
@@ -22,6 +26,15 @@
                 <div v-if="variant === 'antenna'" class="game-modal-icon" aria-hidden="true">
                     <RadarIcon name="antenna" :size="34" :stroke="1.6" />
                 </div>
+                <img
+                    v-if="variant === 'win'"
+                    src="/assets/imgs/radarleb-logo.png"
+                    class="game-modal-logo"
+                    width="128"
+                    height="128"
+                    alt=""
+                />
+                <span v-if="kicker" class="game-modal-kicker">{{ kicker }}</span>
                 <h2 id="game-modal-title" class="rl-title game-modal-title">{{ title }}</h2>
                 <div v-if="variant === 'antenna'" class="game-modal-progress" aria-hidden="true">
                     <span
@@ -83,9 +96,11 @@ const props = defineProps({
     primaryNewTab: { type: Boolean, default: false },
     primaryAction: { type: String, default: '' },
     secondaryLabel: { type: String, default: 'Close' },
-    // Display only: 'antenna' shows the antenna icon and `progress` of 6 segments.
+    // Display only: 'antenna' shows the antenna icon and `progress` of 6 segments;
+    // 'win' shows the logo and red border. `kicker` is the small line above the title.
     variant: { type: String, default: '' },
     progress: { type: Number, default: 0 },
+    kicker: { type: String, default: '' },
 });
 
 const emit = defineEmits(['close', 'primary']);
@@ -156,6 +171,50 @@ function onPrimaryClick() {
     font-size: 38px;
 }
 
+/* You won: red border, logo, green kicker, big title. */
+.game-modal-content--win {
+    gap: 12px;
+    padding-top: 26px;
+    border: 1.5px solid var(--rl-color-signal);
+    animation: game-modal-pop 220ms cubic-bezier(0.2, 0.9, 0.3, 1.2), game-modal-glow 1.8s ease-out 220ms 2;
+}
+
+.game-modal-logo {
+    display: block;
+    width: 128px;
+    height: 128px;
+    animation: game-modal-logo 520ms cubic-bezier(0.2, 0.9, 0.3, 1.35);
+}
+
+.game-modal-kicker {
+    font-family: var(--rl-font-mono);
+    font-size: 12px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--rl-color-found-bright);
+}
+
+.game-modal-content--win .game-modal-title {
+    font-size: 54px;
+    line-height: 0.95;
+}
+
+.game-modal-content--win .game-modal-message {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.45;
+    color: var(--rl-color-bone);
+}
+
+.game-modal-content--win .game-modal-actions {
+    margin-top: 8px;
+}
+
+.game-modal-content--win .game-modal-btn {
+    font-size: 22px;
+    letter-spacing: 0.12em;
+}
+
 .game-modal-progress {
     display: grid;
     grid-template-columns: repeat(6, minmax(0, 1fr));
@@ -219,8 +278,14 @@ function onPrimaryClick() {
     letter-spacing: 0;
 }
 
-.game-modal-content:lang(ar) .game-modal-message {
+.game-modal-content:lang(ar) .game-modal-message,
+.game-modal-content:lang(ar) .game-modal-kicker {
     font-family: var(--rl-font-sans);
+    letter-spacing: 0;
+}
+
+.game-modal-content--win:lang(ar) .game-modal-title {
+    line-height: 1.2;
 }
 
 @keyframes game-modal-fade {
@@ -233,6 +298,16 @@ function onPrimaryClick() {
     to { opacity: 1; transform: scale(1); }
 }
 
+@keyframes game-modal-glow {
+    0% { box-shadow: 0 0 0 0 var(--rl-color-signal-glow); }
+    100% { box-shadow: 0 0 0 16px transparent; }
+}
+
+@keyframes game-modal-logo {
+    from { transform: scale(0.7) rotate(-8deg); opacity: 0; }
+    to { transform: scale(1) rotate(0); opacity: 1; }
+}
+
 @keyframes game-modal-ping {
     0% { box-shadow: 0 0 0 0 var(--rl-color-found-glow); }
     100% { box-shadow: 0 0 0 18px transparent; }
@@ -241,6 +316,8 @@ function onPrimaryClick() {
 @media (prefers-reduced-motion: reduce) {
     .game-modal-overlay,
     .game-modal-content,
+    .game-modal-content--win,
+    .game-modal-logo,
     .game-modal-icon {
         animation: none;
     }

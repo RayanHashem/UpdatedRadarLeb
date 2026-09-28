@@ -339,6 +339,7 @@
         :secondary-label="gameModalSecondaryLabel"
         :variant="gameModalVariant"
         :progress="gameModalProgress"
+        :kicker="gameModalKicker"
         @close="gameModalShow = false"
         @primary="onModalPrimary"
     />
@@ -479,6 +480,7 @@ const gameModalPrimaryAction = ref('');
 const gameModalSecondaryLabel = ref('Close');
 const gameModalVariant = ref('');
 const gameModalProgress = ref(0);
+const gameModalKicker = ref('');
 const loading = ref(true);
 
 const radarOnline = ref(true);
@@ -570,6 +572,7 @@ function showGameModal(config) {
     gameModalSecondaryLabel.value = config.secondaryLabel ?? t('dashboard.popup.close');
     gameModalVariant.value = config.variant ?? '';
     gameModalProgress.value = config.progress ?? 0;
+    gameModalKicker.value = config.kicker ?? '';
     gameModalShow.value = true;
     playPopupSound();
 }
@@ -592,7 +595,7 @@ function showGameModal(config) {
  * isn't deployed yet, the popup still shows but plays nothing.
  */
 function celebrateWin(prizeName) {
-    const label = (prizeName && String(prizeName).trim()) || 'prize';
+    const label = prizeDisplayName(prizeName);
     const audio = document.getElementById('purgeSound');
     if (audio && audioEnabled.value) {
         try {
@@ -604,12 +607,16 @@ function celebrateWin(prizeName) {
         } catch { /* no-op */ }
     }
     showGameModal({
-        title: 'You won!',
-        message: `Congratulations on winning the ${label} Prize!`,
-        subtext: 'Our team will reach out shortly with the details.',
+        title: t('dashboard.popup.win.title'),
+        message: label
+            ? t('dashboard.popup.win.message', { prize: label })
+            : t('dashboard.popup.win.messageNoPrize'),
+        subtext: t('dashboard.popup.win.subtext'),
         primaryLabel: '',
         primaryAction: '',
-        secondaryLabel: 'Awesome',
+        secondaryLabel: t('dashboard.popup.win.button'),
+        variant: 'win',
+        kicker: t('dashboard.popup.win.kicker'),
     });
 }
 
