@@ -23,6 +23,7 @@
     "dashboard.help.radarCashTitle": "Radar Cash",
     "dashboard.help.radarCashText": "Radar Cash stores your game balance. Use it to scan, build progress, and play for the prizes you want to win.",
 
+    "dashboard.loading": "Loading radar…",
     "dashboard.winners.title": "WINNERS",
 
     "locale.switch": "Language"

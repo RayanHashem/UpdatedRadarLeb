@@ -151,25 +151,7 @@
         </div>
 
 
-        <section v-if="loading" id="loading-game">
-            <div class="loader-content">
-                <div class="loader-circle-container">
-                    <img src="/assets/imgs/Flag_of_Lebanon.png" class="flag-center" alt="Lebanon Flag" />
-                    <svg class="loader-svg" viewBox="0 0 100 100">
-                        <!-- Add this <defs> block here -->
-                        <defs>
-                            <linearGradient id="loaderGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#48fdd0" />
-                                <stop offset="100%" stop-color="#62c3ff" />
-                            </linearGradient>
-                        </defs>
-                        <circle class="loader-bg" cx="50" cy="50" r="45"></circle>
-                        <circle class="loader-progress" cx="50" cy="50" r="45"></circle>
-                    </svg>
-
-                </div>
-            </div>
-        </section>
+        <LoadingScreen v-if="loading" />
 
         <section v-show="!loading" id="game">
             <!--
@@ -416,6 +398,7 @@ import GameModal from '@/components/GameModal.vue';
 import LocaleSwitcher from '@/components/LocaleSwitcher.vue';
 import HelpOverlay from '@/components/dashboard/HelpOverlay.vue';
 import WinnersOverlay from '@/components/dashboard/WinnersOverlay.vue';
+import LoadingScreen from '@/components/dashboard/LoadingScreen.vue';
 import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt.vue';
 import DesktopBlock from '@/components/DesktopBlock.vue';
 
@@ -1637,140 +1620,6 @@ watch(selectedGameId, updatePrizeSelectionUI);
 </script>
 
 <style>
-
-#loading-game {
-    background-image: url("/assets/imgs/loading-bg.png");
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-size: cover;
-    background-position: center;
-}
-
-.loader-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
-
-.loader-circle-container {
-    position: relative;
-    width: 500px; /* Adjust size as needed */
-    height: 500px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.loader-svg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    transform: rotate(-90deg);
-}
-
-.loader-bg {
-    fill: none;
-    stroke: rgba(255, 255, 255, 0.3); /* Lighter grey for background circle */
-    stroke-width: 5;
-}
-
-.loader-progress {
-    fill: none;
-    stroke: url(#loaderGradient); /* Reference the gradient defined in SVG */
-    stroke-width: 8;
-    stroke-linecap: round;
-    animation: load-progress 2s linear forwards; /* 2 seconds animation */
-    stroke-dasharray: 282.7; /* 2 * PI * 45 (radius) */
-    stroke-dashoffset: 282.7; /* Start fully hidden */
-    filter: drop-shadow(0 0 5px rgba(0, 255, 255, 0.7)) drop-shadow(0 0 5px rgba(0, 255, 255, 0.5)); /* Neon glow effect */
-}
-
-@keyframes load-progress {
-    0% {
-        stroke-dashoffset: 282.7;
-    }
-    100% {
-        stroke-dashoffset: 0;
-    }
-}
-
-.flag-center {
-    width: 60%; /* Adjust size of the flag */
-    height: 60%;
-    object-fit: contain;
-    position: absolute;
-    border-radius: 50%; /* Make it circular */
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); /* Optional: add a subtle shadow */
-}
-
-.radar-text-overlay {
-    position: absolute;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: white;
-    font-family: 'Bungee', cursive; /* Use Bungee for the main title */
-    text-align: center;
-    text-shadow: 0 0 10px rgba(0, 255, 255, 0.8), 0 0 20px rgba(0, 255, 255, 0.6); /* Neon text shadow */
-}
-
-.radar-title {
-    font-size: 2.2em; /* Adjust size */
-    line-height: 1;
-}
-
-.port-text {
-    font-family: 'GE Flow', sans-serif; /* Use GE Flow for the subtitle */
-    font-size: 0.9em; /* Adjust size */
-    margin-top: 5px;
-}
-
-/* Responsive adjustments for the loader */
-@media (max-width: 768px) {
-    .loader-circle-container {
-        width: 350px;
-        height: 350px;
-    }
-    .radar-title {
-        font-size: 1.8em;
-    }
-    .port-text {
-        font-size: 0.7em;
-    }
-    .loader-progress {
-        stroke-width: 6;
-    }
-}
-
-@media (max-width: 480px) {
-    .loader-circle-container {
-        width: 280px;
-        height: 280px;
-    }
-    .radar-title {
-        font-size: 1.5em;
-    }
-    .port-text {
-        font-size: 0.6em;
-    }
-    .loader-progress {
-        stroke-width: 5;
-    }
-}
 
 /*
  * Location tile — the rightmost slot in the bottom action row.

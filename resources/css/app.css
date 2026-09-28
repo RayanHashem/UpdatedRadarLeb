@@ -45,18 +45,6 @@ section {
     overflow: hidden;
 }
 
-#loading-game {
- 
-    background-image: url("/assets/imgs/loading-bg.png");
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
-
 #game {
     background-image: none;
     display: flex; /* This is necessary for the child wrapper to take height */
