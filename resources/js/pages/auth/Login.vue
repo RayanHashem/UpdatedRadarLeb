@@ -58,6 +58,15 @@ const goToSignUp = () => {
                 <p class="signin__subtitle">Sign in to keep scanning.</p>
             </div>
 
+            <!-- Server status after a password reset ("Your password has been reset."). -->
+            <div v-if="status" class="rl-notice" role="status">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="signin__notice-icon">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M8 12.5l2.7 2.7L16 9.8" />
+                </svg>
+                <span>{{ status }}</span>
+            </div>
+
             <form class="rl-form signin__form" @submit.prevent="submit">
                 <div class="rl-field">
                     <label for="phone_number" class="rl-label">Mobile number</label>
@@ -161,6 +170,11 @@ const goToSignUp = () => {
     margin: 0;
     font-size: 15px;
     color: var(--rl-color-bone-muted);
+}
+
+.signin__notice-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
 }
 
 .signin__form {
