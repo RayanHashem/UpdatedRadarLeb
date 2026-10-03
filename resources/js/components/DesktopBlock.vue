@@ -15,32 +15,42 @@
  *     app — this component never reaches it, so admins keep desktop access.
  *   - Login / register / legal pages are not affected: users can still sign
  *     up from a laptop, they're just told to play on mobile after that.
+ *
+ * Look: Sign in style (2026 redesign) — rings, logo and heading from the
+ * Sign in screen, steps numbered like How to play. English only, so the
+ * overlay pins lang/dir even when the game behind it is in Arabic.
  */
-import { Link } from '@inertiajs/vue3';
 </script>
 
 <template>
-    <div class="desktop-block" role="dialog" aria-modal="true" aria-labelledby="desktop-block-title">
-        <div class="desktop-block__card">
-            <img src="/assets/imgs/logo.png" alt="RadarLeb" class="desktop-block__logo" />
-            <h1 id="desktop-block-title" class="desktop-block__title">Play on your phone</h1>
-            <p class="desktop-block__body">
-                RadarLeb is a mobile-only experience. The radar uses your phone's
-                location and movement around Lebanon — that's where the fun is.
-                Please open this page on your mobile device to play.
-            </p>
+    <div class="desktop-block" role="dialog" aria-modal="true" aria-labelledby="desktop-block-title" lang="en" dir="ltr">
+        <div class="desktop-block__column">
+            <div class="desktop-block__hero">
+                <span class="rl-ring rl-hero__ring--outer desktop-block__ring" aria-hidden="true"></span>
+                <span class="rl-ring rl-hero__ring--mid desktop-block__ring" aria-hidden="true"></span>
+                <span class="rl-ring rl-hero__ring--inner desktop-block__ring" aria-hidden="true"></span>
+                <img src="/assets/imgs/radarleb-logo.png" alt="RadarLeb" class="desktop-block__logo" width="176" height="176" />
+            </div>
+
+            <div class="rl-hero__heading desktop-block__heading">
+                <h1 id="desktop-block-title" class="rl-title rl-hero__title">Play on your phone</h1>
+                <p class="rl-hero__subtitle desktop-block__body">
+                    RadarLeb is a mobile-only experience. Please open this page on your
+                    mobile device to play.
+                </p>
+            </div>
 
             <div class="desktop-block__steps">
                 <div class="desktop-block__step">
-                    <span class="desktop-block__step-num">1</span>
+                    <span class="desktop-block__step-num">01</span>
                     <span>Open Safari or Chrome on your phone.</span>
                 </div>
                 <div class="desktop-block__step">
-                    <span class="desktop-block__step-num">2</span>
+                    <span class="desktop-block__step-num">02</span>
                     <span>Type <strong>radarleb.com</strong> in the address bar.</span>
                 </div>
                 <div class="desktop-block__step">
-                    <span class="desktop-block__step-num">3</span>
+                    <span class="desktop-block__step-num">03</span>
                     <span>Sign in with your account and start scanning.</span>
                 </div>
             </div>
@@ -49,94 +59,91 @@ import { Link } from '@inertiajs/vue3';
 </template>
 
 <style scoped>
+/* Covers the whole window; scrolls if the window is shorter than the content. */
 .desktop-block {
     position: fixed;
     inset: 0;
     z-index: 100000;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 1.5rem;
-    background:
-        radial-gradient(ellipse at top, rgba(98, 195, 255, 0.18), transparent 60%),
-        linear-gradient(180deg, #06212e 0%, #03141d 100%);
-    color: #ffffff;
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    background: var(--rl-color-night);
+    color: var(--rl-color-bone);
+    font-family: var(--rl-font-sans);
 }
 
-.desktop-block__card {
+/*
+ * margin:auto centres the column vertically without clipping it in short
+ * windows. isolation keeps the rings (z-index -1) behind the text but above
+ * the page background.
+ */
+.desktop-block__column {
+    isolation: isolate;
+    box-sizing: border-box;
     width: 100%;
-    max-width: 30rem;
-    padding: 2rem 1.75rem;
-    background: rgba(6, 33, 46, 0.92);
-    border: 1px solid rgba(98, 195, 255, 0.25);
-    border-radius: 18px;
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.5);
-    text-align: center;
+    max-width: 480px;
+    margin: auto;
+    padding: 48px 24px;
+}
+
+/* Rings centred on the logo, like Sign in. */
+.desktop-block__hero {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+.desktop-block__ring {
+    top: 50%;
+    z-index: -1;
 }
 
 .desktop-block__logo {
-    width: 88px;
-    height: auto;
-    margin: 0 auto 0.85rem;
+    position: relative;
     display: block;
+    width: 176px;
+    height: 176px;
 }
 
-.desktop-block__title {
-    margin: 0 0 0.65rem;
-    font-size: 1.6rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
+/* Heading and text centred under the logo; the steps card stays left-aligned. */
+.desktop-block__heading {
+    text-align: center;
 }
 
 .desktop-block__body {
-    margin: 0 0 1.4rem;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.85);
+    margin-top: 4px;
 }
 
 .desktop-block__steps {
     display: flex;
     flex-direction: column;
-    gap: 0.55rem;
-    margin: 0 auto 1.25rem;
-    max-width: 22rem;
-    text-align: start;
+    gap: 12px;
+    margin-top: 24px;
+    padding: 16px;
+    border: 1px solid var(--rl-color-night-edge);
+    border-radius: 16px;
+    background: var(--rl-color-night-raised);
 }
 
 .desktop-block__step {
     display: grid;
     grid-template-columns: 28px minmax(0, 1fr);
-    gap: 0.6rem;
-    align-items: center;
-    font-size: 0.9rem;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.9);
+    gap: 10px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--rl-color-bone-soft);
+}
+
+.desktop-block__step strong {
+    font-weight: 600;
+    color: var(--rl-color-bone);
 }
 
 .desktop-block__step-num {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background-color: #62c3ff;
-    color: #06212e;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
-}
-
-.desktop-block__note {
-    margin: 0;
-    font-size: 0.82rem;
-    line-height: 1.5;
-    color: rgba(255, 255, 255, 0.7);
-}
-
-.desktop-block__link {
-    color: #62c3ff;
-    text-decoration: underline;
-    text-underline-offset: 2px;
+    padding-top: 2px;
+    font-family: var(--rl-font-mono);
+    font-size: 13px;
+    color: var(--rl-color-alert);
 }
 </style>
