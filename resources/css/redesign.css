@@ -316,3 +316,59 @@
 @media (prefers-reduced-motion: reduce) {
     .rl-sheet { animation: none; }
 }
+
+/* -----------------------------------------------------------------------
+ * Auth hero (Sign in style): radar rings, logo and heading for the
+ * pages around sign-in (Forgot password, Reset password, ...).
+ * Same measurements as the Sign in screen.
+ * --------------------------------------------------------------------- */
+.rl-hero__ring {
+    top: calc(190px + env(safe-area-inset-top, 0px));
+}
+
+.rl-hero__ring--outer { width: 520px; height: 520px; border-color: var(--rl-color-ring-outer); }
+.rl-hero__ring--mid   { width: 380px; height: 380px; border-color: var(--rl-color-ring-mid); }
+.rl-hero__ring--inner { width: 250px; height: 250px; border-color: var(--rl-color-ring-inner); }
+
+/* 56px = the Sign in design's toggle row + gap above the logo. */
+.rl-hero__logo {
+    display: block;
+    width: 176px;
+    height: 176px;
+    margin: 56px auto 0;
+}
+
+.rl-hero__heading {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 36px;
+}
+
+.rl-hero__title {
+    font-size: 40px;
+    letter-spacing: 0.02em;
+}
+
+.rl-hero__subtitle {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--rl-color-bone-muted);
+}
+
+/* Green confirmation card (e.g. "A reset link has been sent to your email."). */
+.rl-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 20px;
+    padding: 12px 14px;
+    border: 1px solid var(--rl-color-found);
+    border-radius: var(--rl-radius-field);
+    background: var(--rl-color-found-wash);
+    color: var(--rl-color-found-bright);
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.45;
+}

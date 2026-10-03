@@ -1,4 +1,10 @@
 <script setup lang="ts">
+/*
+ * Forgot password — Sign in style (2026 redesign). Not part of the client
+ * design, so it reuses the Sign in screen's rings, logo, fields and CTA.
+ * English only, like before. Posts the email to /forgot-password; the
+ * server answers with `status` (link sent) or an email error.
+ */
 import InputError from '@/components/InputError.vue';
 import { Head, useForm, Link } from '@inertiajs/vue3';
 
@@ -17,68 +23,71 @@ const submit = () => {
 
 <template>
     <Head title="Forgot password" />
-    <section id="sign-in" class="w-100 page-forgot">
-        <div class="d-flex align-items-center flex-column h-100 p-3-5">
-            <!-- Flag container, centered above the form -->
-            <div class="d-flex gap-4 flex-column w-100 align-items-center">
-                <img src="/assets/imgs/Flag_of_Lebanon.png" class="flag" alt="Flag of Lebanon" />
-            </div>
-            <!-- Form container with custom styling defined in app.css -->
-            <div class="form-container d-flex flex-column gap-5">
-                <form @submit.prevent="submit">
-                    <!-- Status message -->
-                    <div v-if="status" class="mb-3 text-center forgot-password-status-msg">
-                        {{ status }}
-                    </div>
+    <main class="rl-screen">
+        <span class="rl-ring rl-hero__ring rl-hero__ring--outer" aria-hidden="true"></span>
+        <span class="rl-ring rl-hero__ring rl-hero__ring--mid" aria-hidden="true"></span>
+        <span class="rl-ring rl-hero__ring rl-hero__ring--inner" aria-hidden="true"></span>
 
-                    <!-- Email Input -->
+        <div class="rl-screen__column">
+            <img src="/assets/imgs/radarleb-logo.png" class="rl-hero__logo" width="176" height="176" alt="Radar Leb" />
+
+            <div class="rl-hero__heading">
+                <h1 class="rl-title rl-hero__title">Forgot password</h1>
+                <p class="rl-hero__subtitle">Use the email address you signed up with (sign-in uses your phone number).</p>
+            </div>
+
+            <!-- Server confirmation, e.g. "A reset link has been sent to your email." -->
+            <div v-if="status" class="rl-notice" role="status">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" class="forgot__notice-icon">
+                    <rect x="3" y="5.5" width="18" height="13" rx="2.5" />
+                    <path d="M3.5 7l8.5 6 8.5-6" />
+                </svg>
+                <span>{{ status }}</span>
+            </div>
+
+            <form class="rl-form forgot__form" @submit.prevent="submit">
+                <div class="rl-field">
+                    <label for="email" class="rl-label">Email</label>
                     <input
                         type="email"
-                        class="form-control mb-3 custom-input"
-                        placeholder="Email"
+                        class="rl-input"
+                        placeholder="you@example.com"
                         id="email"
                         required
                         autofocus
                         :tabindex="1"
                         autocomplete="email"
+                        :aria-invalid="form.errors.email ? 'true' : undefined"
+                        aria-describedby="email-error"
                         v-model="form.email"
                     />
-                    <InputError :message="form.errors.email" variant="material" />
-                    <p class="small text-center mb-0 px-2 forgot-password-helper">
-                        Use the email address you signed up with (sign-in uses your phone number).
-                    </p>
+                    <InputError id="email-error" :message="form.errors.email" variant="inline" />
+                </div>
 
-                    <!-- Submit Button -->
-                    <div class="d-flex justify-content-center align-items-center gap-3 mt-4 w-100">
-                        <button
-                            class="btn btn-custom-1 btn-custom"
-                            style="background-color: var(--rl-color-cyan);"
-                            type="submit"
-                            :tabindex="2"
-                            :disabled="form.processing"
-                        >
-                            <span v-if="!form.processing">Send Reset Link</span>
-                            <span v-else>Sending...</span>
-                        </button>
-                    </div>
+                <button class="rl-button forgot__submit" type="submit" :tabindex="2" :disabled="form.processing">
+                    <span v-if="!form.processing">Send Reset Link</span>
+                    <span v-else>Sending...</span>
+                </button>
+            </form>
 
-                    <!-- Horizontal rule with shadow -->
-                    <hr style="height:2px;border-width:0;color:gray;background-color:white;opacity:1; box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.42), 0 6px 20px 0 rgba(0, 0, 0, 0.84); width: 80%; margin: 20px auto;">
-                    
-                    <!-- Back to Login button -->
-                    <div class="d-flex justify-content-center mt-3 w-100">
-                        <Link
-                            href="/login"
-                            class="btn btn-custom-1 btn-custom"
-                            style="background-color: var(--rl-color-cyan); color: var(--rl-color-text);"
-                            :tabindex="3"
-                        >
-                            Back to Login
-                        </Link>
-                    </div>
-                </form>
-            </div>
+            <p class="rl-footer">
+                <Link href="/login" class="rl-link rl-link--strong" :tabindex="3">Back to Login</Link>
+            </p>
         </div>
-    </section>
+    </main>
 </template>
 
+<style scoped>
+.forgot__notice-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.forgot__form {
+    margin-top: 24px;
+}
+
+.forgot__submit {
+    margin-top: 8px;
+}
+</style>
