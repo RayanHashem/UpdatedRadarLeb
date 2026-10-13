@@ -19,6 +19,10 @@
  *
  * Persistence: a "user said no" / "user installed" flag is stored in
  * localStorage so we never re-pester after the user makes a choice.
+ *
+ * Look: 2026 redesign (popup card, red / outlined buttons, steps numbered
+ * like How to play). English only, so it stays left to right even over the
+ * Arabic game screen.
  */
 import { onMounted, onBeforeUnmount, ref, computed } from 'vue';
 
@@ -150,22 +154,24 @@ onBeforeUnmount(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="a2hs-title"
+            lang="en"
+            dir="ltr"
         >
             <div class="a2hs-card">
-                <img src="/android-chrome-192x192.png" alt="" class="a2hs-icon" />
+                <img src="/android-chrome-192x192.png" alt="" class="a2hs-icon" width="52" height="52" />
                 <div class="a2hs-copy">
                     <h3 id="a2hs-title" class="a2hs-title">{{ titleText }}</h3>
                     <p class="a2hs-body">{{ bodyText }}</p>
                 </div>
                 <div class="a2hs-actions">
+                    <button type="button" class="a2hs-btn a2hs-btn--decline" @click="dismiss">
+                        Not now
+                    </button>
                     <button v-if="!isIos" type="button" class="a2hs-btn a2hs-btn--accept" @click="accept">
                         Add to Home Screen
                     </button>
                     <button v-else type="button" class="a2hs-btn a2hs-btn--accept" @click="openIosGuide">
                         Show me how
-                    </button>
-                    <button type="button" class="a2hs-btn a2hs-btn--decline" @click="dismiss">
-                        Not now
                     </button>
                 </div>
             </div>
@@ -183,12 +189,14 @@ onBeforeUnmount(() => {
             role="dialog"
             aria-modal="true"
             aria-labelledby="a2hs-guide-title"
+            lang="en"
+            dir="ltr"
         >
             <div class="a2hs-guide">
                 <h3 id="a2hs-guide-title" class="a2hs-guide__title">Add RadarLeb to your iPhone home screen</h3>
                 <ol class="a2hs-steps">
                     <li class="a2hs-step">
-                        <span class="a2hs-step__num">1</span>
+                        <span class="a2hs-step__num">01</span>
                         <div class="a2hs-step__body">
                             <span>Tap the <strong>Share</strong> button at the bottom of Safari.</span>
                             <svg class="a2hs-share-icon" viewBox="0 0 24 24" aria-hidden="true">
@@ -198,13 +206,13 @@ onBeforeUnmount(() => {
                         </div>
                     </li>
                     <li class="a2hs-step">
-                        <span class="a2hs-step__num">2</span>
+                        <span class="a2hs-step__num">02</span>
                         <div class="a2hs-step__body">
                             Scroll down and tap <strong>“Add to Home Screen”</strong>.
                         </div>
                     </li>
                     <li class="a2hs-step">
-                        <span class="a2hs-step__num">3</span>
+                        <span class="a2hs-step__num">03</span>
                         <div class="a2hs-step__body">
                             Tap <strong>Add</strong>. The RadarLeb icon will appear on your home screen.
                         </div>
@@ -214,17 +222,16 @@ onBeforeUnmount(() => {
                     Apple does not let websites add the icon automatically — these
                     two taps are the only way on iPhone.
                 </p>
-                <div class="a2hs-actions a2hs-actions--center">
-                    <button type="button" class="a2hs-btn a2hs-btn--accept" @click="closeIosGuide">
-                        Done
-                    </button>
-                </div>
+                <button type="button" class="a2hs-btn a2hs-btn--accept a2hs-done" @click="closeIosGuide">
+                    Done
+                </button>
             </div>
         </div>
     </Teleport>
 </template>
 
 <style scoped>
+/* Banner: a popup card pinned to the bottom, clear of the home bar and the notch. */
 .a2hs-backdrop {
     position: fixed;
     left: 0;
@@ -233,176 +240,218 @@ onBeforeUnmount(() => {
     z-index: 1100;
     display: flex;
     justify-content: center;
-    padding: 0.75rem;
-    /* Clear of the iPhone home bar and, sideways, the notch. */
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
-    padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
-    padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
+    padding: 12px;
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(12px + env(safe-area-inset-left, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    font-family: var(--rl-font-sans);
     pointer-events: none;
 }
 
 .a2hs-backdrop--full {
     inset: 0;
     align-items: center;
-    background: rgba(0, 0, 0, 0.55);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
+    padding: 24px;
+    background: var(--rl-color-dialog-backdrop);
     pointer-events: auto;
 }
 
 .a2hs-card {
     pointer-events: auto;
+    display: grid;
+    grid-template-columns: 52px minmax(0, 1fr);
+    gap: 14px 14px;
+    box-sizing: border-box;
     width: 100%;
     max-width: 26rem;
-    display: grid;
-    grid-template-columns: 56px minmax(0, 1fr);
-    gap: 0.75rem 0.85rem;
-    padding: 0.85rem 1rem;
-    background: rgba(6, 33, 46, 0.95);
-    color: #ffffff;
-    border: 1px solid rgba(98, 195, 255, 0.25);
-    border-radius: 14px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    padding: 16px;
+    border: 1px solid var(--rl-color-dialog-edge);
+    border-radius: 18px;
+    background: var(--rl-color-night-raised);
+    color: var(--rl-color-bone);
+    box-shadow: 0 14px 40px rgba(0, 0, 0, 0.55);
+    animation: a2hs-up 260ms ease-out;
 }
 
 .a2hs-icon {
-    grid-row: 1 / span 2;
-    width: 56px;
-    height: 56px;
+    width: 52px;
+    height: 52px;
     border-radius: 12px;
     object-fit: cover;
-    align-self: start;
-    background: rgba(255, 255, 255, 0.05);
 }
 
 .a2hs-title {
-    margin: 0 0 0.2rem;
-    font-size: 0.95rem;
-    font-weight: 700;
-    letter-spacing: 0.01em;
+    margin: 0 0 4px;
+    font-family: var(--rl-font-headline);
+    font-weight: 800;
+    font-size: 20px;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: var(--rl-color-bone);
 }
 
 .a2hs-body {
     margin: 0;
-    font-size: 0.78rem;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.85);
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--rl-color-dialog-text);
 }
 
 .a2hs-actions {
-    grid-column: 1 / span 2;
-    display: flex;
-    gap: 0.5rem;
-    justify-content: flex-end;
-    flex-wrap: wrap;
-    margin-top: 0.25rem;
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
 }
 
-.a2hs-actions--center {
-    justify-content: center;
-    margin-top: 0.5rem;
-}
-
+/* Same look as the redesign's buttons, sized for a banner. */
 .a2hs-btn {
-    min-height: 44px;
-    border: none;
-    border-radius: 999px;
-    padding: 0.5rem 0.95rem;
-    font-size: 0.85rem;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    padding: 0 10px;
+    border: 0;
+    border-radius: var(--rl-radius-button);
+    background: var(--rl-color-signal);
+    color: #ffffff;
+    font-family: var(--rl-font-headline);
+    font-weight: 800;
+    font-size: 17px;
+    line-height: 1.05;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition: filter 120ms ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    transition: transform 220ms ease-out, filter 220ms ease-out, background-color 220ms ease-out;
 }
 
-.a2hs-btn:hover {
-    filter: brightness(1.07);
+.a2hs-btn:active {
+    transform: scale(0.97);
+    filter: brightness(1.12);
+    transition-duration: 60ms;
 }
 
-.a2hs-btn--accept {
-    background-color: #62c3ff;
-    color: #06212e;
+.a2hs-btn:focus-visible {
+    outline: 2px solid var(--rl-color-bone);
+    outline-offset: 2px;
 }
 
 .a2hs-btn--decline {
-    background-color: rgba(255, 255, 255, 0.08);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    border: 1px solid var(--rl-color-night-line);
+    background: transparent;
+    color: var(--rl-color-bone);
 }
 
-/* iOS guide modal */
+.a2hs-btn--decline:active {
+    background: var(--rl-color-press-wash);
+    filter: none;
+}
+
+/* iOS guide: the redesign popup card. */
 .a2hs-guide {
+    box-sizing: border-box;
     width: 100%;
-    max-width: 22rem;
-    background: rgba(6, 33, 46, 0.97);
-    border: 1px solid rgba(98, 195, 255, 0.25);
-    border-radius: 16px;
-    padding: 1.1rem 1rem;
-    color: #ffffff;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    max-width: 24rem;
+    max-height: calc(100svh - 48px);
+    overflow-y: auto;
+    padding: 28px 22px 22px;
+    border: 1px solid var(--rl-color-dialog-edge);
+    border-radius: 22px;
+    background: var(--rl-color-night-raised);
+    color: var(--rl-color-bone);
+    animation: a2hs-pop 220ms ease-out;
 }
 
 .a2hs-guide__title {
-    margin: 0 0 0.85rem;
-    font-size: 1rem;
-    font-weight: 700;
+    margin: 0 0 20px;
+    font-family: var(--rl-font-headline);
+    font-weight: 800;
+    font-size: 28px;
+    line-height: 1.05;
+    letter-spacing: 0.02em;
     text-align: center;
-    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    color: var(--rl-color-bone);
 }
 
 .a2hs-steps {
-    list-style: none;
-    margin: 0;
-    padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: 14px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
 }
 
+/* Numbered like How to play: red mono 01 / 02 / 03. */
 .a2hs-step {
     display: grid;
     grid-template-columns: 28px minmax(0, 1fr);
-    gap: 0.6rem;
-    align-items: start;
-    font-size: 0.85rem;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.92);
+    gap: 10px;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--rl-color-bone-soft);
+}
+
+.a2hs-step strong {
+    font-weight: 600;
+    color: var(--rl-color-bone);
 }
 
 .a2hs-step__num {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    background-color: #62c3ff;
-    color: #06212e;
-    font-weight: 700;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.85rem;
+    padding-top: 2px;
+    font-family: var(--rl-font-mono);
+    font-size: 13px;
+    color: var(--rl-color-alert);
 }
 
+/* Normal text flow, so bold words stay inside their sentence; the Share icon sits at the end. */
 .a2hs-step__body {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.45rem;
-    flex-wrap: wrap;
+    display: block;
 }
 
 .a2hs-share-icon {
-    width: 22px;
-    height: 22px;
-    color: #62c3ff;
-    flex-shrink: 0;
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-left: 6px;
+    vertical-align: -4px;
+    color: var(--rl-color-bone);
 }
 
 .a2hs-note {
-    margin: 0.85rem 0 0;
-    font-size: 0.72rem;
-    line-height: 1.4;
-    color: rgba(255, 255, 255, 0.65);
+    margin: 18px 0 0;
+    font-size: 13px;
+    line-height: 1.5;
     text-align: center;
+    color: var(--rl-color-bone-subtle);
+}
+
+.a2hs-done {
+    width: 100%;
+    min-height: 54px;
+    margin-top: 20px;
+    font-size: 21px;
+}
+
+@keyframes a2hs-up {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes a2hs-pop {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .a2hs-card,
+    .a2hs-guide {
+        animation: none;
+    }
 }
 
 @media (display-mode: standalone) {
