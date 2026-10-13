@@ -90,57 +90,58 @@
                     </nav>
                 </header>
 
-                <div class="radar-status" role="group" :aria-label="t('dashboard.radar.status')">
-                    <div class="radar-card">
-                        <span class="radar-label">{{ t('dashboard.radar.targetPrize') }}</span>
-                        <span class="radar-card__value">{{ selectedPrizeTile ? t(`dashboard.radar.prize.${selectedPrizeTile.key}`) : t('dashboard.radar.none') }}</span>
-                        <span class="radar-card__meta">{{ selectedPrizeTile ? selectedPrizeTile.price : t('dashboard.radar.pickPrize') }}</span>
-                    </div>
-                    <div class="radar-card radar-card--radar">
-                        <span class="radar-label">{{ t('dashboard.radar.radar') }}</span>
-                        <span class="radar-card__status">
-                            <span class="radar-card__dot" :class="radarOnline ? 'radar-card__dot--live' : 'radar-card__dot--offline'"></span>
-                            {{ scanning ? t('dashboard.radar.scanning') : radarOnline ? t('dashboard.radar.online') : t('dashboard.radar.offline') }}
-                        </span>
-                        <!--
-                          Idle: two bars lit and pulsing. During a scan they fill with the same
-                          8-step counter (visibleCount, 16 s) that used to fill the side bar.
-                        -->
-                        <div
-                            class="radar-card__bars"
-                            role="img"
-                            :aria-label="visibleCount > 0 ? t('dashboard.radar.scanProgress', { done: visibleCount, total: originalColors.length }) : t('dashboard.radar.signal')"
-                        >
-                            <span
-                                v-for="n in originalColors.length"
-                                :key="n"
-                                class="radar-card__bar"
-                                :class="{ 'radar-card__bar--on': visibleCount > 0 ? n <= visibleCount : n <= 2 }"
-                                :style="{ height: 4 + (n - 1) * 1.7 + 'px', animationDelay: (n - 1) * 0.12 + 's' }"
-                            ></span>
+                <!--
+                  Radar map (2026 "Radar map" screen). One region lights up per antenna
+                  found, in a per-player, per-prize order (lib/radarRegions.ts), so the
+                  map is the same after a reload. The status cards and the "Antenna
+                  found" note sit on top of the map.
+                -->
+                <RadarMap class="radar-map-card" :found="foundRegions" :fresh="freshRegion" :scanning="scanning">
+                    <div class="radar-status" role="group" :aria-label="t('dashboard.radar.status')">
+                        <div class="radar-card">
+                            <span class="radar-label">{{ t('dashboard.radar.targetPrize') }}</span>
+                            <span class="radar-card__value">{{ selectedPrizeTile ? t(`dashboard.radar.prize.${selectedPrizeTile.key}`) : t('dashboard.radar.none') }}</span>
+                            <span class="radar-card__meta">{{ selectedPrizeTile ? selectedPrizeTile.price : t('dashboard.radar.pickPrize') }}</span>
+                        </div>
+                        <div class="radar-status__side">
+                            <div class="radar-card radar-card--radar">
+                                <span class="radar-label">{{ t('dashboard.radar.radar') }}</span>
+                                <span class="radar-card__status">
+                                    <span class="radar-card__dot" :class="radarOnline ? 'radar-card__dot--live' : 'radar-card__dot--offline'"></span>
+                                    {{ scanning ? t('dashboard.radar.scanning') : radarOnline ? t('dashboard.radar.online') : t('dashboard.radar.offline') }}
+                                </span>
+                                <!--
+                                  Idle: two bars lit and pulsing. During a scan they fill with the same
+                                  8-step counter (visibleCount, 16 s) that used to fill the side bar.
+                                -->
+                                <div
+                                    class="radar-card__bars"
+                                    role="img"
+                                    :aria-label="visibleCount > 0 ? t('dashboard.radar.scanProgress', { done: visibleCount, total: originalColors.length }) : t('dashboard.radar.signal')"
+                                >
+                                    <span
+                                        v-for="n in originalColors.length"
+                                        :key="n"
+                                        class="radar-card__bar"
+                                        :class="{ 'radar-card__bar--on': visibleCount > 0 ? n <= visibleCount : n <= 2 }"
+                                        :style="{ height: 3 + (n - 1) * 1.5 + 'px', animationDelay: (n - 1) * 0.12 + 's' }"
+                                    ></span>
+                                </div>
+                            </div>
+                            <span class="radar-north" aria-hidden="true">
+                                <svg width="12" height="16" viewBox="0 0 12 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M6 15V2" />
+                                    <path d="M2 6l4-4 4 4" />
+                                </svg>
+                                {{ t('dashboard.radar.north') }}
+                            </span>
                         </div>
                     </div>
-                </div>
-
-                <div class="radar-dish-wrap">
-                    <div class="radar-dish" :class="{ 'radar-dish--scanning': scanning }" aria-hidden="true">
-                        <div class="radar-dish__ticks"></div>
-                        <div class="radar-dish__ring radar-dish__ring--1"></div>
-                        <div class="radar-dish__ring radar-dish__ring--2"></div>
-                        <div class="radar-dish__ring radar-dish__ring--3"></div>
-                        <div class="radar-dish__axis radar-dish__axis--v"></div>
-                        <div class="radar-dish__axis radar-dish__axis--h"></div>
-                        <div class="radar-dish__sweep radar-dish__sweep--idle"></div>
-                        <div class="radar-dish__sweep radar-dish__sweep--scan"></div>
-                        <!-- One blip per detected antenna (positions are decorative). -->
-                        <template v-for="(blip, i) in RADAR_BLIPS.slice(0, Math.min(6, Number(currentProgress.radar_level) || 0))" :key="i">
-                            <span class="radar-dish__ping" :style="{ left: blip[0] + '%', top: blip[1] + '%' }"></span>
-                            <span class="radar-dish__blip" :style="{ left: blip[0] + '%', top: blip[1] + '%' }"></span>
-                        </template>
-                        <div class="radar-dish__center"></div>
-                        <span class="radar-dish__north">{{ t('dashboard.radar.north') }}</span>
+                    <div v-if="mapNote" class="radar-note" role="status">
+                        <span class="radar-note__dot"></span>
+                        <span>{{ mapNote }}</span>
                     </div>
-                </div>
+                </RadarMap>
 
                 <div class="antenna-panel" role="group" :aria-label="t('dashboard.radar.antennaDetection')">
                     <div class="antenna-panel__head">
@@ -154,7 +155,10 @@
                             class="antenna-slot"
                             :class="{ 'antenna-slot--found': n <= currentProgress.radar_level }"
                         >
-                            <RadarIcon name="antenna" />
+                            <RadarIcon name="antenna" :size="20" />
+                            <!-- The region this antenna lit on the map; a dash until it's found. -->
+                            <span v-if="foundRegions[n - 1]" class="antenna-slot__name">{{ t(`dashboard.radar.region.${foundRegions[n - 1]}.short`) }}</span>
+                            <span v-else class="antenna-slot__name" aria-hidden="true">—</span>
                         </div>
                     </div>
                 </div>
@@ -203,10 +207,19 @@
                     <button
                         id="scan"
                         class="radar-scan"
-                        :class="{ 'radar-scan--busy': scanning, 'radar-scan--long': buttonText.length > (locale === 'ar' ? 11 : 9) }"
+                        :class="{
+                            'radar-scan--busy': scanning,
+                            'radar-scan--long': !missedScan && buttonText.length > (locale === 'ar' ? 11 : 9),
+                            'radar-scan--missed': missedScan,
+                        }"
                         :disabled="!canScan" :style="buttonStyle" @click="startScan"
                     >
-                        {{ buttonText }}
+                        <!-- Missed scan (2 s): "ANTENNA NOT DETECTED" with "Try again" underneath. -->
+                        <template v-if="missedScan">
+                            <span class="radar-scan__miss">{{ buttonText }}</span>
+                            <span class="radar-scan__retry">{{ t('dashboard.radar.tryAgain') }}</span>
+                        </template>
+                        <template v-else>{{ buttonText }}</template>
                     </button>
                     <div class="radar-actions__side">
                         <!--
@@ -282,6 +295,8 @@ import SettingsOverlay from '@/components/dashboard/SettingsOverlay.vue';
 import ChangePasswordSheet from '@/components/dashboard/ChangePasswordSheet.vue';
 import LoadingScreen from '@/components/dashboard/LoadingScreen.vue';
 import RadarIcon from '@/components/dashboard/RadarIcon.vue';
+import RadarMap from '@/components/dashboard/RadarMap.vue';
+import { regionOrder } from '@/lib/radarRegions';
 import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt.vue';
 import DesktopBlock from '@/components/DesktopBlock.vue';
 
@@ -344,9 +359,6 @@ const PRIZE_TILES = [
     { key: 'muscle', icon: 'muscle', price: '$150,000', priceShort: '$150K' },
     { key: 'supercar', icon: 'supercar', price: '$200,000', priceShort: '$200K' },
 ];
-
-/** Radar dish blip positions (% of the dish), one per detected antenna. Decorative. */
-const RADAR_BLIPS = [[65.3, 30.7], [29.3, 39.3], [71.3, 66], [39.3, 71.3], [53.3, 20], [20.7, 59.3]];
 
 const activeOverlay = ref(null);
 
@@ -441,6 +453,9 @@ let bgVideoResumeId = null;
 
 const canScan = computed(() => radarOnline.value && !scanning.value && selectedGameEnabled.value);
 
+/* The 2 s after a missed scan, while the button reads "Antenna not detected". */
+const missedScan = computed(() => selectedGameEnabled.value && !scanning.value && detectionStatus.value === 'not-found');
+
 const buttonText = computed(() => {
     if (!selectedGameEnabled.value) return t('dashboard.radar.comingSoon');
     if (scanning.value) return t('dashboard.radar.scanning');
@@ -452,8 +467,8 @@ const buttonText = computed(() => {
 const buttonStyle = computed(() => {
     if (scanning.value) {
         return { backgroundColor: 'var(--rl-color-signal-deep)', color: '#fff' };
-    } else if (detectionStatus.value === 'not-found') {
-        return { backgroundColor: 'var(--rl-color-signal-deep)', color: '#fff' };
+    } else if (missedScan.value) {
+        return {}; // .radar-scan--missed draws the "not detected" state
     } else {
         return { backgroundColor: 'var(--rl-color-signal)', color: '#fff' };
     }
@@ -700,6 +715,49 @@ const currentProgress = computed(() => {
 
     return g?.progress ?? { radar_level: 0 }
 })
+
+/*
+ * Radar map: the regions lit for the selected prize. Each player + prize has
+ * its own fixed order (regionOrder), and the first radar_level regions in it
+ * are lit, so reloading never reshuffles the map.
+ */
+const authUserId = computed(() => usePage().props.auth?.user?.id ?? null);
+
+const foundRegions = computed(() => {
+    if (selectedGameId.value == null) return [];
+    const level = Math.max(0, Math.min(6, Number(currentProgress.value.radar_level) || 0));
+    return regionOrder(authUserId.value, selectedGameId.value).slice(0, level);
+});
+
+/* The region the last scan lit (it flashes) and the note shown on the map until the next scan. */
+const freshRegion = ref(null);
+const lastFind = ref(null);
+
+watch(
+    () => [selectedGameId.value, foundRegions.value.length],
+    ([gameId, count], [previousGameId, previousCount]) => {
+        if (gameId !== previousGameId) {
+            freshRegion.value = null;
+            lastFind.value = null;
+        } else if (count > previousCount) {
+            freshRegion.value = foundRegions.value[count - 1];
+            lastFind.value = { count, region: freshRegion.value };
+        }
+    },
+);
+
+watch(scanning, (isScanning) => {
+    if (isScanning) {
+        freshRegion.value = null;
+        lastFind.value = null;
+    }
+});
+
+const mapNote = computed(() => {
+    if (!lastFind.value) return '';
+    if (lastFind.value.count >= 6) return t('dashboard.radar.map.allFound');
+    return t('dashboard.radar.map.found', { region: t(`dashboard.radar.region.${lastFind.value.region}`) });
+});
 
 function setGameProgress(gameId, progress) {
     const idx = prizes.value.findIndex(g => g.id === gameId);
@@ -1854,26 +1912,16 @@ watch(selectedGameId, updatePrizeSelectionUI);
 
 <style scoped>
 /*
- * 2026 redesign "Radar" screen. Sizes are from the 390x844 design frame.
- * The dish shrinks on short / narrow screens so everything fits without
- * scrolling where it can (.radar-screen scrolls when it can't).
+ * 2026 redesign "Radar" screen (map version). Sizes are from the 390x844
+ * design frame. The map takes whatever height is left (up to the design's
+ * 404px), so short screens fit without scrolling where they can
+ * (.radar-screen scrolls when they can't).
  */
 #game {
     background: var(--rl-color-night);
 }
 
 .radar-screen {
-    /* Height of everything except the dish; used to size the dish. */
-    --radar-chrome: 552px;
-    --dish: clamp(
-        180px,
-        min(
-            calc(100svh - var(--radar-chrome) - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)),
-            calc(100vw - 90px)
-        ),
-        300px
-    );
-
     position: relative;
     display: flex;
     flex-direction: column;
@@ -1960,35 +2008,61 @@ watch(selectedGameId, updatePrizeSelectionUI);
     color: var(--rl-color-bone-subtle);
 }
 
-/* ---- Status cards ---------------------------------------------------- */
-.radar-status {
-    display: grid;
-    flex-shrink: 0;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
+/* ---- Radar map ------------------------------------------------------- */
+/* Takes the height left over, between 250px and the design's 404px. */
+.radar-map-card {
+    flex: 1 1 0;
+    min-height: 250px;
+    max-height: 404px;
     margin: 12px 16px 0;
+}
+
+/* ---- Status cards (laid over the top of the map) ----------------------- */
+.radar-status {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.radar-status__side {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
 }
 
 .radar-card {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     min-width: 0;
-    padding: 10px 12px;
+    max-width: 170px;
+    padding: 7px 10px;
     border: 1px solid var(--rl-color-night-edge);
     border-radius: 12px;
-    background: var(--rl-color-night-raised);
+    background: var(--rl-color-map-overlay);
+}
+
+.radar-card .radar-label {
+    font-size: 10px;
 }
 
 .radar-card--radar {
-    gap: 6px;
+    align-items: flex-end;
+    gap: 5px;
 }
 
 .radar-card__value {
     overflow: hidden;
     font-family: var(--rl-font-headline);
     font-weight: 800;
-    font-size: 22px;
+    font-size: 19px;
     line-height: 1.05;
     text-transform: uppercase;
     white-space: nowrap;
@@ -1997,7 +2071,7 @@ watch(selectedGameId, updatePrizeSelectionUI);
 
 .radar-card__meta {
     font-family: var(--rl-font-mono);
-    font-size: 13px;
+    font-size: 12px;
 }
 
 .radar-card__status {
@@ -2005,14 +2079,14 @@ watch(selectedGameId, updatePrizeSelectionUI);
     align-items: center;
     gap: 6px;
     font-family: var(--rl-font-mono);
-    font-size: 13px;
+    font-size: 12px;
     text-transform: uppercase;
 }
 
 .radar-card__dot {
     flex-shrink: 0;
-    width: 8px;
-    height: 8px;
+    width: 7px;
+    height: 7px;
     border-radius: 50%;
     background: var(--rl-color-found);
 }
@@ -2029,11 +2103,11 @@ watch(selectedGameId, updatePrizeSelectionUI);
     display: flex;
     align-items: flex-end;
     gap: 3px;
-    height: 16px;
+    height: 14px;
 }
 
 .radar-card__bar {
-    width: 6px;
+    width: 5px;
     border-radius: 1px;
     background: var(--rl-color-night-line);
 }
@@ -2044,132 +2118,52 @@ watch(selectedGameId, updatePrizeSelectionUI);
     animation: radar-signal 1.1s ease-in-out infinite alternate;
 }
 
-/* ---- Radar dish ------------------------------------------------------ */
-.radar-dish-wrap {
+/* North arrow, under the Radar card. */
+.radar-north {
     display: flex;
-    flex-shrink: 0;
-    justify-content: center;
-    margin-top: 14px;
-}
-
-.radar-dish {
-    position: relative;
-    width: var(--dish);
-    height: var(--dish);
-    border-radius: 50%;
-    background: var(--rl-color-night-sunken);
-    box-shadow: 0 0 0 1px var(--rl-color-dialog-edge) inset;
-}
-
-/* Tick marks around the rim: bone at 38% alpha, masked to a thin band. */
-.radar-dish__ticks {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: repeating-conic-gradient(rgba(237, 232, 220, 0.38) 0deg 0.7deg, transparent 0.7deg 10deg);
-    -webkit-mask: radial-gradient(circle closest-side, transparent 92.7%, #000 93.3%, #000 99.3%, transparent 100%);
-    mask: radial-gradient(circle closest-side, transparent 92.7%, #000 93.3%, #000 99.3%, transparent 100%);
-}
-
-.radar-dish__ring {
-    position: absolute;
-    border: 1px solid var(--rl-color-dish-line);
-    border-radius: 50%;
-}
-
-.radar-dish__ring--1 { inset: 12.67%; }
-.radar-dish__ring--2 { inset: 25.33%; }
-.radar-dish__ring--3 { inset: 38%; }
-
-.radar-dish__axis {
-    position: absolute;
-    background: var(--rl-color-dish-line);
-}
-
-.radar-dish__axis--v { top: 3.33%; bottom: 3.33%; left: 50%; width: 1px; }
-.radar-dish__axis--h { top: 50%; left: 3.33%; right: 3.33%; height: 1px; }
-
-.radar-dish__sweep {
-    position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: conic-gradient(
-        from 0deg,
-        rgba(214, 40, 40, 0) 0deg 290deg,
-        rgba(214, 40, 40, 0.1) 320deg,
-        rgba(214, 40, 40, 0.42) 359deg,
-        rgba(255, 110, 90, 0.95) 359.4deg,
-        rgba(214, 40, 40, 0) 360deg
-    );
-    transition: opacity 0.3s ease;
-}
-
-/* Idle: a faint sweep turning slowly so the radar never looks frozen. */
-.radar-dish__sweep--idle {
-    opacity: 0.35;
-    animation: radar-sweep 10s linear infinite;
-}
-
-/* Scanning: full-strength sweep, one turn every 2.4 s (the design's .rl-sweep--run). */
-.radar-dish__sweep--scan {
-    opacity: 0;
-}
-
-.radar-dish--scanning .radar-dish__sweep--idle {
-    opacity: 0;
-}
-
-.radar-dish--scanning .radar-dish__sweep--scan {
-    opacity: 1;
-    animation: radar-sweep 2.4s linear infinite;
-}
-
-.radar-dish__ping {
-    position: absolute;
-    width: 26px;
-    height: 26px;
-    margin: -13px 0 0 -13px;
-    box-sizing: border-box;
-    border: 1.5px solid var(--rl-color-found);
-    border-radius: 50%;
-    animation: radar-ping 2s ease-out infinite;
-}
-
-.radar-dish__blip {
-    position: absolute;
-    width: 10px;
-    height: 10px;
-    margin: -5px 0 0 -5px;
-    border-radius: 50%;
-    background: var(--rl-color-found);
-}
-
-.radar-dish__center {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 12px;
-    height: 12px;
-    margin: -6px 0 0 -6px;
-    border-radius: 50%;
-    background: var(--rl-color-bone);
-    box-shadow: 0 0 0 4px rgba(237, 232, 220, 0.12);
-}
-
-.radar-dish__north {
-    position: absolute;
-    top: 6%;
-    left: 50%;
-    transform: translateX(-50%);
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    margin-inline-end: 4px;
     font-family: var(--rl-font-mono);
-    font-size: 10px;
+    font-size: 9px;
     color: var(--rl-color-dish-label);
+}
+
+/* "Antenna found · North": bottom right of the map until the next scan. */
+.radar-note {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: calc(100% - 20px);
+    box-sizing: border-box;
+    padding: 7px 10px;
+    border: 1px solid var(--rl-color-found);
+    border-radius: 10px;
+    background: rgba(11, 17, 16, 0.92);
+    color: var(--rl-color-found-bright);
+    font-family: var(--rl-font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    animation: radar-note-in 300ms ease-out;
+}
+
+.radar-note__dot {
+    flex-shrink: 0;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--rl-color-found-bright);
 }
 
 /* ---- Antenna detection ----------------------------------------------- */
 .antenna-panel {
     flex-shrink: 0;
-    margin: 16px 16px 0;
+    margin: 12px 16px 0;
     padding: 10px 12px 12px;
     border: 1px solid var(--rl-color-night-edge);
     border-radius: 14px;
@@ -2196,13 +2190,26 @@ watch(selectedGameId, updatePrizeSelectionUI);
 
 .antenna-slot {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
+    gap: 3px;
     box-sizing: border-box;
-    height: 46px;
+    height: 52px;
+    overflow: hidden;
     border: 1px dashed var(--rl-color-slot-line);
     border-radius: 10px;
     color: var(--rl-color-slot-icon);
+}
+
+.antenna-slot__name {
+    max-width: 100%;
+    font-family: var(--rl-font-mono);
+    font-size: 8px;
+    line-height: 1.2;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    white-space: nowrap;
 }
 
 .antenna-slot--found {
@@ -2372,6 +2379,40 @@ button.radar-actions__tile {
 }
 
 /*
+ * Missed scan: dark button with a bright red edge and glow, a quick shake,
+ * and "Try again" under the message, so a miss can't be mistaken for the
+ * red Scan or the dark-red Scanning state.
+ */
+.radar-scan--missed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    box-sizing: border-box;
+    border: 2px solid var(--rl-color-alert);
+    background: var(--rl-color-miss);
+    box-shadow: 0 0 0 4px var(--rl-color-signal-wash), 0 0 24px var(--rl-color-signal-glow);
+    animation: radar-miss-shake 420ms ease-out, radar-miss-glow 1s ease-in-out 420ms infinite alternate;
+}
+
+.radar-scan__miss {
+    color: var(--rl-color-alert);
+    font-size: 19px;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.radar-scan__retry {
+    font-family: var(--rl-font-sans);
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: var(--rl-color-bone);
+}
+
+/*
  * Press feedback for every tappable control. The press snaps in (60 ms) and
  * releases slowly (220 ms), so even a quick tap shows.
  */
@@ -2413,7 +2454,10 @@ button.radar-actions__tile:active {
 .radar-screen:lang(ar) .radar-card__status,
 .radar-screen:lang(ar) .radar-card__value,
 .radar-screen:lang(ar) .radar-actions__label,
-.radar-screen:lang(ar) .radar-scan {
+.radar-screen:lang(ar) .radar-scan,
+.radar-screen:lang(ar) .radar-scan__miss,
+.radar-screen:lang(ar) .radar-note,
+.radar-screen:lang(ar) .antenna-slot__name {
     letter-spacing: 0;
 }
 
@@ -2421,12 +2465,16 @@ button.radar-actions__tile:active {
 .radar-screen:lang(ar) .radar-label,
 .radar-screen:lang(ar) .radar-card__status,
 .radar-screen:lang(ar) .radar-card__meta,
-.radar-screen:lang(ar) .radar-actions__label {
+.radar-screen:lang(ar) .radar-actions__label,
+.radar-screen:lang(ar) .radar-north,
+.radar-screen:lang(ar) .radar-note,
+.radar-screen:lang(ar) .antenna-slot__name {
     font-family: var(--rl-font-sans);
 }
 
 .radar-screen:lang(ar) .radar-label { font-size: 12px; }
-.radar-screen:lang(ar) .radar-card__status { font-size: 14px; }
+.radar-screen:lang(ar) .radar-card .radar-label { font-size: 11px; }
+.radar-screen:lang(ar) .radar-card__status { font-size: 13px; }
 .radar-screen:lang(ar) .radar-card__value { line-height: 1.25; }
 /* Every tile reserves two lines for its name, so all five prices sit on one line. */
 .radar-screen:lang(ar) .prize-tile__name {
@@ -2438,17 +2486,20 @@ button.radar-actions__tile:active {
     line-height: 1.25;
 }
 .radar-screen:lang(ar) .radar-actions__label { font-size: 11px; }
-.radar-screen:lang(ar) .radar-dish__north { font-size: 12px; }
+.radar-screen:lang(ar) .radar-north { font-size: 11px; }
+.radar-screen:lang(ar) .radar-note { font-size: 12px; }
+.radar-screen:lang(ar) .antenna-slot__name { font-size: 9.5px; }
+.radar-screen:lang(ar) .radar-scan__miss { font-size: 20px; }
+/* Arabic letters are taller than the Latin caps: give the two lines room. */
+.radar-screen:lang(ar) .radar-scan--missed { gap: 3px; line-height: 1.3; }
 
 /* ---- Short screens (most phones with browser chrome) ------------------ */
 @media (max-height: 740px) {
-    .radar-screen { --radar-chrome: 475px; }
     .radar-screen__bar { height: 52px; }
-    .radar-status { margin-top: 8px; }
-    .radar-card { padding: 8px 10px; }
-    .radar-dish-wrap { margin-top: 10px; }
+    .radar-map-card { margin-top: 8px; }
+    .radar-card { padding: 6px 9px; }
     .antenna-panel { margin-top: 10px; padding: 8px 10px 10px; }
-    .antenna-slot { height: 38px; }
+    .antenna-slot { height: 44px; gap: 2px; }
     .prize-picker { margin-top: 10px; }
     .prize-tile { height: 80px; }
     .radar-screen:lang(ar) .prize-tile { gap: 3px; padding: 4px 2px; }
@@ -2467,11 +2518,27 @@ button.radar-actions__tile:active {
     .radar-screen__brand-name { display: none; }
     .radar-scan { font-size: 20px; }
     .radar-scan--long { font-size: 14px; }
+    .radar-scan__miss { font-size: 15px; }
+    .radar-scan__retry { font-size: 12px; }
+    .antenna-slot__name { font-size: 7px; letter-spacing: 0; }
 }
 
-@keyframes radar-sweep {
-    from { transform: rotate(38deg); }
-    to { transform: rotate(398deg); }
+@keyframes radar-note-in {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes radar-miss-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(5px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(2px); }
+}
+
+@keyframes radar-miss-glow {
+    from { box-shadow: 0 0 0 4px var(--rl-color-signal-wash), 0 0 14px var(--rl-color-signal-wash); }
+    to { box-shadow: 0 0 0 4px var(--rl-color-signal-wash), 0 0 28px var(--rl-color-signal-glow); }
 }
 
 @keyframes radar-live {
@@ -2495,7 +2562,6 @@ button.radar-actions__tile:active {
  * static red hint instead of the wave.
  */
 @media (prefers-reduced-motion: reduce) {
-    .radar-dish__sweep--idle,
     .radar-card__bar--on,
     .radar-card__dot--live,
     .prize-picker--prompt .prize-tile,
@@ -2503,23 +2569,14 @@ button.radar-actions__tile:active {
         animation: none;
     }
 
-    .radar-dish__sweep--idle {
-        transform: rotate(38deg);
-    }
-
-    .radar-dish__ping {
+    .radar-scan--missed,
+    .radar-note {
         animation: none;
-        opacity: 0.5;
     }
 
     .prize-picker--prompt .prize-tile {
         border-color: var(--rl-color-signal-glow);
     }
-}
-
-@keyframes radar-ping {
-    0% { transform: scale(0.4); opacity: 1; }
-    100% { transform: scale(1.6); opacity: 0; }
 }
 
 @keyframes radar-signal {

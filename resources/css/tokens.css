@@ -94,7 +94,6 @@
     --rl-color-ring-outer:   #16201D;       /* decorative radar rings     */
     --rl-color-ring-mid:     #18221F;
     --rl-color-ring-inner:   #1B2522;
-    --rl-color-dish-line:    #1F2A27;       /* radar dish rings / axes    */
     --rl-color-dish-label:   #6F7C76;       /* radar dish "N"             */
     --rl-color-slot-line:    #2F3B37;       /* empty antenna slot border  */
     --rl-color-slot-icon:    #3A4742;       /* empty antenna slot icon    */
@@ -113,6 +112,19 @@
     --rl-color-signal-glow:  rgba(214, 40, 40, 0.55);  /* "pick a prize" nudge */
     --rl-color-press-wash:   rgba(237, 232, 220, 0.12); /* pressed icon / tile */
     --rl-color-alert:        #F0605A;       /* field errors               */
+    --rl-color-map:          #0D1412;       /* radar map card             */
+    --rl-color-map-grid:     #131C19;       /* radar map grid lines       */
+    --rl-color-map-ring-1:   rgba(237, 232, 220, 0.10); /* dashed range rings */
+    --rl-color-map-ring-2:   rgba(237, 232, 220, 0.08);
+    --rl-color-map-ring-3:   rgba(237, 232, 220, 0.06);
+    --rl-color-map-label:    #3A4743;       /* "Mediterranean"            */
+    --rl-color-map-pin:      #45524D;       /* region not found yet       */
+    --rl-color-map-overlay:  rgba(11, 17, 16, 0.9); /* cards over the map */
+    --rl-color-region:       #111A17;       /* region fill                */
+    --rl-color-region-edge:  #2E3B37;       /* region outline             */
+    --rl-color-region-lit:   rgba(31, 168, 90, 0.30);  /* region found    */
+    --rl-color-region-flash: rgba(120, 255, 170, 0.95); /* just found     */
+    --rl-color-miss:         #1E0C0C;       /* Scan button after a miss   */
 
     /* Arabic glyphs fall through to IBM Plex Sans Arabic (loaded in app.blade.php). */
     --rl-font-headline:      'Big Shoulders Display', 'IBM Plex Sans Arabic', 'Arial Narrow', sans-serif;
