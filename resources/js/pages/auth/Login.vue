@@ -93,10 +93,7 @@ const goToSignUp = () => {
                 </div>
 
                 <div class="rl-field">
-                    <div class="signin__label-row">
-                        <label for="password" class="rl-label">Password</label>
-                        <a href="/forgot-password" class="rl-link signin__forgot" :tabindex="4">Forgot password?</a>
-                    </div>
+                    <label for="password" class="rl-label">Password</label>
                     <input
                         type="password"
                         class="rl-input"
@@ -110,6 +107,7 @@ const goToSignUp = () => {
                         v-model="form.password"
                     />
                     <InputError id="password-error" :message="form.errors.password" variant="inline" />
+                    <a href="/forgot-password" class="rl-link signin__forgot" :tabindex="4">Forget password?</a>
                 </div>
 
                 <button class="rl-button signin__submit" type="submit" :tabindex="3" :disabled="form.processing">
@@ -181,13 +179,13 @@ const goToSignUp = () => {
     margin-top: 24px;
 }
 
-.signin__label-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-}
-
+/* Under the password field, right-aligned; 44px tall so it's easy to tap. */
 .signin__forgot {
+    display: inline-flex;
+    align-self: flex-end;
+    align-items: center;
+    min-height: 44px;
+    margin: -6px 0 -12px;
     font-size: 13px;
 }
 

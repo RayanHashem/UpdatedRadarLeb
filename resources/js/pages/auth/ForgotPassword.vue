@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /*
- * Forgot password — Sign in style (2026 redesign). Not part of the client
+ * Forget password — Sign in style (2026 redesign). Not part of the client
  * design, so it reuses the Sign in screen's rings, logo, fields and CTA.
  * English only, like before. Posts the email to /forgot-password; the
  * server answers with `status` (link sent) or an email error.
@@ -22,7 +22,7 @@ const submit = () => {
 </script>
 
 <template>
-    <Head title="Forgot password" />
+    <Head title="Forget password" />
     <main class="rl-screen">
         <span class="rl-ring rl-hero__ring rl-hero__ring--outer" aria-hidden="true"></span>
         <span class="rl-ring rl-hero__ring rl-hero__ring--mid" aria-hidden="true"></span>
@@ -32,7 +32,7 @@ const submit = () => {
             <img src="/assets/imgs/radarleb-logo.png" class="rl-hero__logo" width="176" height="176" alt="Radar Leb" />
 
             <div class="rl-hero__heading">
-                <h1 class="rl-title rl-hero__title">Forgot password</h1>
+                <h1 class="rl-title rl-hero__title">Forget password</h1>
                 <p class="rl-hero__subtitle">Use the email address you signed up with (sign-in uses your phone number).</p>
             </div>
 
