@@ -26,20 +26,26 @@ class PasswordResetLinkController extends Controller
     }
 
     /**
+     * The one reply every request gets, so the page never reveals whether an
+     * email address has an account.
+     */
+    public const NEUTRAL_STATUS = 'If an account exists for this email, we’ve sent a password reset link.';
+
+    /**
      * Handle an incoming password reset link request.
      *
-     * Root-cause hardening (why "forgot password" was not working 100%):
-     *  1. Exact-match Rule::exists('users','email') silently failed for users who
-     *     signed up with mixed casing (e.g. "Ali_Houdeib@hotmail.com" vs
-     *     "ali_houdeib@hotmail.com"). We now resolve the user case-insensitively
-     *     and pass the DB-stored email to the broker so the token row is keyed
-     *     correctly and the link is built for the right account.
-     *  2. MAIL_MAILER=log made sendResetLink() return RESET_LINK_SENT even though
-     *     no email ever left the server. We now detect that and fail closed with
-     *     a clear instruction, so the UI never lies to the user.
-     *  3. SMTP/transport exceptions used to be swallowed into a generic "try
-     *     again later". We now log the exception and still return a user-safe
-     *     message, but mail failures are actually visible in storage/logs.
+     * Always answers with NEUTRAL_STATUS (registered or not, sent or not), so
+     * the form can't be used to find out who has an account. The email only
+     * goes out when the address belongs to a player. Anything that stops it
+     * (unknown address, mail not configured, SMTP failure, throttled) is
+     * written to the log instead of being shown.
+     *
+     * Earlier hardening kept:
+     *  1. The user is resolved case-insensitively and the DB-stored email is
+     *     passed to the broker, so mixed-case sign-ups still get their link.
+     *  2. MAIL_MAILER=log outside local/testing is detected and logged (no
+     *     email would leave the server).
+     *  3. SMTP/transport exceptions are logged with the mailer and host.
      *
      * @throws ValidationException
      */
@@ -63,21 +69,25 @@ class PasswordResetLinkController extends Controller
             ->whereRaw('LOWER(email) = ?', [$normalizedEmail])
             ->first();
 
-        if (! $user) {
-            throw ValidationException::withMessages([
-                'email' => 'No account found with this email address. Please sign up first.',
-            ]);
+        if ($user) {
+            $this->sendLink($user);
         }
 
+        return back()->with('status', self::NEUTRAL_STATUS);
+    }
+
+    /**
+     * Send the reset email to a known player. Failures are logged, never shown.
+     */
+    private function sendLink(User $user): void
+    {
         if (config('mail.default') === 'log'
             && ! app()->environment('local', 'testing')) {
             Log::warning('Password reset requested while MAIL_MAILER=log in non-local env', [
                 'user_id' => $user->id,
             ]);
 
-            return back()->withErrors([
-                'email' => 'Email delivery is not configured on the server yet. Please contact support.',
-            ]);
+            return;
         }
 
         try {
@@ -90,29 +100,21 @@ class PasswordResetLinkController extends Controller
                 'error'   => $e->getMessage(),
             ]);
 
-            return back()->withErrors([
-                'email' => 'We could not deliver the reset email right now (mail server error). Please try again shortly.',
-            ]);
+            return;
         } catch (\Throwable $e) {
             Log::error('Unexpected failure sending password reset link', [
                 'user_id' => $user->id,
                 'error'   => $e->getMessage(),
             ]);
 
-            return back()->withErrors([
-                'email' => 'Unable to send reset email right now. Please try again later.',
+            return;
+        }
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            Log::warning('Password::sendResetLink returned non-success status', [
+                'user_id' => $user->id,
+                'status'  => $status,
             ]);
         }
-
-        if ($status === Password::RESET_LINK_SENT) {
-            return back()->with('status', __('A reset link has been sent to your email.'));
-        }
-
-        Log::warning('Password::sendResetLink returned non-success status', [
-            'user_id' => $user->id,
-            'status'  => $status,
-        ]);
-
-        return back()->withErrors(['email' => __($status)]);
     }
 }
