@@ -1,13 +1,14 @@
 /**
  * Single source of truth for prize rules (UI side).
  *
- * RD:Leb. Wallet holds Radar Cash units; `games.price_to_play` is the radar amount debited per scan:
+ * RD:Leb. Wallet holds Radar Cash units, and 1 Radar Cash = $1 for every prize.
+ * `games.price_to_play` is the Radar Cash debited per scan:
  *
- *   Mobile              min deposit 10$    implied 1 radar = 0.25$   1 scan = 1 radar
- *   Bike & Electronics  min deposit 25$    1 radar = 0.25$           1 scan = 4 radars
- *   SUV                 min deposit 30$    1 radar = 0.25$           1 scan = 8 radars
- *   Muscle Car          min deposit 40$    1 radar = 6$              1 scan = 24 radars
- *   Super Car           min deposit 50$    1 radar = 8$              1 scan = 32 radars
+ *   Mobile              min deposit 10$    1 scan = 1 Radar Cash
+ *   Bike & Electronics  min deposit 25$    1 scan = 4 Radar Cash
+ *   SUV                 min deposit 30$    1 scan = 8 Radar Cash
+ *   Muscle Car          min deposit 40$    1 scan = 24 Radar Cash
+ *   Super Car           min deposit 50$    1 scan = 32 Radar Cash
  *
  * Per scan, Radar Cash debited = radars per scan. Must match `Game::price_to_play`.
  *

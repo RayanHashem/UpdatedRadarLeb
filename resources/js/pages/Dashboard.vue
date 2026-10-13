@@ -341,7 +341,7 @@ const PRIZE_DISPLAY_ORDER = ['Mobile', 'Bike & Electronics', 'SUV', 'Muscle Car'
 
 /** Display config for each prize slot (same order as orderedPrizes). Enables Vue @click instead of DOM listeners. */
 const PRIZE_DISPLAY_CONFIG = [
-    { img: '/assets/imgs/mobile1.png', detectedImg: '/assets/imgs/mobile-detected1.png', label: 'MOBILE', price: '1.500$' },
+    { img: '/assets/imgs/mobile1.png', detectedImg: '/assets/imgs/mobile-detected1.png', label: 'MOBILE', price: '2.000$' },
     { img: '/assets/imgs/be1.png', detectedImg: '/assets/imgs/be-detected1.png', label: 'BIKE / ELECTRONICS', price: '15.000$' },
     { img: '/assets/imgs/suv1.png', detectedImg: '/assets/imgs/suv-detected1.png', label: 'SUV', price: '50.000$' },
     { img: '/assets/imgs/muscle-car1.png', detectedImg: '/assets/imgs/muscle-car-detected1.png', label: 'MUSCLE CAR', price: '150.000$' },
@@ -353,7 +353,7 @@ const PRIZE_DISPLAY_CONFIG = [
  * Names come from lang/*.json: dashboard.radar.prize.<key> (full) and .<key>.short (tile). Display only.
  */
 const PRIZE_TILES = [
-    { key: 'mobile', icon: 'mobile', price: '$1,500', priceShort: '$1.5K' },
+    { key: 'mobile', icon: 'mobile', price: '$2,000', priceShort: '$2K' },
     { key: 'bike', icon: 'bike', price: '$15,000', priceShort: '$15K' },
     { key: 'suv', icon: 'suv', price: '$50,000', priceShort: '$50K' },
     { key: 'muscle', icon: 'muscle', price: '$150,000', priceShort: '$150K' },

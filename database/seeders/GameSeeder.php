@@ -15,12 +15,12 @@ class GameSeeder extends Seeder
         $games = [
             [
                 'name'                       => 'Mobile',
-                'price'                      => 1800,
+                'price'                      => 2400,
                 'image_path'                 => '/assets/imgs/mobile1.png',
                 'price_to_play'              => 1,
-                'minimum_amount_for_winning'  => 1800,
+                'minimum_amount_for_winning'  => 2400,
                 'minimum_deposit'            => 10,
-                'target_amount'              => 1800,
+                'target_amount'              => 2400,
                 'current_amount'             => 0,
                 'draw_number'                => '1',
                 'is_enabled'                 => true,
