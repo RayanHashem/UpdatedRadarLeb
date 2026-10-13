@@ -48,7 +48,7 @@
             :updating="updatingPassword"
             :success="showSuccessMessage"
             :password-error="passwordError"
-            :new-password-error="newPasswordError"
+            :new-password-error="newPasswordError || newPasswordRulesMessage"
             :confirm-password-error="confirmPasswordError"
             @verify="verifyOldPassword"
             @update="updatePassword"
@@ -297,6 +297,7 @@ import LoadingScreen from '@/components/dashboard/LoadingScreen.vue';
 import RadarIcon from '@/components/dashboard/RadarIcon.vue';
 import RadarMap from '@/components/dashboard/RadarMap.vue';
 import { regionOrder } from '@/lib/radarRegions';
+import { failedPasswordRules } from '@/lib/passwordRules';
 import AddToHomeScreenPrompt from '@/components/AddToHomeScreenPrompt.vue';
 import DesktopBlock from '@/components/DesktopBlock.vue';
 
@@ -1148,6 +1149,25 @@ const verifyOldPassword = async () => {
     }
 };
 
+/*
+ * New password rules: the same five as Sign up (lib/passwordRules.ts, which
+ * mirrors the server's Password::defaults()). Like Sign up, the red message
+ * lists what's still missing while the player types.
+ */
+const newPasswordRulesMessage = computed(() => {
+    if (!newPassword.value) return '';
+    const missing = failedPasswordRules(newPassword.value);
+    if (!missing.length) return '';
+    return t('dashboard.password.error.rules', {
+        missing: missing.map((rule) => t(`dashboard.password.rule.${rule.id}`)).join(t('dashboard.password.rule.separator')),
+    });
+});
+
+// A message from the last "Done" tap goes away once the player edits the password.
+watch(newPassword, () => {
+    newPasswordError.value = '';
+});
+
 const updatePassword = async () => {
     // Clear previous errors
     newPasswordError.value = '';
@@ -1159,8 +1179,8 @@ const updatePassword = async () => {
         return;
     }
 
-    if (newPassword.value.length < 8) {
-        newPasswordError.value = t('dashboard.password.error.minLength');
+    if (newPasswordRulesMessage.value) {
+        newPasswordError.value = newPasswordRulesMessage.value;
         return;
     }
 

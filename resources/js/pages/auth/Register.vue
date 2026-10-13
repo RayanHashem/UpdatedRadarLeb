@@ -3,6 +3,8 @@ import InputError from '@/components/InputError.vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed, onMounted, ref, watch } from 'vue';
 import { RADARLEB_TERMS_FULL } from '@/content/radarlebTermsFull';
+/* Password rules: shared with Change password and must match backend validation exactly. */
+import { PASSWORD_RULES } from '@/lib/passwordRules';
 
 const form = useForm({
     name: '',
@@ -36,15 +38,6 @@ onMounted(() => {
 
 const dobDisplay = ref('');
 const submitAttempted = ref(false);
-
-/** Password rules: must match backend validation exactly */
-const PASSWORD_RULES = [
-    { id: 'min', label: 'At least 8 characters', test: (p: string) => p.length >= 8 },
-    { id: 'upper', label: 'At least one uppercase letter', test: (p: string) => /[A-Z]/.test(p) },
-    { id: 'lower', label: 'At least one lowercase letter', test: (p: string) => /[a-z]/.test(p) },
-    { id: 'number', label: 'At least one number', test: (p: string) => /\d/.test(p) },
-    { id: 'special', label: 'At least one special character (!@#$%^&*)', test: (p: string) => /[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?]/.test(p) },
-] as const;
 
 const passwordAllValid = computed(() =>
     PASSWORD_RULES.every((rule) => rule.test(form.password))

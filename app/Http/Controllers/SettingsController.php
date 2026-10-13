@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
 
 class SettingsController extends Controller
@@ -38,10 +39,11 @@ class SettingsController extends Controller
     {
         $user = $request->user();
 
-        // Validate old password
+        // Same password rules as Sign up (Password::defaults() in AppServiceProvider):
+        // 8+ characters, upper and lower case, a number and a symbol.
         $request->validate([
             'old_password' => ['required', 'string'],
-            'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+            'new_password' => ['required', 'string', 'confirmed', Password::defaults()],
         ]);
 
         // Verify old password

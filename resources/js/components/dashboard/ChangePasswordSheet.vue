@@ -4,7 +4,7 @@
  *
  * Presentation only. Dashboard.vue still owns the two-step flow and the
  * rules: step 1 verifies the old password (verifyOldPassword), step 2 sets
- * the new one (updatePassword, min 8 characters + matching confirmation),
+ * the new one (updatePassword, Sign up's five password rules + matching confirmation),
  * Back returns to Settings (resetPasswordFlow).
  *
  * Error text arrives either from the app (already translated with t()) or
@@ -48,6 +48,10 @@ const SERVER_MESSAGE_KEYS: Record<string, string> = {
     'The old password field is required.': 'dashboard.password.error.enterOld',
     'The new password field is required.': 'dashboard.password.error.enterNew',
     'The new password field must be at least 8 characters.': 'dashboard.password.error.minLength',
+    'The new password field must contain at least one letter.': 'dashboard.password.server.letters',
+    'The new password field must contain at least one uppercase and one lowercase letter.': 'dashboard.password.server.mixedCase',
+    'The new password field must contain at least one number.': 'dashboard.password.server.numbers',
+    'The new password field must contain at least one symbol.': 'dashboard.password.server.symbols',
     'The new password field confirmation does not match.': 'dashboard.password.error.mismatch',
     'Server Error': 'dashboard.password.error.generic',
 }
