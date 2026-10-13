@@ -57,6 +57,31 @@ function syncDocumentLocale(page: { component: string; props: Record<string, unk
     document.documentElement.dir = isRtlLocale(locale) ? 'rtl' : 'ltr';
 }
 
+/*
+ * On-screen keyboard. iOS Safari keeps the page height when the keyboard
+ * opens, so the bottom of a screen (the Sign in button, Change password's
+ * Done) can sit under the keyboard with nothing left to scroll.
+ * --rl-keyboard-inset holds the keyboard's height while it's open, and
+ * .rl-screen__column / .rl-sheet__column add it as bottom padding so every
+ * field and button can be scrolled above it. Android shrinks the page
+ * instead (interactive-widget=resizes-content in app.blade.php), so there
+ * the inset stays 0.
+ */
+function trackKeyboardInset() {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const update = () => {
+        const covered = document.documentElement.clientHeight - viewport.height;
+        // Ignore pinch-zoom and small toolbar changes; a keyboard is well over 120px.
+        const inset = viewport.scale <= 1.01 && covered > 120 ? Math.round(covered) : 0;
+        document.documentElement.style.setProperty('--rl-keyboard-inset', `${inset}px`);
+    };
+    viewport.addEventListener('resize', update);
+    update();
+}
+
+trackKeyboardInset();
+
 // -----------------------------------------------------------
 // Service Worker Registration
 // TEMPORARILY DISABLED - Unregister all Service Workers to fix CSS loading issues

@@ -52,13 +52,13 @@ function setLocale(code: string) {
 .locale-switcher {
     display: inline-flex;
     align-items: center;
-    overflow: hidden;
     border: 1px solid var(--rl-color-night-line);
     border-radius: 8px;
     user-select: none;
 }
 
 .locale-switcher__btn {
+    position: relative;
     appearance: none;
     width: 34px;
     height: 30px;
@@ -75,6 +75,37 @@ function setLocale(code: string) {
 .locale-switcher__btn.is-active {
     background: var(--rl-color-bone);
     color: var(--rl-color-night);
+}
+
+/* Round the outer ends (instead of clipping the pill, so the tap areas below can reach outside it). */
+.locale-switcher__btn:first-child {
+    border-start-start-radius: 7px;
+    border-end-start-radius: 7px;
+}
+
+.locale-switcher__btn:last-child {
+    border-start-end-radius: 7px;
+    border-end-end-radius: 7px;
+}
+
+/*
+ * Invisible 44x44 tap area: 7px above and below, and 10px outwards
+ * (EN and AR still meet in the middle, so they never overlap).
+ */
+.locale-switcher__btn::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    bottom: -7px;
+    inset-inline: 0;
+}
+
+.locale-switcher__btn:first-child::before {
+    inset-inline-start: -10px;
+}
+
+.locale-switcher__btn:last-child::before {
+    inset-inline-end: -10px;
 }
 
 /* Press feedback: snaps in, releases slowly so a quick tap still shows. */

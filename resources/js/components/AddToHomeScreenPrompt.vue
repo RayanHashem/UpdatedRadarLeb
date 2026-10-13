@@ -234,6 +234,10 @@ onBeforeUnmount(() => {
     display: flex;
     justify-content: center;
     padding: 0.75rem;
+    /* Clear of the iPhone home bar and, sideways, the notch. */
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(0.75rem + env(safe-area-inset-left, 0px));
+    padding-right: calc(0.75rem + env(safe-area-inset-right, 0px));
     pointer-events: none;
 }
 
@@ -302,6 +306,7 @@ onBeforeUnmount(() => {
 }
 
 .a2hs-btn {
+    min-height: 44px;
     border: none;
     border-radius: 999px;
     padding: 0.5rem 0.95rem;

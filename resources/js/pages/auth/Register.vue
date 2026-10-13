@@ -332,7 +332,8 @@ const submit = () => {
                 </div>
 
                 <!-- 18+ and Terms checkbox -->
-                <div class="signup__terms">
+                <!-- The whole card is the checkbox label: a tap anywhere on it ticks the box (44px+ target). -->
+                <label class="signup__terms" for="confirm_18_and_terms">
                     <input
                         v-model="form.confirm_18_and_terms"
                         type="checkbox"
@@ -341,7 +342,7 @@ const submit = () => {
                         :tabindex="7"
                         @click="onTermsCheckboxClick"
                     />
-                    <label for="confirm_18_and_terms" class="signup__terms-label">
+                    <span class="signup__terms-label">
                         I confirm I'm at least 18 years old and I agree to&nbsp;<span class="terms-consent-tail"
                             >the <Link
                                 :href="route('terms')"
@@ -350,8 +351,8 @@ const submit = () => {
                                 >Terms &amp; Privacy Policy</Link
                             >.</span
                         >
-                    </label>
-                </div>
+                    </span>
+                </label>
                 <InputError :message="form.errors.confirm_18_and_terms" variant="inline" />
 
                 <button class="rl-button signup__submit" type="submit" :disabled="!canSubmit" :tabindex="8">
@@ -474,6 +475,7 @@ const submit = () => {
 
 .signup__terms {
     display: flex;
+    cursor: pointer;
     align-items: flex-start;
     gap: 12px;
     padding: 12px 14px;

@@ -1979,7 +1979,8 @@ watch(selectedGameId, updatePrizeSelectionUI);
 }
 
 .radar-screen__locale {
-    margin-right: 6px;
+    /* 10px: room for the EN/AR tap areas, which reach 10px past the pill. */
+    margin-inline-end: 10px;
 }
 
 .radar-screen__icon-btn {
@@ -2509,9 +2510,15 @@ button.radar-actions__tile:active {
 }
 
 /* ---- Narrow phones ---------------------------------------------------- */
+/* Icon buttons stay 44px wide (tap targets); the name gets a little smaller instead. */
 @media (max-width: 370px) {
     .radar-screen__bar { padding: 0 8px 0 12px; }
-    .radar-screen__icon-btn { width: 38px; }
+    .radar-screen__nav { gap: 0; }
+    .radar-screen__brand-name { font-size: 18px; }
+}
+
+@media (max-width: 359px) {
+    .radar-screen__brand-name { display: none; }
 }
 
 @media (max-width: 340px) {

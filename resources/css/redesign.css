@@ -32,7 +32,8 @@
     min-height: 100%;
     max-width: 480px;
     margin: 0 auto;
-    padding: calc(16px + env(safe-area-inset-top, 0px)) 24px calc(28px + env(safe-area-inset-bottom, 0px));
+    padding: calc(16px + env(safe-area-inset-top, 0px)) 24px
+        calc(28px + env(safe-area-inset-bottom, 0px) + var(--rl-keyboard-inset, 0px));
 }
 
 /* Decorative radar ring. Each screen sets its size, centre (top) and colour. */
@@ -171,6 +172,7 @@
 }
 
 .rl-link {
+    position: relative;
     padding: 0;
     border: 0;
     background: none;
@@ -178,6 +180,18 @@
     font: inherit;
     text-decoration: underline;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Short text links get an invisible tap area of at least 44x44px around them; nothing moves. */
+.rl-link::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
 }
 
 .rl-link:hover {
@@ -240,7 +254,8 @@
     min-height: 100%;
     max-width: 480px;
     margin: 0 auto;
-    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(24px + env(safe-area-inset-bottom, 0px));
+    padding: calc(12px + env(safe-area-inset-top, 0px)) 16px
+        calc(24px + env(safe-area-inset-bottom, 0px) + var(--rl-keyboard-inset, 0px));
 }
 
 .rl-sheet__bar {
