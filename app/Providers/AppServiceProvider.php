@@ -45,11 +45,6 @@ class AppServiceProvider extends ServiceProvider
         });
 
         /*
-         * Optional MAIL_RESET_BASE_URL: canonical public URL for password-reset emails.
-         * Without it, the link uses the current request root (see PortBasedSessionIsolation),
-         * which can be the wrong port if the request hit e.g. :8001 while users use :8000.
-         */
-        /*
          * Draw lifecycle observers.
          *
          *   - GameObserver stamps `opened_at` on the active Draw row when an
@@ -63,8 +58,14 @@ class AppServiceProvider extends ServiceProvider
         Game::observe(GameObserver::class);
         Winner::observe(WinnerObserver::class);
 
+        /*
+         * Password-reset links use app.reset_base_url (MAIL_RESET_BASE_URL), the
+         * canonical public URL. Without it, the link uses the current request root
+         * (see PortBasedSessionIsolation), which can be the wrong port if the
+         * request hit e.g. :8001 while users use :8000.
+         */
         ResetPassword::createUrlUsing(function ($notifiable, string $token) {
-            $base = (string) (env('MAIL_RESET_BASE_URL') ?: config('app.url'));
+            $base = (string) (config('app.reset_base_url') ?: config('app.url'));
             $base = rtrim($base, '/');
 
             return $base.'/reset-password/'.$token

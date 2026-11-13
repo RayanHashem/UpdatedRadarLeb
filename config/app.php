@@ -56,6 +56,21 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Password Reset Link Base URL
+    |--------------------------------------------------------------------------
+    |
+    | Canonical public URL used in password-reset emails (e.g.
+    | https://radarleb.com). Set it in production: without it the link falls
+    | back to app.url, which PortBasedSessionIsolation sets from the request
+    | host, so a forged Host / X-Forwarded-Host header would end up in the
+    | email. Read via config() so it still works when config is cached.
+    |
+    */
+
+    'reset_base_url' => env('MAIL_RESET_BASE_URL'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |

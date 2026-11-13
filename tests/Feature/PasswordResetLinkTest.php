@@ -91,6 +91,38 @@ class PasswordResetLinkTest extends TestCase
         Notification::assertSentToTimes($user, ResetPassword::class, 1);
     }
 
+    public function test_reset_link_uses_the_configured_base_url_even_with_a_forged_host(): void
+    {
+        Notification::fake();
+        config(['app.reset_base_url' => 'https://radarleb.example']);
+        $user = User::factory()->create(['email' => 'player@example.com']);
+
+        $this->withHeaders(['Host' => 'evil.example', 'X-Forwarded-Host' => 'evil.example'])
+            ->from('/forgot-password')
+            ->post('/forgot-password', ['email' => 'player@example.com'])
+            ->assertSessionHas('status', self::NEUTRAL);
+
+        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
+            $url = $notification->toMail($user)->actionUrl;
+
+            return str_starts_with($url, 'https://radarleb.example/reset-password/')
+                && ! str_contains($url, 'evil.example');
+        });
+    }
+
+    public function test_without_a_configured_base_url_the_link_falls_back_to_the_app_url(): void
+    {
+        Notification::fake();
+        config(['app.reset_base_url' => null]);
+        $user = User::factory()->create(['email' => 'player@example.com']);
+
+        $this->from('/forgot-password')->post('/forgot-password', ['email' => 'player@example.com']);
+
+        Notification::assertSentTo($user, ResetPassword::class, function (ResetPassword $notification) use ($user) {
+            return str_starts_with($notification->toMail($user)->actionUrl, rtrim(config('app.url'), '/').'/reset-password/');
+        });
+    }
+
     public function test_a_malformed_email_is_still_a_field_error(): void
     {
         $this->from('/forgot-password')
