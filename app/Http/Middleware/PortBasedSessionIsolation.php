@@ -74,7 +74,16 @@ class PortBasedSessionIsolation
         }
 
         $root = $request->getSchemeAndHttpHost();
-        config(['app.url' => $root]);
+
+        /*
+         * Only local dev lets app.url follow the request host (so :8000 and
+         * :8001 both work). Everywhere else app.url stays APP_URL, so a forged
+         * Host / X-Forwarded-Host header can't change links built from it,
+         * such as the email header link and the password-reset fallback.
+         */
+        if (app()->environment('local')) {
+            config(['app.url' => $root]);
+        }
         URL::forceRootUrl($root);
 
         return $next($request);
