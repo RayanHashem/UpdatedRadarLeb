@@ -107,7 +107,7 @@ const goToSignUp = () => {
                         v-model="form.password"
                     />
                     <InputError id="password-error" :message="form.errors.password" variant="inline" />
-                    <a href="/forgot-password" class="rl-link signin__forgot" :tabindex="4">Forget password?</a>
+                    <a href="/forgot-password" class="rl-link signin__forgot" :tabindex="4">Forgot password?</a>
                 </div>
 
                 <button class="rl-button signin__submit" type="submit" :tabindex="3" :disabled="form.processing">
